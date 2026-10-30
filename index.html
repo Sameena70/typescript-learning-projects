@@ -3,54 +3,164 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TypeScript Calculator</title>
-  <link rel="stylesheet" href="style.css">
-  <!-- Link the compiled JavaScript file -->
-  <script src="dist/calculator.js" defer></script>
+  <title>TypeScript Projects Showcase</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+    }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 30px 20px;
+    }
+    .container {
+      max-width: 860px;
+      width: 100%;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    header h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 10px;
+    }
+    header p {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 30px;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.12);
+    }
+    .card-icon {
+      font-size: 2.2rem;
+      margin-bottom: 14px;
+    }
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: #eff6ff;
+      color: #2563eb;
+      border: 1px solid #dbeafe;
+    }
+    .launch-btn {
+      display: block;
+      text-align: center;
+      background: var(--accent);
+      color: #ffffff;
+      text-decoration: none;
+      padding: 13px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: background 0.15s ease;
+    }
+    .launch-btn:hover {
+      background: var(--accent-hover);
+    }
+  </style>
 </head>
 <body>
-  <div class="calculator-container">
-    <div class="calculator-card">
-      <div class="calculator-header">
-        <span class="app-title">TypeScript Calculator</span>
+  <div class="container">
+    <header>
+      <h1>TypeScript Projects Showcase</h1>
+      <p>Interactive web applications built using TypeScript, HTML5 & CSS3</p>
+    </header>
+
+    <div class="grid">
+      <!-- Project 1: Simple Calculator -->
+      <div class="card">
+        <div>
+          <div class="card-icon">🧮</div>
+          <h2 class="card-title">01. Simple Calculator</h2>
+          <p class="card-desc">
+            Clean calculator supporting arithmetic operations, percentage, zero-division handling, and desktop keyboard accessibility.
+          </p>
+          <div class="card-tags">
+            <span class="tag">TypeScript</span>
+            <span class="tag">Keyboard API</span>
+            <span class="tag">Math</span>
+          </div>
+        </div>
+        <a href="01-simple-calculator/index.html" class="launch-btn">Launch Calculator &rarr;</a>
       </div>
 
-      <!-- Calculator Display -->
-      <div class="display-screen">
-        <div id="historyDisplay" class="history-text"></div>
-        <div id="currentDisplay" class="current-text">0</div>
-      </div>
-
-      <!-- Buttons Grid -->
-      <div class="buttons-grid">
-        <!-- Row 1: Actions -->
-        <button id="clearBtn" class="btn btn-action" type="button">AC</button>
-        <button id="deleteBtn" class="btn btn-action" type="button">DEL</button>
-        <button id="percentBtn" class="btn btn-action" type="button">%</button>
-        <button class="btn btn-operator" data-operator="/" type="button">÷</button>
-
-        <!-- Row 2: 7, 8, 9, Multiply -->
-        <button class="btn btn-number" data-number="7" type="button">7</button>
-        <button class="btn btn-number" data-number="8" type="button">8</button>
-        <button class="btn btn-number" data-number="9" type="button">9</button>
-        <button class="btn btn-operator" data-operator="*" type="button">×</button>
-
-        <!-- Row 3: 4, 5, 6, Subtract -->
-        <button class="btn btn-number" data-number="4" type="button">4</button>
-        <button class="btn btn-number" data-number="5" type="button">5</button>
-        <button class="btn btn-number" data-number="6" type="button">6</button>
-        <button class="btn btn-operator" data-operator="-" type="button">−</button>
-
-        <!-- Row 4: 1, 2, 3, Add -->
-        <button class="btn btn-number" data-number="1" type="button">1</button>
-        <button class="btn btn-number" data-number="2" type="button">2</button>
-        <button class="btn btn-number" data-number="3" type="button">3</button>
-        <button class="btn btn-operator" data-operator="+" type="button">+</button>
-
-        <!-- Row 5: 0, Decimal, Equals -->
-        <button class="btn btn-number btn-zero" data-number="0" type="button">0</button>
-        <button id="decimalBtn" class="btn btn-number" type="button">.</button>
-        <button id="equalsBtn" class="btn btn-equals" type="button">=</button>
+      <!-- Project 2: Expense Tracker -->
+      <div class="card">
+        <div>
+          <div class="card-icon">💳</div>
+          <h2 class="card-title">02. Expense Tracker</h2>
+          <p class="card-desc">
+            Personal budget manager with Indian Rupee (₹) formatting, category filtering, monthly limits, and localStorage persistence.
+          </p>
+          <div class="card-tags">
+            <span class="tag">TypeScript</span>
+            <span class="tag">INR (₹)</span>
+            <span class="tag">LocalStorage</span>
+          </div>
+        </div>
+        <a href="02-expense-tracker/index.html" class="launch-btn">Launch Expense Tracker &rarr;</a>
       </div>
     </div>
   </div>

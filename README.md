@@ -1,104 +1,82 @@
-# TypeScript Calculator Web Application
+# TypeScript Projects Portfolio
 
-A clean, modern, beginner-friendly Calculator Web Application built with **HTML5, CSS3, and TypeScript (compiled to JavaScript)**. Designed with practical examples to learn and demonstrate core TypeScript fundamentals such as static typing, strict mode, DOM element type casting, functions with type annotations, and desktop keyboard accessibility.
-
----
-
-## Features
-
-- **Core Arithmetic Operations**: Addition (`+`), Subtraction (`−`), Multiplication (`×`), Division (`÷`), and Modulo/Remainder (`%`).
-- **Percentage Calculation**: Convert any active value to its percentage instantly (`%`).
-- **Zero Division Protection**: Gracefully handles division by zero and displays a clean error state without crashing.
-- **Display Screen & History**: Shows both the active operand and the previous operation with formatted operators.
-- **Decimal & Digit Controls**: Supports fractional numbers with duplicate decimal prevention, single-digit deletion (`DEL`), and full reset (`AC`).
-- **Desktop Keyboard Support**: Type calculations naturally using your physical keyboard (`0-9`, `+`, `-`, `*`, `/`, `%`, `.`, `Enter`, `=`, `Backspace`, `Escape`).
-- **Responsive UI**: Fully centered layout styled with a modern dark theme that adapts seamlessly to desktop and mobile screen sizes.
+A collection of beginner-friendly and modern web applications built using **TypeScript, HTML5, and CSS3**.
 
 ---
 
-## Technologies Used
-
-- **TypeScript**: Application logic, static type checks, DOM casting, and math operators.
-- **HTML5**: Semantic markup for the calculator display screen and button grid.
-- **CSS3**: Modern Flexbox, CSS Grid, custom color palette, and responsive breakpoints.
-- **Node.js & npm / npx**: Tooling to run the TypeScript compiler (`tsc`).
+## 🚀 Live Demo on GitHub Pages
+Visit the live portal hosting both projects:
+👉 **[https://Sameena70.github.io/typescript-simple-calculator/](https://Sameena70.github.io/typescript-simple-calculator/)**
 
 ---
 
-## Project Structure
+## 📂 Included Projects
+
+### 1. [01. Simple Calculator](./01-simple-calculator)
+A dark-themed, responsive web calculator.
+- **Key Features**: Addition, Subtraction, Multiplication, Division, Percentage, Clear (AC), Delete (DEL), Division-by-Zero error prevention, and full **Desktop Keyboard Support**.
+- **Tech Highlights**: Basic types (`number`, `string`, `boolean`), functions with strict return types, DOM type assertions (`as HTMLButtonElement`), and template literals.
+
+### 2. [02. Personal Expense Tracker](./02-expense-tracker)
+A clean, light & warm-gray styled personal finance tracker formatted with **Indian Rupee (₹ INR)**.
+- **Key Features**: Add expenses (Amount, Category, Date, Title), Monthly Budget tracking, Remaining Balance with color-coded status badges, Category Filter, and single-item delete.
+- **Tech Highlights**: TypeScript `interface Expense`, typed array operations (`.filter()`, `.reduce()`), browser `localStorage` integration, and `Intl.NumberFormat("en-IN")`.
+
+---
+
+## 🛠️ Repository Structure
 
 ```text
 type script/
-├── .gitignore            # Rules for excluding dependency and cache files from Git
-├── index.html            # Web interface with display screen and button grid
-├── package.json          # Node project scripts & devDependencies
-├── README.md             # Project documentation and guide
-├── style.css             # Dark theme styling, button styles, and responsive layout
-├── tsconfig.json         # TypeScript compiler configuration (strict mode, target ES6)
-├── src/
-│   └── calculator.ts     # TypeScript source code (types, functions, DOM logic)
-└── dist/
-    └── calculator.js     # Compiled JavaScript consumed by index.html
+├── index.html                   # Showcase landing page for GitHub Pages
+├── README.md                    # Main portfolio documentation
+├── .gitignore                   # Ignores node_modules, temp files, and caches
+│
+├── 01-simple-calculator/        # Project 1: Calculator
+│   ├── index.html
+│   ├── style.css
+│   ├── tsconfig.json
+│   ├── package.json
+│   ├── README.md
+│   ├── src/calculator.ts
+│   └── dist/calculator.js
+│
+└── 02-expense-tracker/          # Project 2: Expense Tracker (INR)
+    ├── index.html
+    ├── style.css
+    ├── tsconfig.json
+    ├── package.json
+    ├── README.md
+    ├── src/expense-tracker.ts
+    └── dist/expense-tracker.js
 ```
 
 ---
 
-## Getting Started & Installation
+## 💻 Running the Projects Locally
 
-### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/Sameena70/typescript-simple-calculator.git
+   cd typescript-simple-calculator
+   ```
 
-### 1. Clone or Download the Repository
-```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd "type script"
-```
+2. **Open the Showcase or Projects**:
+   - Open root `index.html` to access both projects from a menu.
+   - Or open `01-simple-calculator/index.html` / `02-expense-tracker/index.html` directly.
 
-### 2. Install Dependencies (Optional)
-If you wish to install TypeScript locally:
-```bash
-npm install
-```
-
----
-
-## How to Run the Project
-
-### Running in the Browser
-No complex local server setup is needed:
-- Double-click `index.html` to open it in your default web browser, or
-- On Windows PowerShell:
-  ```powershell
-  Start-Process index.html
-  ```
-
-### Compiling TypeScript Changes
-When you edit `src/calculator.ts`, compile the changes into `dist/calculator.js`:
-
-- **One-time compile**:
-  ```bash
-  npx -p typescript tsc
-  ```
-- **Watch mode (automatically compiles on save)**:
-  ```bash
-  npx -p typescript tsc --watch
-  ```
-
----
-
-## Keyboard Shortcuts (Desktop)
-
-| Key | Action |
-| --- | --- |
-| `0` - `9` | Enter number digit |
-| `.` | Enter decimal point |
-| `+`, `-`, `*`, `/`, `%` | Arithmetic operations |
-| `Enter` or `=` | Calculate result |
-| `Backspace` | Delete last digit (`DEL`) |
-| `Escape` | Clear all (`AC`) |
+3. **Recompiling TypeScript**:
+   - For Calculator:
+     ```bash
+     cd 01-simple-calculator && npx -p typescript tsc
+     ```
+   - For Expense Tracker:
+     ```bash
+     cd 02-expense-tracker && npx -p typescript tsc
+     ```
 
 ---
 
 ## License
-This project is open-source and free to use under the [MIT License](https://opensource.org/licenses/MIT).
+Open-source under the [MIT License](https://opensource.org/licenses/MIT).
 
