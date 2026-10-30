@@ -1,0 +1,13 @@
+{
+  "name": "typescript-calculator",
+  "version": "1.0.0",
+  "description": "Beginner-friendly calculator web application in TypeScript",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
+

@@ -1,0 +1,158 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  padding: 16px;
+}
+
+.calculator-container {
+  width: 100%;
+  max-width: 360px;
+}
+
+.calculator-card {
+  background: #1e293b;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  padding: 24px;
+}
+
+.calculator-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.app-title {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Display Screen */
+.display-screen {
+  background-color: #0f172a;
+  border-radius: 12px;
+  padding: 18px 16px;
+  margin-bottom: 20px;
+  text-align: right;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  word-wrap: break-word;
+  word-break: break-all;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.history-text {
+  color: #64748b;
+  font-size: 1rem;
+  min-height: 1.3rem;
+  margin-bottom: 6px;
+  transition: color 0.2s ease;
+}
+
+.current-text {
+  color: #f8fafc;
+  font-size: 2.3rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+/* Buttons Grid */
+.buttons-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.btn {
+  border: none;
+  outline: none;
+  height: 60px;
+  border-radius: 14px;
+  font-size: 1.25rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.08s ease, filter 0.15s ease, background-color 0.15s ease;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.95);
+}
+
+/* Button color themes */
+.btn-number {
+  background-color: #334155;
+  color: #f8fafc;
+}
+
+.btn-number:hover {
+  background-color: #475569;
+}
+
+.btn-action {
+  background-color: #475569;
+  color: #f1f5f9;
+  font-weight: 600;
+}
+
+.btn-action:hover {
+  background-color: #64748b;
+}
+
+.btn-operator {
+  background-color: #3b82f6;
+  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.btn-operator:hover {
+  background-color: #2563eb;
+}
+
+.btn-equals {
+  background-color: #10b981;
+  color: #ffffff;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.btn-equals:hover {
+  background-color: #059669;
+}
+
+.btn-zero {
+  grid-column: span 2;
+}
+
+/* Responsive tweaking */
+@media (max-width: 380px) {
+  .calculator-card {
+    padding: 16px;
+  }
+  .btn {
+    height: 52px;
+    font-size: 1.15rem;
+  }
+  .current-text {
+    font-size: 1.9rem;
+  }
+}
+
