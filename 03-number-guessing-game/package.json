@@ -1,0 +1,13 @@
+{
+  "name": "number-guessing-game",
+  "version": "1.0.0",
+  "description": "Beginner-friendly Number Guessing Game built with TypeScript",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
+

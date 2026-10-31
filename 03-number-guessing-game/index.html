@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GUESS MASTER — Number Guessing Game</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- Compiled TypeScript logic -->
+  <script src="dist/number-guessing-game.js" defer></script>
+</head>
+<body>
+  <!-- Ambient background glow particles -->
+  <div class="glow-orb glow-cyan"></div>
+  <div class="glow-orb glow-magenta"></div>
+
+  <div class="game-container">
+    <!-- Top badge -->
+    <div class="header-pill">
+      <span class="pill-dot"></span>
+      TypeScript Game Project
+    </div>
+
+    <!-- Hero Titles -->
+    <header class="hero-header">
+      <h1 class="neon-title">GUESS MASTER</h1>
+      <p class="neon-subtitle">Can you crack the code?</p>
+    </header>
+
+    <!-- Main Glassmorphism Card -->
+    <main class="glass-card">
+      <!-- 1. Difficulty Selection View -->
+      <section id="difficultySection" class="view-section">
+        <p class="section-title">Select Difficulty Level</p>
+        <div class="difficulty-options">
+          <button type="button" class="diff-btn active" data-difficulty="easy" data-max="100" data-attempts="7">
+            <span class="diff-name">Easy</span>
+            <span class="diff-range">(1 - 100) • 7 Attempts</span>
+          </button>
+          <button type="button" class="diff-btn" data-difficulty="medium" data-max="500" data-attempts="9">
+            <span class="diff-name">Medium</span>
+            <span class="diff-range">(1 - 500) • 9 Attempts</span>
+          </button>
+          <button type="button" class="diff-btn" data-difficulty="hard" data-max="1000" data-attempts="10">
+            <span class="diff-name">Hard</span>
+            <span class="diff-range">(1 - 1000) • 10 Attempts</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. Active Game HUD & Attempts -->
+      <section class="game-hud">
+        <div class="hud-item">
+          <span class="hud-label">Attempts Remaining</span>
+          <span class="hud-value neon-cyan" id="remainingAttemptsDisplay">7 / 7</span>
+        </div>
+        <div class="hud-item text-right">
+          <span class="hud-label">Target Range</span>
+          <span class="hud-value neon-magenta" id="targetRangeDisplay">1 - 100</span>
+        </div>
+      </section>
+
+      <!-- Visual Progress Bar for Attempts -->
+      <div class="attempts-track">
+        <div class="attempts-fill" id="attemptsProgressBar"></div>
+      </div>
+
+      <!-- 3. Dynamic Feedback Screen -->
+      <div id="feedbackBanner" class="feedback-box state-neutral">
+        <div class="feedback-icon" id="feedbackIcon">🎯</div>
+        <div class="feedback-text-group">
+          <div class="feedback-headline" id="feedbackTitle">Make your first guess!</div>
+          <div class="feedback-sub" id="feedbackMessage">Type an integer and hit submit.</div>
+        </div>
+      </div>
+
+      <!-- 4. Guess Input Form -->
+      <form id="guessForm" class="guess-form" novalidate>
+        <div class="input-glow-group">
+          <input
+            type="number"
+            id="guessInput"
+            placeholder="Enter your guess..."
+            min="1"
+            max="100"
+            step="1"
+            autocomplete="off"
+            required
+          >
+          <button type="submit" id="submitGuessBtn" class="btn-neon-action">
+            <span>Submit Guess</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </div>
+        <div id="validationErrorMessage" class="validation-msg"></div>
+      </form>
+
+      <!-- 5. Previous Guesses Tags -->
+      <div class="guess-history-card">
+        <div class="history-label">Previous Guesses:</div>
+        <div class="history-list" id="historyTagsContainer">
+          <span class="no-history">No guesses yet</span>
+        </div>
+      </div>
+
+      <!-- 6. Control Actions (Restart & Change Difficulty) -->
+      <div class="action-row">
+        <button type="button" id="restartGameBtn" class="btn-glass">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+          <span>Restart Game</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- Session Stats Bar -->
+    <footer class="stats-glass-bar">
+      <div class="stat-pill">
+        <span class="stat-val" id="statsGamesPlayed">0</span>
+        <span class="stat-lbl">Played</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-val stat-won-val" id="statsGamesWon">0</span>
+        <span class="stat-lbl">Won</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-val stat-lost-val" id="statsGamesLost">0</span>
+        <span class="stat-lbl">Lost</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-val neon-cyan" id="statsWinRate">0%</span>
+        <span class="stat-lbl">Win Rate</span>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>
