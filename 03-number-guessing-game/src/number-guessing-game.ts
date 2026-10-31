@@ -75,8 +75,9 @@ let totalGamesLost: number = 0;
 
 /**
  * Generates an integer between min and max (inclusive).
+ * Uses default parameters: min defaults to 1, max defaults to 100.
  */
-function generateRandomNumber(min: number, max: number): number {
+function generateRandomNumber(min: number = 1, max: number = 100): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -298,10 +299,21 @@ function setFeedback(
   feedbackMessage.innerText = message;
 }
 
+/**
+ * Calculates remaining attempts percentage.
+ * Pure reusable calculation helper with function scope parameters.
+ */
+function calculateRemainingPercentage(remaining: number, max: number): number {
+  if (max <= 0) {
+    return 0;
+  }
+  return (remaining / max) * 100;
+}
+
 function updateAttemptsProgress(): void {
   remainingAttemptsDisplay.innerText = `${remainingAttempts} / ${maxAllowedAttempts}`;
 
-  const percentage: number = (remainingAttempts / maxAllowedAttempts) * 100;
+  const percentage: number = calculateRemainingPercentage(remainingAttempts, maxAllowedAttempts);
   attemptsProgressBar.style.width = `${percentage}%`;
 
   if (remainingAttempts <= 2) {
@@ -316,49 +328,54 @@ function updateAttemptsProgress(): void {
   }
 }
 
+/**
+ * Renders guess history tags using map() callback to transform numbers into HTML badges.
+ */
 function renderHistoryTags(): void {
   if (guessHistory.length === 0) {
     historyTagsContainer.innerHTML = '<span class="no-history">No guesses yet</span>';
     return;
   }
 
-  historyTagsContainer.innerHTML = "";
+  // Use map() to transform each historical guess (number) into a styled badge HTML string
+  const tagsHtml: string = guessHistory
+    .map((val: number): string => {
+      let tagClass: string = "";
+      let arrow: string = "";
 
-  for (let i: number = 0; i < guessHistory.length; i++) {
-    const val: number = guessHistory[i];
-    const tag: HTMLSpanElement = document.createElement("span");
+      if (val === secretNumber) {
+        tagClass = "tag-win";
+        arrow = "✓";
+      } else if (val < secretNumber) {
+        tagClass = "tag-low";
+        arrow = "↑";
+      } else {
+        tagClass = "tag-high";
+        arrow = "↓";
+      }
 
-    let tagClass: string = "";
-    let arrow: string = "";
+      return `<span class="history-tag ${tagClass}">${val} ${arrow}</span>`;
+    })
+    .join("");
 
-    if (val === secretNumber) {
-      tagClass = "tag-win";
-      arrow = "✓";
-    } else if (val < secretNumber) {
-      tagClass = "tag-low";
-      arrow = "↑";
-    } else {
-      tagClass = "tag-high";
-      arrow = "↓";
-    }
-
-    tag.className = `history-tag ${tagClass}`;
-    tag.innerText = `${val} ${arrow}`;
-    historyTagsContainer.appendChild(tag);
-  }
+  historyTagsContainer.innerHTML = tagsHtml;
 }
+
+/**
+ * Calculates win rate percentage given games won and total games played.
+ * Uses an arrow function expression with a ternary guard against division by zero.
+ */
+const calculateWinRate = (won: number, total: number): number => {
+  return total === 0 ? 0 : Math.round((won / total) * 100);
+};
 
 function updateStatsDisplay(): void {
   statsGamesPlayed.innerText = totalGamesPlayed.toString();
   statsGamesWon.innerText = totalGamesWon.toString();
   statsGamesLost.innerText = totalGamesLost.toString();
 
-  if (totalGamesPlayed === 0) {
-    statsWinRate.innerText = "0%";
-  } else {
-    const rate: number = Math.round((totalGamesWon / totalGamesPlayed) * 100);
-    statsWinRate.innerText = `${rate}%`;
-  }
+  const rate: number = calculateWinRate(totalGamesWon, totalGamesPlayed);
+  statsWinRate.innerText = `${rate}%`;
 }
 
 // ==========================================================
@@ -367,9 +384,13 @@ function updateStatsDisplay(): void {
 
 difficultyButtons.forEach((btn: HTMLButtonElement) => {
   btn.addEventListener("click", () => {
-    const level = btn.getAttribute("data-difficulty") as DifficultyLevel;
-    if (level && level !== activeDifficulty) {
-      setDifficulty(level);
+    // getAttribute can return null; coalesce with empty string fallback
+    const rawLevel: string = btn.getAttribute("data-difficulty") ?? "";
+    if (rawLevel === "easy" || rawLevel === "medium" || rawLevel === "hard") {
+      const level: DifficultyLevel = rawLevel;
+      if (level !== activeDifficulty) {
+        setDifficulty(level);
+      }
     }
   });
 });

@@ -72,18 +72,16 @@ let monthlyBudget: number = loadBudgetFromStorage();
 // ========================================================
 
 /**
- * Loads expenses from browser's localStorage
+ * Loads expenses from browser's localStorage.
+ * Uses ?? to provide a safe fallback string "[]" when localStorage item is null.
  */
 function loadExpensesFromStorage(): Expense[] {
-  const savedData: string | null = localStorage.getItem(STORAGE_EXPENSES_KEY);
-  if (savedData !== null) {
-    try {
-      return JSON.parse(savedData) as Expense[];
-    } catch {
-      return [];
-    }
+  const savedData: string = localStorage.getItem(STORAGE_EXPENSES_KEY) ?? "[]";
+  try {
+    return JSON.parse(savedData) as Expense[];
+  } catch {
+    return [];
   }
-  return [];
 }
 
 /**
@@ -94,15 +92,14 @@ function saveExpensesToStorage(): void {
 }
 
 /**
- * Loads the user's monthly budget
+ * Loads the user's monthly budget.
+ * Uses ?? to provide a fallback "25000" if no budget is found in storage.
  */
 function loadBudgetFromStorage(): number {
-  const savedBudget: string | null = localStorage.getItem(STORAGE_BUDGET_KEY);
-  if (savedBudget !== null) {
-    const parsed: number = parseFloat(savedBudget);
-    if (!isNaN(parsed) && parsed >= 0) {
-      return parsed;
-    }
+  const savedBudget: string = localStorage.getItem(STORAGE_BUDGET_KEY) ?? "25000";
+  const parsed: number = parseFloat(savedBudget);
+  if (!isNaN(parsed) && parsed >= 0) {
+    return parsed;
   }
   return 25000; // Default monthly budget is ₹25,000
 }
@@ -120,21 +117,30 @@ function saveBudgetToStorage(newBudget: number): void {
 // ========================================================
 
 /**
- * Formats a number to Indian Rupee (INR) currency string (e.g. 12500 -> ₹12,500.00)
+ * Formats a number to a currency string.
+ * Uses default parameters: currencyCode defaults to "INR", locale defaults to "en-IN".
+ * @param amount - The numerical amount to format
+ * @param currencyCode - ISO currency code (defaults to "INR")
+ * @param locale - Formatting locale string (defaults to "en-IN")
  */
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-IN", {
+function formatCurrency(
+  amount: number,
+  currencyCode: string = "INR",
+  locale: string = "en-IN"
+): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
-    currency: "INR",
+    currency: currencyCode,
     maximumFractionDigits: 2,
   }).format(amount);
 }
 
 /**
- * Formats a YYYY-MM-DD string into a readable date (e.g. Oct 30, 2026)
+ * Formats a YYYY-MM-DD string into a readable date (e.g. Oct 30, 2026).
+ * Optional parameter fallbackText specifies what to return when dateString is empty.
  */
-function formatDate(dateString: string): string {
-  if (!dateString) return "-";
+function formatDate(dateString?: string, fallbackText: string = "-"): string {
+  if (!dateString) return fallbackText;
   const dateParts = dateString.split("-");
   if (dateParts.length === 3) {
     const year = parseInt(dateParts[0], 10);
@@ -151,7 +157,8 @@ function formatDate(dateString: string): string {
 }
 
 /**
- * Sets today's date as default in the date input
+ * Sets today's date as default in the date input.
+ * Local variables (today, year, month, day) are scoped cleanly inside this function.
  */
 function setDefaultDate(): void {
   const today: Date = new Date();
@@ -159,6 +166,28 @@ function setDefaultDate(): void {
   const month: string = String(today.getMonth() + 1).padStart(2, "0");
   const day: string = String(today.getDate()).padStart(2, "0");
   expenseDate.value = `${year}-${month}-${day}`;
+}
+
+/**
+ * Calculates percentage of budget spent, capped at 100%.
+ * Pure reusable calculation helper with function scope parameters.
+ */
+function calculateBudgetPercentage(spent: number, budget: number): number {
+  if (budget <= 0) {
+    return 0;
+  }
+  return Math.min((spent / budget) * 100, 100);
+}
+
+/**
+ * Resets all expense form input fields and restores validation defaults.
+ * Reusable helper eliminating duplicate form-reset code.
+ */
+function resetExpenseForm(): void {
+  expenseTitle.value = "";
+  expenseAmount.value = "";
+  clearValidationErrors();
+  setDefaultDate();
 }
 
 // ========================================================
@@ -215,10 +244,15 @@ function validateExpenseForm(): boolean {
 // ========================================================
 
 /**
- * Calculates sum of all expenses
+ * Calculates sum of all expenses.
+ * Uses reduce() with an arrow function callback to accumulate amounts into a single number.
+ * Callback parameters: (runningTotal: number, currentExpense: Expense)
  */
 function calculateTotalExpenses(): number {
-  return expenses.reduce((total: number, item: Expense) => total + item.amount, 0);
+  return expenses.reduce(
+    (runningTotal: number, currentExpense: Expense): number => runningTotal + currentExpense.amount,
+    0
+  );
 }
 
 /**
@@ -235,11 +269,8 @@ function renderSummary(): void {
   // Count description
   expenseCountText.innerText = `${expenses.length} transaction${expenses.length === 1 ? "" : "s"} recorded`;
 
-  // Calculate percentage of budget used
-  let percentUsed: number = 0;
-  if (monthlyBudget > 0) {
-    percentUsed = Math.min((totalSpent / monthlyBudget) * 100, 100);
-  }
+  // Calculate percentage of budget used via reusable helper function
+  const percentUsed: number = calculateBudgetPercentage(totalSpent, monthlyBudget);
 
   budgetProgressBar.style.width = `${percentUsed}%`;
 
@@ -268,12 +299,9 @@ function renderSummary(): void {
 function renderExpenseTable(): void {
   const selectedCategory: string = categoryFilter.value;
 
-  // Filter items
-  const filteredExpenses: Expense[] = expenses.filter((item: Expense) => {
-    if (selectedCategory === "ALL") {
-      return true;
-    }
-    return item.category === selectedCategory;
+  // Filter items: filter() uses a callback returning boolean to keep only matching expenses
+  const filteredExpenses: Expense[] = expenses.filter((item: Expense): boolean => {
+    return selectedCategory === "ALL" || item.category === selectedCategory;
   });
 
   // Toggle empty state display
@@ -285,9 +313,9 @@ function renderExpenseTable(): void {
 
   emptyState.classList.add("hidden");
 
-  // Generate table rows HTML
+  // Generate table rows HTML: map() transforms each Expense into an HTML table row string
   const rowsHtml: string = filteredExpenses
-    .map((item: Expense) => {
+    .map((item: Expense): string => {
       return `
         <tr>
           <td>
@@ -319,8 +347,9 @@ function renderExpenseTable(): void {
   const deleteButtons = expenseTableBody.querySelectorAll<HTMLButtonElement>(".btn-delete");
   deleteButtons.forEach((btn: HTMLButtonElement) => {
     btn.addEventListener("click", () => {
-      const idToDelete: string | null = btn.getAttribute("data-id");
-      if (idToDelete) {
+      // getAttribute returns string | null; use ?? to safely extract ID
+      const idToDelete: string = btn.getAttribute("data-id") ?? "";
+      if (idToDelete !== "") {
         deleteExpense(idToDelete);
       }
     });
@@ -365,11 +394,8 @@ function handleAddExpense(event: Event): void {
   // Persist to storage
   saveExpensesToStorage();
 
-  // Reset input fields
-  expenseTitle.value = "";
-  expenseAmount.value = "";
-  clearValidationErrors();
-  setDefaultDate();
+  // Reset input fields using reusable helper
+  resetExpenseForm();
   expenseTitle.focus();
 
   // Re-render
@@ -378,10 +404,11 @@ function handleAddExpense(event: Event): void {
 }
 
 /**
- * Deletes a single expense by ID
+ * Deletes a single expense by ID.
+ * filter() creates a new array containing every expense EXCEPT the one matching the given ID.
  */
 function deleteExpense(id: string): void {
-  expenses = expenses.filter((item: Expense) => item.id !== id);
+  expenses = expenses.filter((item: Expense): boolean => item.id !== id);
   saveExpensesToStorage();
   renderSummary();
   renderExpenseTable();
@@ -438,14 +465,7 @@ function handleSaveBudget(): void {
 // ========================================================
 
 expenseForm.addEventListener("submit", handleAddExpense);
-
-resetFormBtn.addEventListener("click", () => {
-  expenseTitle.value = "";
-  expenseAmount.value = "";
-  clearValidationErrors();
-  setDefaultDate();
-});
-
+resetFormBtn.addEventListener("click", resetExpenseForm);
 categoryFilter.addEventListener("change", renderExpenseTable);
 clearAllBtn.addEventListener("click", clearAllExpenses);
 

@@ -82,6 +82,44 @@ function calculatePercentage(value: number): number {
   return value / 100;
 }
 
+/**
+ * Rounds a number to a specified number of decimal places to prevent floating-point inaccuracies.
+ * Uses a default parameter (decimalPlaces = 8) so callers can omit the precision argument.
+ * @param value - The number to round
+ * @param decimalPlaces - Number of decimal digits to keep (defaults to 8)
+ * @returns The rounded number
+ */
+function roundToPrecision(value: number, decimalPlaces: number = 8): number {
+  const factor: number = Math.pow(10, decimalPlaces);
+  return Math.round(value * factor) / factor;
+}
+
+/**
+ * Performs the arithmetic operation between two numbers based on an operator symbol.
+ * @param first - First operand
+ * @param second - Second operand
+ * @param operator - Operator symbol ("+", "-", "*", "/", "%")
+ * @returns Calculated result number, or null if division by zero occurred
+ */
+function calculate(first: number, second: number, operator: string): number | null {
+  if (operator === "+") {
+    return add(first, second);
+  }
+  if (operator === "-") {
+    return subtract(first, second);
+  }
+  if (operator === "*") {
+    return multiply(first, second);
+  }
+  if (operator === "/") {
+    return divide(first, second);
+  }
+  if (operator === "%") {
+    return modulo(first, second);
+  }
+  return null;
+}
+
 // ==========================================
 // 4. Helper Function to Get Math Symbol for UI
 // ==========================================
@@ -182,20 +220,8 @@ function computeResult(): void {
   const firstOperand: number = parseFloat(previousInput);
   const secondOperand: number = parseFloat(currentInput);
 
-  let calculationResult: number | null = null;
-
-  // Perform calculation based on selected operator
-  if (selectedOperator === "+") {
-    calculationResult = add(firstOperand, secondOperand);
-  } else if (selectedOperator === "-") {
-    calculationResult = subtract(firstOperand, secondOperand);
-  } else if (selectedOperator === "*") {
-    calculationResult = multiply(firstOperand, secondOperand);
-  } else if (selectedOperator === "/") {
-    calculationResult = divide(firstOperand, secondOperand);
-  } else if (selectedOperator === "%") {
-    calculationResult = modulo(firstOperand, secondOperand);
-  }
+  // Perform calculation using the reusable calculate function
+  const calculationResult: number | null = calculate(firstOperand, secondOperand, selectedOperator);
 
   // Handle Division by Zero error
   if (calculationResult === null) {
@@ -207,8 +233,8 @@ function computeResult(): void {
     return;
   }
 
-  // Round floating point inaccuracies (e.g. 0.1 + 0.2 = 0.30000000000000004)
-  const roundedResult: number = Math.round(calculationResult * 100000000) / 100000000;
+  // Round floating point inaccuracies using reusable rounding helper (defaults to 8 decimal places)
+  const roundedResult: number = roundToPrecision(calculationResult);
 
   // Format history and store result
   const operatorSymbol: string = getOperatorSymbol(selectedOperator);
@@ -274,8 +300,9 @@ function handlePercentage(): void {
 // Number buttons
 numberButtons.forEach((btn: HTMLButtonElement) => {
   btn.addEventListener("click", () => {
-    const digitValue: string | null = btn.getAttribute("data-number");
-    if (digitValue !== null) {
+    // getAttribute returns string | null; use ?? to provide an empty string fallback
+    const digitValue: string = btn.getAttribute("data-number") ?? "";
+    if (digitValue !== "") {
       appendNumber(digitValue);
     }
   });
@@ -284,8 +311,9 @@ numberButtons.forEach((btn: HTMLButtonElement) => {
 // Operator buttons
 operatorButtons.forEach((btn: HTMLButtonElement) => {
   btn.addEventListener("click", () => {
-    const operatorValue: string | null = btn.getAttribute("data-operator");
-    if (operatorValue !== null) {
+    // getAttribute returns string | null; use ?? to provide an empty string fallback
+    const operatorValue: string = btn.getAttribute("data-operator") ?? "";
+    if (operatorValue !== "") {
       chooseOperator(operatorValue);
     }
   });

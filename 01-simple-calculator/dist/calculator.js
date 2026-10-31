@@ -71,6 +71,42 @@ function modulo(a, b) {
 function calculatePercentage(value) {
     return value / 100;
 }
+/**
+ * Rounds a number to a specified number of decimal places to prevent floating-point inaccuracies.
+ * Uses a default parameter (decimalPlaces = 8) so callers can omit the precision argument.
+ * @param value - The number to round
+ * @param decimalPlaces - Number of decimal digits to keep (defaults to 8)
+ * @returns The rounded number
+ */
+function roundToPrecision(value, decimalPlaces = 8) {
+    const factor = Math.pow(10, decimalPlaces);
+    return Math.round(value * factor) / factor;
+}
+/**
+ * Performs the arithmetic operation between two numbers based on an operator symbol.
+ * @param first - First operand
+ * @param second - Second operand
+ * @param operator - Operator symbol ("+", "-", "*", "/", "%")
+ * @returns Calculated result number, or null if division by zero occurred
+ */
+function calculate(first, second, operator) {
+    if (operator === "+") {
+        return add(first, second);
+    }
+    if (operator === "-") {
+        return subtract(first, second);
+    }
+    if (operator === "*") {
+        return multiply(first, second);
+    }
+    if (operator === "/") {
+        return divide(first, second);
+    }
+    if (operator === "%") {
+        return modulo(first, second);
+    }
+    return null;
+}
 // ==========================================
 // 4. Helper Function to Get Math Symbol for UI
 // ==========================================
@@ -165,23 +201,8 @@ function computeResult() {
     // Convert string inputs to numbers
     const firstOperand = parseFloat(previousInput);
     const secondOperand = parseFloat(currentInput);
-    let calculationResult = null;
-    // Perform calculation based on selected operator
-    if (selectedOperator === "+") {
-        calculationResult = add(firstOperand, secondOperand);
-    }
-    else if (selectedOperator === "-") {
-        calculationResult = subtract(firstOperand, secondOperand);
-    }
-    else if (selectedOperator === "*") {
-        calculationResult = multiply(firstOperand, secondOperand);
-    }
-    else if (selectedOperator === "/") {
-        calculationResult = divide(firstOperand, secondOperand);
-    }
-    else if (selectedOperator === "%") {
-        calculationResult = modulo(firstOperand, secondOperand);
-    }
+    // Perform calculation using the reusable calculate function
+    const calculationResult = calculate(firstOperand, secondOperand, selectedOperator);
     // Handle Division by Zero error
     if (calculationResult === null) {
         currentInput = "Error: Cannot divide by 0";
@@ -191,8 +212,8 @@ function computeResult() {
         updateDisplay();
         return;
     }
-    // Round floating point inaccuracies (e.g. 0.1 + 0.2 = 0.30000000000000004)
-    const roundedResult = Math.round(calculationResult * 100000000) / 100000000;
+    // Round floating point inaccuracies using reusable rounding helper (defaults to 8 decimal places)
+    const roundedResult = roundToPrecision(calculationResult);
     // Format history and store result
     const operatorSymbol = getOperatorSymbol(selectedOperator);
     historyDisplay.innerText = `${previousInput} ${operatorSymbol} ${currentInput} =`;
@@ -248,8 +269,10 @@ function handlePercentage() {
 // Number buttons
 numberButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-        const digitValue = btn.getAttribute("data-number");
-        if (digitValue !== null) {
+        var _a;
+        // getAttribute returns string | null; use ?? to provide an empty string fallback
+        const digitValue = (_a = btn.getAttribute("data-number")) !== null && _a !== void 0 ? _a : "";
+        if (digitValue !== "") {
             appendNumber(digitValue);
         }
     });
@@ -257,8 +280,10 @@ numberButtons.forEach((btn) => {
 // Operator buttons
 operatorButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-        const operatorValue = btn.getAttribute("data-operator");
-        if (operatorValue !== null) {
+        var _a;
+        // getAttribute returns string | null; use ?? to provide an empty string fallback
+        const operatorValue = (_a = btn.getAttribute("data-operator")) !== null && _a !== void 0 ? _a : "";
+        if (operatorValue !== "") {
             chooseOperator(operatorValue);
         }
     });

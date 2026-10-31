@@ -1,104 +1,87 @@
-# TypeScript Calculator Web Application
+# Simple Calculator (TypeScript)
 
-A clean, modern, beginner-friendly Calculator Web Application built with **HTML5, CSS3, and TypeScript (compiled to JavaScript)**. Designed with practical examples to learn and demonstrate core TypeScript fundamentals such as static typing, strict mode, DOM element type casting, functions with type annotations, and desktop keyboard accessibility.
+A clean, responsive, dark-themed **Calculator Web Application** built with **HTML5, CSS3, and modern TypeScript (compiled to JavaScript)**.
 
----
-
-## Features
-
-- **Core Arithmetic Operations**: Addition (`+`), Subtraction (`−`), Multiplication (`×`), Division (`÷`), and Modulo/Remainder (`%`).
-- **Percentage Calculation**: Convert any active value to its percentage instantly (`%`).
-- **Zero Division Protection**: Gracefully handles division by zero and displays a clean error state without crashing.
-- **Display Screen & History**: Shows both the active operand and the previous operation with formatted operators.
-- **Decimal & Digit Controls**: Supports fractional numbers with duplicate decimal prevention, single-digit deletion (`DEL`), and full reset (`AC`).
-- **Desktop Keyboard Support**: Type calculations naturally using your physical keyboard (`0-9`, `+`, `-`, `*`, `/`, `%`, `.`, `Enter`, `=`, `Backspace`, `Escape`).
-- **Responsive UI**: Fully centered layout styled with a modern dark theme that adapts seamlessly to desktop and mobile screen sizes.
+This project was progressively enhanced across six learning phases to practice TypeScript functions, strict return types, parameter handling, arrow functions, and nullish coalescing.
 
 ---
 
-## Technologies Used
+## ✨ Features
 
-- **TypeScript**: Application logic, static type checks, DOM casting, and math operators.
-- **HTML5**: Semantic markup for the calculator display screen and button grid.
-- **CSS3**: Modern Flexbox, CSS Grid, custom color palette, and responsive breakpoints.
-- **Node.js & npm / npx**: Tooling to run the TypeScript compiler (`tsc`).
+- **Core Operations**: Addition (`+`), Subtraction (`−`), Multiplication (`×`), Division (`÷`), and Modulo (`%`).
+- **Percentage Calculations**: Instantly converts active numbers to a percentage (`/ 100`).
+- **Precision Floating-Point Rounding**: Uses a dedicated, reusable rounding helper (`roundToPrecision`) to prevent standard JavaScript floating-point errors (e.g. `0.1 + 0.2` cleanly equals `0.3`).
+- **Division-by-Zero Safety**: Returns `null` from calculation helpers to cleanly signal error conditions, displaying `"Error: Cannot divide by 0"` without crashing.
+- **Display & History**: Dual-line screen showing current input and the previous operand with mathematical operator symbols.
+- **Controls**: Decimal point (`.`) with duplicate prevention, single-digit deletion (`DEL`), and all-clear (`AC`).
+- **Full Desktop Keyboard Accessibility**: Supports number keys (`0-9`), operators (`+`, `-`, `*`, `/`, `%`), decimal (`.`), calculation execution (`Enter` / `=`), backspace deletion (`DEL`), and escape (`AC`).
 
 ---
 
-## Project Structure
+## 🛠️ Technologies Used
+
+- **TypeScript (v5.x)**: Type annotations, strict mode, function extraction, union return types, and default parameters.
+- **HTML5**: Semantic layout, display screen, and interactive button grid.
+- **CSS3**: Modern dark theme variables, CSS Grid, Flexbox, and mobile-friendly responsive breakpoints.
+- **JavaScript (ES6)**: Compiled output running directly in the browser.
+
+---
+
+## 📂 Project Structure
 
 ```text
-type script/
-├── .gitignore            # Rules for excluding dependency and cache files from Git
-├── index.html            # Web interface with display screen and button grid
-├── package.json          # Node project scripts & devDependencies
-├── README.md             # Project documentation and guide
-├── style.css             # Dark theme styling, button styles, and responsive layout
-├── tsconfig.json         # TypeScript compiler configuration (strict mode, target ES6)
+01-simple-calculator/
+├── dist/
+│   └── calculator.js        # Compiled JavaScript output consumed by index.html
 ├── src/
-│   └── calculator.ts     # TypeScript source code (types, functions, DOM logic)
-└── dist/
-    └── calculator.js     # Compiled JavaScript consumed by index.html
+│   └── calculator.ts        # TypeScript source code (math helpers, state, DOM logic)
+├── index.html               # Main calculator interface markup
+├── style.css                # Dark theme stylesheet and button grid layout
+├── package.json             # NPM package scripts (build: "tsc", watch: "tsc --watch")
+├── tsconfig.json            # Compiler configuration (Target: ES6, Strict: true)
+└── README.md                # Project documentation
 ```
 
 ---
 
-## Getting Started & Installation
+## 🧠 TypeScript Concepts Practised in this Project
 
-### Prerequisites
-Make sure you have [Node.js](https://nodejs.org/) installed on your machine.
+1. **Pure Function Extraction & Separation of Concerns**:
+   - `calculate(first: number, second: number, operator: string): number | null` decouples arithmetic logic completely from DOM updates.
+2. **Explicit Return Types & `void`**:
+   - Arithmetic helpers explicitly return `: number`.
+   - `calculate()` returns the union type `: number | null` to account for invalid calculations (e.g., division by zero).
+   - UI handlers (`computeResult()`, `updateDisplay()`, `clearAll()`) return `: void`.
+3. **Default Parameters**:
+   - `roundToPrecision(value: number, decimalPlaces: number = 8): number` provides a sensible default precision without requiring the caller to specify `8` each time.
+4. **Nullish Coalescing (`??`)**:
+   - Safely reading button data attributes (`btn.getAttribute("data-number") ?? ""`) without throwing errors or requiring verbose nested null checks.
+5. **DOM Type Assertions & Strict Event Typing**:
+   - Using `as HTMLButtonElement` and `as HTMLDivElement`.
+   - Strictly typed `KeyboardEvent` in desktop keyboard listeners.
 
-### 1. Clone or Download the Repository
+---
+
+## 🚀 How to Run and Compile
+
+### 1. Open in Browser
+Open `index.html` directly in any web browser, or launch it from PowerShell:
+```powershell
+Start-Process "01-simple-calculator/index.html"
+```
+
+### 2. Compiling TypeScript
+To compile TypeScript source files into JavaScript:
 ```bash
-git clone https://github.com/<your-username>/<your-repo-name>.git
-cd "type script"
+# Using local tsconfig
+tsc --project ./01-simple-calculator/tsconfig.json
+
+# Or using the package script inside this folder:
+cd 01-simple-calculator
+npm run build
 ```
 
-### 2. Install Dependencies (Optional)
-If you wish to install TypeScript locally:
+Watch mode for automatic re-compilation on save:
 ```bash
-npm install
+npm run watch
 ```
-
----
-
-## How to Run the Project
-
-### Running in the Browser
-No complex local server setup is needed:
-- Double-click `index.html` to open it in your default web browser, or
-- On Windows PowerShell:
-  ```powershell
-  Start-Process index.html
-  ```
-
-### Compiling TypeScript Changes
-When you edit `src/calculator.ts`, compile the changes into `dist/calculator.js`:
-
-- **One-time compile**:
-  ```bash
-  npx -p typescript tsc
-  ```
-- **Watch mode (automatically compiles on save)**:
-  ```bash
-  npx -p typescript tsc --watch
-  ```
-
----
-
-## Keyboard Shortcuts (Desktop)
-
-| Key | Action |
-| --- | --- |
-| `0` - `9` | Enter number digit |
-| `.` | Enter decimal point |
-| `+`, `-`, `*`, `/`, `%` | Arithmetic operations |
-| `Enter` or `=` | Calculate result |
-| `Backspace` | Delete last digit (`DEL`) |
-| `Escape` | Clear all (`AC`) |
-
----
-
-## License
-This project is open-source and free to use under the [MIT License](https://opensource.org/licenses/MIT).
-

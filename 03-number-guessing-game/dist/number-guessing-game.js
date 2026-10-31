@@ -50,8 +50,9 @@ let totalGamesLost = 0;
 // ==========================================================
 /**
  * Generates an integer between min and max (inclusive).
+ * Uses default parameters: min defaults to 1, max defaults to 100.
  */
-function generateRandomNumber(min, max) {
+function generateRandomNumber(min = 1, max = 100) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 /**
@@ -208,9 +209,19 @@ function setFeedback(state, icon, title, message) {
     feedbackTitle.innerText = title;
     feedbackMessage.innerText = message;
 }
+/**
+ * Calculates remaining attempts percentage.
+ * Pure reusable calculation helper with function scope parameters.
+ */
+function calculateRemainingPercentage(remaining, max) {
+    if (max <= 0) {
+        return 0;
+    }
+    return (remaining / max) * 100;
+}
 function updateAttemptsProgress() {
     remainingAttemptsDisplay.innerText = `${remainingAttempts} / ${maxAllowedAttempts}`;
-    const percentage = (remainingAttempts / maxAllowedAttempts) * 100;
+    const percentage = calculateRemainingPercentage(remainingAttempts, maxAllowedAttempts);
     attemptsProgressBar.style.width = `${percentage}%`;
     if (remainingAttempts <= 2) {
         attemptsProgressBar.style.background = "linear-gradient(90deg, #f43f5e, #fb7185)";
@@ -225,15 +236,17 @@ function updateAttemptsProgress() {
         attemptsProgressBar.style.boxShadow = "0 0 12px rgba(0, 240, 255, 0.6)";
     }
 }
+/**
+ * Renders guess history tags using map() callback to transform numbers into HTML badges.
+ */
 function renderHistoryTags() {
     if (guessHistory.length === 0) {
         historyTagsContainer.innerHTML = '<span class="no-history">No guesses yet</span>';
         return;
     }
-    historyTagsContainer.innerHTML = "";
-    for (let i = 0; i < guessHistory.length; i++) {
-        const val = guessHistory[i];
-        const tag = document.createElement("span");
+    // Use map() to transform each historical guess (number) into a styled badge HTML string
+    const tagsHtml = guessHistory
+        .map((val) => {
         let tagClass = "";
         let arrow = "";
         if (val === secretNumber) {
@@ -248,31 +261,38 @@ function renderHistoryTags() {
             tagClass = "tag-high";
             arrow = "↓";
         }
-        tag.className = `history-tag ${tagClass}`;
-        tag.innerText = `${val} ${arrow}`;
-        historyTagsContainer.appendChild(tag);
-    }
+        return `<span class="history-tag ${tagClass}">${val} ${arrow}</span>`;
+    })
+        .join("");
+    historyTagsContainer.innerHTML = tagsHtml;
 }
+/**
+ * Calculates win rate percentage given games won and total games played.
+ * Uses an arrow function expression with a ternary guard against division by zero.
+ */
+const calculateWinRate = (won, total) => {
+    return total === 0 ? 0 : Math.round((won / total) * 100);
+};
 function updateStatsDisplay() {
     statsGamesPlayed.innerText = totalGamesPlayed.toString();
     statsGamesWon.innerText = totalGamesWon.toString();
     statsGamesLost.innerText = totalGamesLost.toString();
-    if (totalGamesPlayed === 0) {
-        statsWinRate.innerText = "0%";
-    }
-    else {
-        const rate = Math.round((totalGamesWon / totalGamesPlayed) * 100);
-        statsWinRate.innerText = `${rate}%`;
-    }
+    const rate = calculateWinRate(totalGamesWon, totalGamesPlayed);
+    statsWinRate.innerText = `${rate}%`;
 }
 // ==========================================================
 // 8. Event Listeners
 // ==========================================================
 difficultyButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-        const level = btn.getAttribute("data-difficulty");
-        if (level && level !== activeDifficulty) {
-            setDifficulty(level);
+        var _a;
+        // getAttribute can return null; coalesce with empty string fallback
+        const rawLevel = (_a = btn.getAttribute("data-difficulty")) !== null && _a !== void 0 ? _a : "";
+        if (rawLevel === "easy" || rawLevel === "medium" || rawLevel === "hard") {
+            const level = rawLevel;
+            if (level !== activeDifficulty) {
+                setDifficulty(level);
+            }
         }
     });
 });
