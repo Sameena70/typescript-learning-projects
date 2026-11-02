@@ -13,6 +13,7 @@ This repository was developed to practice core TypeScript fundamentals through p
 | **[01. Simple Calculator](./01-simple-calculator)** | Responsive web arithmetic calculator | Addition, subtraction, multiplication, division, modulo, percentage, division-by-zero protection, precision rounding, and full desktop keyboard support | HTML5, CSS3, TypeScript |
 | **[02. Expense Tracker](./02-expense-tracker)** | Personal finance and monthly budget tracker | Expense logging (title, amount, category, date), Indian Rupee (₹ INR) currency formatting, category filter, single deletion, monthly budget modal, remaining balance, color-coded badges, and `localStorage` persistence | HTML5, CSS3, TypeScript |
 | **[03. Number Guessing Game](./03-number-guessing-game)** | Cyberpunk-themed interactive guess game | 3 difficulty tiers (Easy 1–100, Medium 1–500, Hard 1–1000), dynamic attempts progress bar, directional hints ("Too High!", "Too Low!"), input validation without penalty, guess history tags, and session win rate statistics | HTML5, CSS3, TypeScript |
+| **[04. Advanced Contact Manager](./04-contact-manager)** | SaaS-grade directory & address book application | Dashboard metrics (total, active, inactive, favourites, recent), multi-field contact creation & editing, duplicate phone/email validation, detailed profile modal, multi-field search, category & status filters, CSV import/export, and `localStorage` persistence | HTML5, CSS3, TypeScript |
 
 ---
 
@@ -47,16 +48,39 @@ typescript-learning-projects/
 │   └── dist/
 │       └── expense-tracker.js   # Compiled JavaScript loaded by index.html
 │
-└── 03-number-guessing-game/     # Project 3: Number Guessing Game
-    ├── index.html               # Cyberpunk gaming interface
-    ├── style.css                # Neon glow theme, custom badges & progress bar
+├── 03-number-guessing-game/     # Project 3: Number Guessing Game
+│   ├── index.html               # Cyberpunk gaming interface
+│   ├── style.css                # Neon glow theme, custom badges & progress bar
+│   ├── package.json             # Build script & TypeScript dev dependency
+│   ├── tsconfig.json            # Strict TypeScript configuration (Target: ES6)
+│   ├── README.md                # Project-specific documentation
+│   ├── src/
+│   │   └── number-guessing-game.ts # Source TypeScript implementation
+│   └── dist/
+│       └── number-guessing-game.js # Compiled JavaScript loaded by index.html
+│
+└── 04-contact-manager/          # Project 4: Advanced Contact Manager
+    ├── index.html               # SaaS directory interface & modals
+    ├── style.css                # SaaS design system, responsive table & cards
     ├── package.json             # Build script & TypeScript dev dependency
     ├── tsconfig.json            # Strict TypeScript configuration (Target: ES6)
-    ├── README.md                # Project-specific documentation
+    ├── README.md                # Project-specific documentation & concepts walkthrough
     ├── src/
-    │   └── number-guessing-game.ts # Source TypeScript implementation
+    │   ├── types.ts             # TypeScript interfaces, type aliases & union types
+    │   ├── storage.ts           # LocalStorage persistence & seed data
+    │   ├── validation.ts        # Pure input & duplicate validation helpers
+    │   ├── statistics.ts        # Pure calculation helpers (totals, active, categories)
+    │   ├── contact-service.ts   # State management, CRUD, filters & CSV import/export
+    │   ├── contact-manager.ts   # DOM controller, modal management & UI rendering
+    │   └── main.ts              # Application entry point & lifecycle bootstrap
     └── dist/
-        └── number-guessing-game.js # Compiled JavaScript loaded by index.html
+        ├── types.js
+        ├── storage.js
+        ├── validation.js
+        ├── statistics.js
+        ├── contact-service.js
+        ├── contact-manager.js
+        └── main.js
 ```
 
 ---
@@ -147,6 +171,9 @@ tsc --project ./02-expense-tracker/tsconfig.json
 
 # Compile Number Guessing Game
 tsc --project ./03-number-guessing-game/tsconfig.json
+
+# Compile Advanced Contact Manager
+tsc --project ./04-contact-manager/tsconfig.json
 ```
 
 Or run watch mode while developing:
@@ -161,6 +188,7 @@ No web server setup is required. You can launch the applications directly:
   - `01-simple-calculator/index.html`
   - `02-expense-tracker/index.html`
   - `03-number-guessing-game/index.html`
+  - `04-contact-manager/index.html`
 
 On Windows PowerShell, open any file directly:
 ```powershell
@@ -171,10 +199,10 @@ Start-Process "01-simple-calculator/index.html"
 
 ## 📊 Current Project Status
 
-- **Compilation**: All three projects compile cleanly with **0 errors and 0 warnings** under `strict: true`.
-- **Logic Validation**: Automated logic tests for calculations, date/currency formatters, and win rate formulas completed with 100% pass rate.
+- **Compilation**: All four projects compile cleanly with **0 errors and 0 warnings** under `strict: true`.
+- **Logic Validation**: Automated logic tests for calculations, date/currency formatters, win rate formulas, and contact manager CRUD/validation completed with 100% pass rate.
 - **Manual Verification**: Interactive browser testing (clicking through buttons and keyboards) remains open for manual user confirmation.
-- **Git Status**: Working tree changes from Phases 2–6 remain uncommitted in the local branch, ready for user review.
+- **Git Status**: Changes remain in the local branch, uncommitted and ready for review.
 
 ---
 

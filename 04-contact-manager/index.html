@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Contact Manager | TypeScript Portfolio</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Load the compiled ES6 TypeScript modules -->
+  <script type="module" src="dist/main.js" defer></script>
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Navigation Header -->
+    <header class="app-header">
+      <div class="header-container">
+        <div class="brand-group">
+          <div class="brand-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="brand-title">ContactHub Pro</h1>
+            <p class="brand-tagline">Advanced Contact Management System • TypeScript Project 04</p>
+          </div>
+        </div>
+
+        <div class="header-actions">
+          <button id="exportCsvBtn" class="btn btn-outline" title="Export all contacts to CSV">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export CSV</span>
+          </button>
+
+          <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+          <button id="importCsvBtn" class="btn btn-outline" title="Import contacts from CSV file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Import CSV</span>
+          </button>
+
+          <button id="openAddContactBtn" class="btn btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add Contact</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Section A: Dashboard Overview Cards -->
+      <section class="dashboard-grid">
+        <div class="stat-card">
+          <div class="stat-icon-wrapper icon-total">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Total Contacts</span>
+            <div class="stat-value" id="statTotal">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper icon-active">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Active Contacts</span>
+            <div class="stat-value" id="statActive">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper icon-inactive">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Inactive Contacts</span>
+            <div class="stat-value" id="statInactive">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper icon-fav">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Favourites</span>
+            <div class="stat-value" id="statFavourites">0</div>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon-wrapper icon-recent">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <span class="stat-label">Recently Added</span>
+            <div class="stat-value" id="statRecentlyAdded">0</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Category Filter Pills Bar -->
+      <section class="category-bar">
+        <span class="category-bar-label">Filter by Category:</span>
+        <div class="category-pills" id="categoryPillList">
+          <!-- Populated dynamically via statistics.ts & renderDashboard() -->
+        </div>
+      </section>
+
+      <!-- Section B: Controls Toolbar (Search, Filter, Sort) -->
+      <section class="controls-card">
+        <div class="search-box">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            id="searchInput"
+            class="search-input"
+            placeholder="Search by name, phone, email, or company..."
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="filters-group">
+          <!-- Category dropdown -->
+          <div class="select-wrapper">
+            <label for="categoryFilter" class="sr-only">Category</label>
+            <select id="categoryFilter" class="filter-select">
+              <option value="all">All Categories</option>
+              <option value="Work">Work</option>
+              <option value="Clients">Clients</option>
+              <option value="Business">Business</option>
+              <option value="Family">Family</option>
+              <option value="Friends">Friends</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <!-- Status dropdown -->
+          <div class="select-wrapper">
+            <label for="statusFilter" class="sr-only">Status</label>
+            <select id="statusFilter" class="filter-select">
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+
+          <!-- Favourites toggle button -->
+          <button id="favouritesFilterBtn" class="btn btn-outline filter-fav-btn" title="Filter by favourite contacts">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+            </svg>
+            <span>Favourites</span>
+          </button>
+
+          <!-- Sorting field -->
+          <div class="select-wrapper">
+            <label for="sortFieldSelect" class="sr-only">Sort by</label>
+            <select id="sortFieldSelect" class="filter-select">
+              <option value="createdAt">Date Added</option>
+              <option value="name">Contact Name</option>
+              <option value="company">Company</option>
+            </select>
+          </div>
+
+          <!-- Sort Order toggle button -->
+          <button id="sortOrderBtn" class="btn btn-outline icon-only-btn" title="Order: Descending (Z-A / Newest)" data-order="desc">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14m-7-7l7 7 7-7"/>
+            </svg>
+          </button>
+
+          <!-- Reset filters button -->
+          <button id="resetFiltersBtn" class="btn btn-secondary" title="Reset all search and filters">
+            <span>Reset</span>
+          </button>
+
+          <!-- Clear All button -->
+          <button id="clearAllBtn" class="btn btn-danger-outline" title="Clear all saved contacts">
+            <span>Clear All</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Section C: Contacts List (Table & Cards) -->
+      <section class="contacts-container">
+        <div class="contacts-header-bar">
+          <span class="contacts-section-title">Contacts Directory</span>
+          <span class="results-count" id="displayedCountText">Loading contacts...</span>
+        </div>
+
+        <!-- Desktop Contacts Table -->
+        <div class="table-responsive">
+          <table class="contacts-table">
+            <thead>
+              <tr>
+                <th class="th-fav"><span class="sr-only">Favourite</span></th>
+                <th class="th-name">Contact</th>
+                <th class="th-phone">Phone</th>
+                <th class="th-email">Email</th>
+                <th class="th-company">Company</th>
+                <th class="th-category">Category</th>
+                <th class="th-status">Status</th>
+                <th class="th-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="contactsTableBody">
+              <!-- Dynamically rendered via renderContactList() -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile Contacts Cards Container -->
+        <div class="contacts-cards-grid" id="contactsCardsContainer">
+          <!-- Dynamically rendered via renderContactList() -->
+        </div>
+
+        <!-- Empty State (No Contacts in Store) -->
+        <div class="empty-state" id="emptyStateContainer" style="display: none;">
+          <div class="empty-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <line x1="19" y1="8" x2="19" y2="14"/>
+              <line x1="22" y1="11" x2="16" y2="11"/>
+            </svg>
+          </div>
+          <h3>No Contacts Recorded</h3>
+          <p>Your address book is currently empty. Add your first contact or import a CSV file to get started.</p>
+          <button id="emptyAddContactBtn" class="btn btn-primary">Add Your First Contact</button>
+        </div>
+
+        <!-- No Results State (Search/Filter found 0 matches) -->
+        <div class="no-results-state" id="noResultsContainer" style="display: none;">
+          <div class="no-results-icon">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+              <line x1="8" y1="11" x2="14" y2="11"/>
+            </svg>
+          </div>
+          <h3>No Matching Contacts</h3>
+          <p>No contacts matched your search query or selected filter criteria. Try adjusting your search keywords or resetting filters.</p>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modals -->
+
+    <!-- 1. Add / Edit Contact Modal -->
+    <div class="modal-backdrop" id="contactModal">
+      <div class="modal-container">
+        <div class="modal-header">
+          <h2 id="modalTitle">Add New Contact</h2>
+          <button type="button" class="modal-close-btn" id="closeModalBtn" title="Close dialog">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <form id="contactForm" novalidate>
+          <input type="hidden" id="inputContactId">
+          <div class="modal-body">
+            <div class="form-grid">
+              <!-- Full Name (Required) -->
+              <div class="form-group col-span-2">
+                <label for="inputFullName" class="form-label required">Full Name</label>
+                <input type="text" id="inputFullName" class="form-control" placeholder="e.g. Maya Patel" required>
+                <span class="form-error" id="errFullName"></span>
+              </div>
+
+              <!-- Phone Number (Required) -->
+              <div class="form-group">
+                <label for="inputPhone" class="form-label required">Phone Number</label>
+                <input type="tel" id="inputPhone" class="form-control" placeholder="e.g. +91 98765 43210" required>
+                <span class="form-error" id="errPhone"></span>
+              </div>
+
+              <!-- Email (Optional) -->
+              <div class="form-group">
+                <label for="inputEmail" class="form-label">Email Address <span class="label-opt">(optional)</span></label>
+                <input type="email" id="inputEmail" class="form-control" placeholder="e.g. maya@example.com">
+                <span class="form-error" id="errEmail"></span>
+              </div>
+
+              <!-- Age (Optional) -->
+              <div class="form-group">
+                <label for="inputAge" class="form-label">Age <span class="label-opt">(optional)</span></label>
+                <input type="number" id="inputAge" class="form-control" placeholder="e.g. 28" min="1" max="130">
+                <span class="form-error" id="errAge"></span>
+              </div>
+
+              <!-- Company (Optional) -->
+              <div class="form-group">
+                <label for="inputCompany" class="form-label">Company <span class="label-opt">(optional)</span></label>
+                <input type="text" id="inputCompany" class="form-control" placeholder="e.g. Acme Innovations">
+              </div>
+
+              <!-- Job Title (Optional) -->
+              <div class="form-group">
+                <label for="inputJobTitle" class="form-label">Job Title <span class="label-opt">(optional)</span></label>
+                <input type="text" id="inputJobTitle" class="form-control" placeholder="e.g. Senior Product Designer">
+              </div>
+
+              <!-- Address (Optional) -->
+              <div class="form-group col-span-2">
+                <label for="inputAddress" class="form-label">Address <span class="label-opt">(optional)</span></label>
+                <input type="text" id="inputAddress" class="form-control" placeholder="e.g. Sector 44, Gurugram, Haryana">
+              </div>
+
+              <!-- Category (Required dropdown) -->
+              <div class="form-group">
+                <label for="selectCategory" class="form-label required">Category</label>
+                <select id="selectCategory" class="form-control">
+                  <option value="Work">Work</option>
+                  <option value="Clients">Clients</option>
+                  <option value="Business">Business</option>
+                  <option value="Family">Family</option>
+                  <option value="Friends">Friends</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <!-- Status (Active / Inactive) -->
+              <div class="form-group">
+                <label for="selectStatus" class="form-label required">Status</label>
+                <select id="selectStatus" class="form-control">
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+
+              <!-- Favourite Toggle -->
+              <div class="form-group col-span-2 checkbox-group">
+                <label class="custom-checkbox-label">
+                  <input type="checkbox" id="checkFavourite" class="custom-checkbox">
+                  <span class="checkbox-box"></span>
+                  <span class="checkbox-text">Mark as Favourite contact</span>
+                </label>
+              </div>
+
+              <!-- Notes (Optional) -->
+              <div class="form-group col-span-2">
+                <label for="inputNotes" class="form-label">Notes <span class="label-opt">(optional)</span></label>
+                <textarea id="inputNotes" class="form-control form-textarea" rows="3" placeholder="Additional notes, meeting history, or personal tags..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="cancelModalBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveContactBtn">Save Contact</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 2. Contact Details View Modal -->
+    <div class="modal-backdrop" id="detailsModal">
+      <div class="modal-container modal-details-container">
+        <div class="modal-header">
+          <h2>Contact Overview</h2>
+          <button type="button" class="modal-close-btn" id="closeDetailsBtn" title="Close dialog">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body" id="detailsBody">
+          <!-- Populated dynamically via openDetailsModal() -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Delete Confirmation Modal -->
+    <div class="modal-backdrop" id="deleteModal">
+      <div class="modal-container modal-sm">
+        <div class="modal-header">
+          <h2>Delete Contact</h2>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to permanently delete <strong id="deleteContactName"></strong> from your contacts?</p>
+          <p class="modal-note text-danger">This action cannot be undone.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelDeleteBtn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Clear All Confirmation Modal -->
+    <div class="modal-backdrop" id="clearAllModal">
+      <div class="modal-container modal-sm">
+        <div class="modal-header">
+          <h2>Clear All Contacts</h2>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete <strong>ALL contacts</strong> from your directory?</p>
+          <p class="modal-note text-danger">All saved records in your browser will be removed.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="cancelClearAllBtn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmClearAllBtn">Clear Everything</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Floating Toast Notifications Container -->
+    <div class="toast-container" id="toastContainer"></div>
+  </div>
+</body>
+</html>
+

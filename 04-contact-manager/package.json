@@ -1,0 +1,13 @@
+{
+  "name": "contact-manager",
+  "version": "1.0.0",
+  "description": "Advanced Contact Manager in TypeScript",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
+
