@@ -50,6 +50,7 @@ const modalTitle = document.getElementById("modalTitle");
 const contactForm = document.getElementById("contactForm");
 const cancelModalBtn = document.getElementById("cancelModalBtn");
 const closeModalBtn = document.getElementById("closeModalBtn");
+const saveContactBtn = document.getElementById("saveContactBtn");
 const openAddContactBtn = document.getElementById("openAddContactBtn");
 const emptyAddContactBtn = document.getElementById("emptyAddContactBtn");
 // Contact Form Inputs
@@ -354,6 +355,7 @@ function resetForm() {
 export function openAddContactModal() {
     resetForm();
     modalTitle.textContent = "Add New Contact";
+    saveContactBtn.textContent = "Save Contact";
     contactModal.classList.add("modal-open");
     inputFullName.focus();
 }
@@ -370,6 +372,7 @@ export function openEditContactModal(id) {
     resetForm();
     currentEditingId = contact.id;
     modalTitle.textContent = "Edit Contact";
+    saveContactBtn.textContent = "Save Changes";
     inputContactId.value = contact.id;
     inputFullName.value = contact.fullName;
     inputPhone.value = contact.phoneNumber;

@@ -770,6 +770,14 @@ body {
   animation: modalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-container form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .modal-details-container {
   max-width: 650px;
 }
@@ -810,6 +818,7 @@ body {
 .modal-body {
   padding: 24px;
   overflow-y: auto;
+  flex: 1;
 }
 
 .modal-footer {
@@ -819,6 +828,10 @@ body {
   justify-content: flex-end;
   gap: 12px;
   background-color: #f8fafc;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .modal-note {

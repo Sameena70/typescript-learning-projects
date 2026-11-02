@@ -81,6 +81,7 @@ const modalTitle = document.getElementById("modalTitle") as HTMLHeadingElement;
 const contactForm = document.getElementById("contactForm") as HTMLFormElement;
 const cancelModalBtn = document.getElementById("cancelModalBtn") as HTMLButtonElement;
 const closeModalBtn = document.getElementById("closeModalBtn") as HTMLButtonElement;
+const saveContactBtn = document.getElementById("saveContactBtn") as HTMLButtonElement;
 const openAddContactBtn = document.getElementById("openAddContactBtn") as HTMLButtonElement;
 const emptyAddContactBtn = document.getElementById("emptyAddContactBtn") as HTMLButtonElement;
 
@@ -427,6 +428,7 @@ function resetForm(): void {
 export function openAddContactModal(): void {
   resetForm();
   modalTitle.textContent = "Add New Contact";
+  saveContactBtn.textContent = "Save Contact";
   contactModal.classList.add("modal-open");
   inputFullName.focus();
 }
@@ -444,6 +446,7 @@ export function openEditContactModal(id: string): void {
   resetForm();
   currentEditingId = contact.id;
   modalTitle.textContent = "Edit Contact";
+  saveContactBtn.textContent = "Save Changes";
 
   inputContactId.value = contact.id;
   inputFullName.value = contact.fullName;
