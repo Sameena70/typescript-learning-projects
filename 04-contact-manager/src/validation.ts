@@ -1,46 +1,64 @@
 /**
  * validation.ts
  * 
- * Pure functions for validating contact form data, preventing duplicates,
- * and validating CSV rows prior to import.
+ * Centralised validation functions for contact forms and imports.
  */
 
 import { Contact, ContactFormData, ValidationResult } from "./types.js";
 
 /**
- * Validates a standard phone number format.
- * Allows international codes (+), digits, spaces, hyphens, and parentheses.
- * Must contain at least 7 digits.
+ * Validates phone numbers with international prefix and at least 7 digits.
  */
 export function isValidPhoneNumber(phone: string): boolean {
   const trimmed = phone.trim();
   if (trimmed.length < 7) {
     return false;
   }
-  // Regular expression: optional '+' followed by numbers, spaces, hyphens, or parentheses
-  const phonePattern = /^\+?[\d\s\-()]{7,20}$/;
+  const phonePattern = /^\+?[\d\s\-()]{7,25}$/;
   return phonePattern.test(trimmed);
 }
 
 /**
- * Validates an email address format.
+ * Validates email addresses.
  */
 export function isValidEmail(email: string): boolean {
   const trimmed = email.trim();
   if (trimmed.length === 0) {
-    return true; // Optional field, empty is acceptable
+    return true; // Optional field
   }
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailPattern.test(trimmed);
 }
 
 /**
- * Validates the contact form inputs.
- * Checks required fields, formats, and checks for duplicates.
- * 
- * @param formData Raw data entered into the form
- * @param existingContacts Array of existing contacts to check against for duplicates
- * @param currentContactId Optional ID if editing an existing contact (to skip self in duplicate checks)
+ * Checks for duplicate contacts based on phone number or email.
+ */
+export function findDuplicateContact(
+  phone: string,
+  email: string | undefined,
+  existingContacts: Contact[],
+  excludeContactId?: string
+): Contact | undefined {
+  const cleanPhone = phone.replace(/[\s\-()]/g, "").toLowerCase();
+  const cleanEmail = (email || "").trim().toLowerCase();
+
+  return existingContacts.find((c) => {
+    if (excludeContactId && c.id === excludeContactId) {
+      return false;
+    }
+
+    const cPhoneClean = c.phoneNumber.replace(/[\s\-()]/g, "").toLowerCase();
+    const phoneMatches = cPhoneClean.length > 0 && cPhoneClean === cleanPhone;
+
+    const cEmailClean = (c.email || "").trim().toLowerCase();
+    const emailMatches = cleanEmail.length > 0 && cEmailClean.length > 0 && cEmailClean === cleanEmail;
+
+    return phoneMatches || emailMatches;
+  });
+}
+
+/**
+ * Validates the full contact form data.
  */
 export function validateContactForm(
   formData: ContactFormData,
@@ -50,7 +68,7 @@ export function validateContactForm(
   const errors: ValidationResult["errors"] = {};
   let isValid = true;
 
-  // 1. Validate Full Name (Required, min 2 characters)
+  // 1. Full Name
   const trimmedName = formData.fullName.trim();
   if (trimmedName.length === 0) {
     errors.fullName = "Full name is required.";
@@ -60,7 +78,7 @@ export function validateContactForm(
     isValid = false;
   }
 
-  // 2. Validate Phone Number (Required, format check)
+  // 2. Phone Number
   const trimmedPhone = formData.phoneNumber.trim();
   if (trimmedPhone.length === 0) {
     errors.phoneNumber = "Phone number is required.";
@@ -70,14 +88,14 @@ export function validateContactForm(
     isValid = false;
   }
 
-  // 3. Validate Optional Email
+  // 3. Email
   const trimmedEmail = formData.email.trim();
   if (trimmedEmail.length > 0 && !isValidEmail(trimmedEmail)) {
     errors.email = "Please enter a valid email address.";
     isValid = false;
   }
 
-  // 4. Validate Optional Age
+  // 4. Age
   const trimmedAge = formData.age.trim();
   if (trimmedAge.length > 0) {
     const parsedAge = Number(trimmedAge);
@@ -87,36 +105,20 @@ export function validateContactForm(
     }
   }
 
-  // 5. Prevent Duplicate Contacts
-  // Check if another contact already has the same phone number or email (if provided)
-  const cleanPhone = trimmedPhone.replace(/[\s\-()]/g, "");
-  
-  const duplicateContact = existingContacts.find((c: Contact) => {
-    // If editing, skip the contact itself
-    if (currentContactId && c.id === currentContactId) {
-      return false;
+  // 5. Duplicates
+  if (isValid) {
+    const duplicate = findDuplicateContact(trimmedPhone, trimmedEmail, existingContacts, currentContactId);
+    if (duplicate) {
+      const cleanPhone = trimmedPhone.replace(/[\s\-()]/g, "").toLowerCase();
+      const duplicatePhone = duplicate.phoneNumber.replace(/[\s\-()]/g, "").toLowerCase();
+      if (duplicatePhone === cleanPhone) {
+        errors.phoneNumber = `Phone number already exists for contact "${duplicate.fullName}".`;
+      } else {
+        errors.email = `Email address already exists for contact "${duplicate.fullName}".`;
+      }
+      isValid = false;
     }
-
-    const cPhoneClean = c.phoneNumber.replace(/[\s\-()]/g, "");
-    const isSamePhone = cPhoneClean.length > 0 && cPhoneClean === cleanPhone;
-
-    const isSameEmail =
-      trimmedEmail.length > 0 &&
-      c.email !== undefined &&
-      c.email.trim().toLowerCase() === trimmedEmail.toLowerCase();
-
-    return isSamePhone || isSameEmail;
-  });
-
-  if (duplicateContact) {
-    if (duplicateContact.phoneNumber.replace(/[\s\-()]/g, "") === cleanPhone) {
-      errors.phoneNumber = "A contact with this phone number already exists.";
-    } else {
-      errors.email = "A contact with this email address already exists.";
-    }
-    isValid = false;
   }
 
   return { isValid, errors };
 }
-

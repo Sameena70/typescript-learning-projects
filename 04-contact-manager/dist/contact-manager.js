@@ -4,8 +4,18 @@
  * DOM UI Controller: connects HTML elements, renders the dashboard,
  * contact table and cards, handles modals, forms, and alerts.
  */
-import { getAllContacts, getFilteredContacts, getContactById, addContact, updateContact, deleteContact, toggleFavouriteStatus, toggleContactStatus, clearAllContacts, exportContactsToCSV, importContactsFromCSV, } from "./contact-service.js";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+import { getAllContacts, getFilteredContacts, getContactById, addContact, updateContact, deleteContact, toggleFavouriteStatus, toggleContactStatus, clearAllContacts, exportContactsToCSV, importContactsFromCSV, addImportedContacts, } from "./contact-service.js";
 import { calculateContactStatistics } from "./statistics.js";
+import { ContactImportExport } from "./import-export.js";
 // ========================================================
 // 1. Application UI State
 // ========================================================
@@ -66,6 +76,9 @@ const selectCategory = document.getElementById("selectCategory");
 const selectStatus = document.getElementById("selectStatus");
 const checkFavourite = document.getElementById("checkFavourite");
 const inputNotes = document.getElementById("inputNotes");
+const inputTags = document.getElementById("inputTags");
+const inputBirthday = document.getElementById("inputBirthday");
+const inputReminder = document.getElementById("inputReminder");
 // Form Validation Error Labels
 const errFullName = document.getElementById("errFullName");
 const errPhone = document.getElementById("errPhone");
@@ -363,7 +376,7 @@ export function openAddContactModal() {
  * Opens modal for editing an existing contact.
  */
 export function openEditContactModal(id) {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f, _g;
     const contact = getContactById(id);
     if (!contact) {
         showToast("Contact not found.", "error");
@@ -385,6 +398,9 @@ export function openEditContactModal(id) {
     selectStatus.value = contact.status;
     checkFavourite.checked = contact.isFavourite;
     inputNotes.value = (_e = contact.notes) !== null && _e !== void 0 ? _e : "";
+    inputTags.value = contact.tags ? contact.tags.join(", ") : "";
+    inputBirthday.value = (_f = contact.birthday) !== null && _f !== void 0 ? _f : "";
+    inputReminder.value = (_g = contact.reminderDate) !== null && _g !== void 0 ? _g : "";
     contactModal.classList.add("modal-open");
     inputFullName.focus();
 }
@@ -461,6 +477,35 @@ export function openDetailsModal(id) {
         <span class="info-label">Physical Address</span>
         <span class="info-value">${contact.address ? escapeHtml(contact.address) : "Not provided"}</span>
       </div>
+
+      ${contact.tags && contact.tags.length > 0
+        ? `
+        <div class="info-block col-span-2">
+          <span class="info-label">Tags / Groups</span>
+          <div class="info-tags" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+            ${contact.tags.map(t => `<span class="badge" style="background: rgba(59,130,246,0.1); color: #3b82f6; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">${escapeHtml(t)}</span>`).join('')}
+          </div>
+        </div>
+      `
+        : ""}
+
+      ${contact.birthday
+        ? `
+        <div class="info-block">
+          <span class="info-label">Birthday 🎂</span>
+          <span class="info-value">${escapeHtml(contact.birthday)}</span>
+        </div>
+      `
+        : ""}
+
+      ${contact.reminderDate
+        ? `
+        <div class="info-block">
+          <span class="info-label">Follow-up Reminder ⏰</span>
+          <span class="info-value" style="color: #f59e0b; font-weight: 600;">${escapeHtml(contact.reminderDate)}</span>
+        </div>
+      `
+        : ""}
 
       <div class="info-block col-span-2">
         <span class="info-label">Notes</span>
@@ -561,6 +606,9 @@ function handleContactFormSubmit(e) {
         status: selectStatus.value,
         isFavourite: checkFavourite.checked,
         notes: inputNotes.value,
+        tags: inputTags ? inputTags.value : "",
+        birthday: inputBirthday ? inputBirthday.value : "",
+        reminderDate: inputReminder ? inputReminder.value : "",
     };
     if (currentEditingId) {
         // Updating existing contact
@@ -751,6 +799,56 @@ export function initContactManagerEvents() {
         renderContactList();
         showToast("All contacts have been removed.", "warning");
     });
+    // Export to JSON
+    const exportJsonBtn = document.getElementById("exportJsonBtn");
+    exportJsonBtn === null || exportJsonBtn === void 0 ? void 0 : exportJsonBtn.addEventListener("click", () => {
+        const all = getAllContacts();
+        if (all.length === 0) {
+            showToast("No contacts to export.", "warning");
+            return;
+        }
+        try {
+            ContactImportExport.exportToJSON(all);
+            showToast("Contacts exported to JSON successfully!", "success");
+        }
+        catch (err) {
+            if (err instanceof Error) {
+                showToast(err.message, "error");
+            }
+        }
+    });
+    // Import from JSON
+    const jsonFileInput = document.getElementById("jsonFileInput");
+    const importJsonBtn = document.getElementById("importJsonBtn");
+    importJsonBtn === null || importJsonBtn === void 0 ? void 0 : importJsonBtn.addEventListener("click", () => {
+        if (jsonFileInput) {
+            jsonFileInput.value = "";
+            jsonFileInput.click();
+        }
+    });
+    jsonFileInput === null || jsonFileInput === void 0 ? void 0 : jsonFileInput.addEventListener("change", () => __awaiter(this, void 0, void 0, function* () {
+        var _a;
+        const file = (_a = jsonFileInput.files) === null || _a === void 0 ? void 0 : _a[0];
+        if (!file)
+            return;
+        try {
+            const all = getAllContacts();
+            const { validContacts, summary } = yield ContactImportExport.parseAndValidateJSON(file, all);
+            if (summary.success) {
+                addImportedContacts(validContacts);
+                renderDashboard();
+                renderContactList();
+                showToast(`Imported ${summary.importedCount} contacts (${summary.skippedCount} skipped/duplicates).`, "success");
+            }
+            else {
+                showToast(`Import failed: ${summary.errors[0] || "No valid contacts found."}`, "error");
+            }
+        }
+        catch (err) {
+            const msg = err instanceof Error ? err.message : "Error reading JSON file.";
+            showToast(msg, "error");
+        }
+    }));
     // Export to CSV
     exportCsvBtn.addEventListener("click", () => {
         const csvData = exportContactsToCSV();

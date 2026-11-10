@@ -27,8 +27,10 @@ import {
   clearAllContacts,
   exportContactsToCSV,
   importContactsFromCSV,
+  addImportedContacts,
 } from "./contact-service.js";
 import { calculateContactStatistics } from "./statistics.js";
+import { ContactImportExport } from "./import-export.js";
 
 // ========================================================
 // 1. Application UI State
@@ -98,6 +100,9 @@ const selectCategory = document.getElementById("selectCategory") as HTMLSelectEl
 const selectStatus = document.getElementById("selectStatus") as HTMLSelectElement;
 const checkFavourite = document.getElementById("checkFavourite") as HTMLInputElement;
 const inputNotes = document.getElementById("inputNotes") as HTMLTextAreaElement;
+const inputTags = document.getElementById("inputTags") as HTMLInputElement;
+const inputBirthday = document.getElementById("inputBirthday") as HTMLInputElement;
+const inputReminder = document.getElementById("inputReminder") as HTMLInputElement;
 
 // Form Validation Error Labels
 const errFullName = document.getElementById("errFullName") as HTMLSpanElement;
@@ -460,6 +465,9 @@ export function openEditContactModal(id: string): void {
   selectStatus.value = contact.status;
   checkFavourite.checked = contact.isFavourite;
   inputNotes.value = contact.notes ?? "";
+  inputTags.value = contact.tags ? contact.tags.join(", ") : "";
+  inputBirthday.value = contact.birthday ?? "";
+  inputReminder.value = contact.reminderDate ?? "";
 
   contactModal.classList.add("modal-open");
   inputFullName.focus();
@@ -549,6 +557,41 @@ export function openDetailsModal(id: string): void {
         <span class="info-label">Physical Address</span>
         <span class="info-value">${contact.address ? escapeHtml(contact.address) : "Not provided"}</span>
       </div>
+
+      ${
+        contact.tags && contact.tags.length > 0
+          ? `
+        <div class="info-block col-span-2">
+          <span class="info-label">Tags / Groups</span>
+          <div class="info-tags" style="display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px;">
+            ${contact.tags.map(t => `<span class="badge" style="background: rgba(59,130,246,0.1); color: #3b82f6; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem;">${escapeHtml(t)}</span>`).join('')}
+          </div>
+        </div>
+      `
+          : ""
+      }
+
+      ${
+        contact.birthday
+          ? `
+        <div class="info-block">
+          <span class="info-label">Birthday 🎂</span>
+          <span class="info-value">${escapeHtml(contact.birthday)}</span>
+        </div>
+      `
+          : ""
+      }
+
+      ${
+        contact.reminderDate
+          ? `
+        <div class="info-block">
+          <span class="info-label">Follow-up Reminder ⏰</span>
+          <span class="info-value" style="color: #f59e0b; font-weight: 600;">${escapeHtml(contact.reminderDate)}</span>
+        </div>
+      `
+          : ""
+      }
 
       <div class="info-block col-span-2">
         <span class="info-label">Notes</span>
@@ -663,6 +706,9 @@ function handleContactFormSubmit(e: Event): void {
     status: selectStatus.value as ContactStatus,
     isFavourite: checkFavourite.checked,
     notes: inputNotes.value,
+    tags: inputTags ? inputTags.value : "",
+    birthday: inputBirthday ? inputBirthday.value : "",
+    reminderDate: inputReminder ? inputReminder.value : "",
   };
 
   if (currentEditingId) {
@@ -875,6 +921,58 @@ export function initContactManagerEvents(): void {
     renderDashboard();
     renderContactList();
     showToast("All contacts have been removed.", "warning");
+  });
+
+  // Export to JSON
+  const exportJsonBtn = document.getElementById("exportJsonBtn");
+  exportJsonBtn?.addEventListener("click", () => {
+    const all = getAllContacts();
+    if (all.length === 0) {
+      showToast("No contacts to export.", "warning");
+      return;
+    }
+    try {
+      ContactImportExport.exportToJSON(all);
+      showToast("Contacts exported to JSON successfully!", "success");
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        showToast(err.message, "error");
+      }
+    }
+  });
+
+  // Import from JSON
+  const jsonFileInput = document.getElementById("jsonFileInput") as HTMLInputElement;
+  const importJsonBtn = document.getElementById("importJsonBtn");
+  importJsonBtn?.addEventListener("click", () => {
+    if (jsonFileInput) {
+      jsonFileInput.value = "";
+      jsonFileInput.click();
+    }
+  });
+
+  jsonFileInput?.addEventListener("change", async () => {
+    const file = jsonFileInput.files?.[0];
+    if (!file) return;
+
+    try {
+      const all = getAllContacts();
+      const { validContacts, summary } = await ContactImportExport.parseAndValidateJSON(file, all);
+      if (summary.success) {
+        addImportedContacts(validContacts);
+        renderDashboard();
+        renderContactList();
+        showToast(
+          `Imported ${summary.importedCount} contacts (${summary.skippedCount} skipped/duplicates).`,
+          "success"
+        );
+      } else {
+        showToast(`Import failed: ${summary.errors[0] || "No valid contacts found."}`, "error");
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error reading JSON file.";
+      showToast(msg, "error");
+    }
   });
 
   // Export to CSV

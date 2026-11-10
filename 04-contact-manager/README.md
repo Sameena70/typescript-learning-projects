@@ -1,189 +1,139 @@
-# Project 04: Advanced Contact Manager
+# ContactHub Pro — Advanced Contact Management System
 
-A full-featured, SaaS-grade **Contact Management System** built with **TypeScript (Strict Mode), HTML5, and CSS3**.
-
-This project represents the fourth practical project in the TypeScript learning journey, moving beyond single-file scripts to a clean, modular architecture. It reinforces core TypeScript concepts—interfaces, union types, optional properties, array methods (`map`, `filter`, `find`, `reduce`), state management, `localStorage` persistence, and client-side CSV processing.
+An enterprise-ready contact management dashboard built with modular TypeScript, ES6 modules, JSON/CSV two-way import/export, and complete contact metadata tracking (groups, tags, birthdays, and reminders).
 
 ---
 
-## 🌟 Features Overview
+## 1. Project Overview
 
-### 1. Interactive Dashboard
-- **Metric Cards**: Real-time calculated counters for **Total Contacts**, **Active Contacts**, **Inactive Contacts**, **Favourites**, and **Recently Added** (last 7 days).
-- **Category Distribution Bar**: Visual interactive badges displaying contact counts across 6 categories (`Work`, `Clients`, `Business`, `Family`, `Friends`, `Other`). Clicking any badge filters the directory dynamically.
-
-### 2. Comprehensive Contact Management (CRUD)
-- **Add Contact Modal**: Multi-field form capturing Full Name, Phone Number, Email, Age, Company, Job Title, Address, Category, Status, Favourite flag, and Notes.
-- **Input Validation**: Strict format checking for phone numbers and email addresses, required field enforcement, and duplicate detection (flags matching phone numbers or emails across contacts).
-- **Edit Contact**: Seamlessly populates existing contact details, prevents accidental duplicates, updates modification timestamps, and commits changes.
-- **Detailed View Modal**: Comprehensive profile viewer showing all contact fields, avatar initials, clickable call/email links, creation date, and last modified date.
-- **Delete Contact**: Confirmation dialog preventing accidental data loss.
-- **Status & Favourite Toggles**: 1-click toggling directly from directory rows, mobile cards, or the details modal.
-
-### 3. Dynamic Search, Filtering & Sorting
-- **Multi-Field Live Search**: Instant filtering matching against Name, Phone Number, Email, and Company simultaneously.
-- **Category Filter**: Select individual categories or view all.
-- **Status Filter**: View `All`, `Active Only`, or `Inactive Only`.
-- **Favourites Toggle**: Quick-filter button to display only starred contacts.
-- **Sorting Options**: Sort by **Date Added**, **Full Name (A–Z / Z–A)**, or **Company**.
-- **Sort Order**: Direction toggle button (Ascending / Descending).
-
-### 4. Data Persistence & Portability
-- **Browser `localStorage`**: Persists all additions, edits, deletions, and status toggles across browser reloads.
-- **Pre-seeded Initial State**: First-time visitors immediately see 5 realistic sample contacts.
-- **CSV Export**: Clean client-side export to standard `.csv` file format with proper column escaping.
-- **CSV Import**: File upload parser that validates columns, handles optional fields, skips duplicates, and reports imported vs skipped row counts.
-- **Clear All**: Reset action with confirmation dialog.
-
-### 5. SaaS-Grade UI & UX
-- **Responsive Layout**: Desktop table layout transforms into clean, touch-friendly contact cards on tablet and mobile viewports.
-- **Empty States**: Distinct visual feedback for empty address books vs search queries with zero matches.
-- **Toast Notifications**: Non-intrusive floating feedback messages (`success`, `warning`, `error`, `info`) with auto-dismissal.
+**ContactHub Pro** provides a complete directory solution for personal and professional networking. It allows users to manage contacts across multiple categories, organize with custom tags, track birthdays, schedule follow-up reminders, and perform safe data backups via CSV and JSON.
 
 ---
 
-## 📂 Project Architecture
+## 2. Features
 
-```text
+- **Rich Contact Profiles**:
+  - Full Name, Phone, Email, Age, Company, Job Title, Address, Notes.
+  - **Tags / Groups**: Tag contacts (e.g. "Developer", "Client Lead", "Badminton").
+  - **Birthday & Reminder Tracking**: Store birthdays and follow-up alerts.
+  - Active/Inactive status toggle & Favourite starring.
+- **Search & Multi-Filter Engine**:
+  - Full-text search across Name, Phone, Email, Company, and Tags.
+  - Category filtering (Work, Clients, Business, Family, Friends, Other).
+  - Status and Favourites filtering.
+  - Multi-column sorting (Name, Creation Date, Company).
+- **Two-Way Data Portability (JSON & CSV)**:
+  - **JSON Export / Import**: Full fidelity schema backup and restore.
+  - **CSV Export / Import**: Excel and spreadsheet compatible data portability.
+  - Duplicate detection by phone number and email address.
+  - Granular import error reporting with imported vs skipped counts.
+- **Defensive Data Persistence**:
+  - Automatic pre-populated seed data on first launch.
+  - Safe parsing with error recovery for corrupted `localStorage`.
+
+---
+
+## 3. Technology Stack
+
+- **HTML5 & CSS3**: Responsive grid layout, Plus Jakarta Sans typography, modal dialogs.
+- **TypeScript 5.x**: Strict mode, ES6 modules, interfaces, and custom types.
+- **Async File APIs**: Promise-based `FileReader` for JSON and CSV file parsing.
+
+---
+
+## 4. Folder Structure
+
+```
 04-contact-manager/
-├── index.html                  # Semantic UI structure (Dashboard, Directory, Modals, Toasts)
-├── style.css                   # SaaS design system, responsive grid & modern typography
-├── package.json                # Project build scripts (tsc, tsc --watch)
-├── tsconfig.json               # Strict TypeScript configuration (ES6 module output)
-├── README.md                   # Comprehensive project documentation & TypeScript concepts guide
-├── src/
-│   ├── types.ts                # TypeScript interfaces, type aliases, and union types
-│   ├── storage.ts              # LocalStorage handling, safe JSON parsing, and seed data
-│   ├── validation.ts           # Pure validation functions for form inputs & duplicate detection
-│   ├── statistics.ts           # Pure calculation helpers (totals, active/inactive, categories)
-│   ├── contact-service.ts      # State management, CRUD operations, search/filter & CSV handling
-│   ├── contact-manager.ts      # DOM controller, modal management, dynamic rendering & events
-│   └── main.ts                 # Application entry point, initializes state & wires global listeners
-└── dist/                       # Compiled ES6 JavaScript modules loaded by index.html
+├── dist/                  # Compiled JavaScript ES6 modules
+│   ├── contact-manager.js # DOM controller & modal management
+│   ├── contact-service.js # Business logic, CRUD & state
+│   ├── import-export.js   # JSON import/export & Promise FileReader
+│   ├── main.js            # Entry point
+│   ├── statistics.js      # Dashboard metric aggregations
+│   ├── storage.ts.js      # LocalStorage with seed data
+│   ├── types.js           # Shared interfaces & union types
+│   └── validation.js      # Centralized validation & duplicate detector
+├── src/                   # TypeScript source code
+│   ├── types.ts
+│   ├── storage.ts
+│   ├── validation.ts
+│   ├── statistics.ts
+│   ├── contact-service.ts
+│   ├── import-export.ts
+│   ├── contact-manager.ts
+│   └── main.ts
+├── index.html             # Application markup with type="module"
+├── style.css              # Dashboard stylesheet
+├── package.json           # Build scripts & dependencies
+├── tsconfig.json          # TypeScript compiler options
+└── README.md              # Project documentation
 ```
 
-### Module Responsibilities:
-- **`types.ts`**: The single source of truth for application contracts (`Contact`, `ContactFormData`, `ContactCategory`, `ContactStatus`, `ValidationResult`, `ContactStatistics`, `FilterOptions`).
-- **`storage.ts`**: Decouples persistence from business logic, handling serializing, deserializing, error boundaries, and default seed records.
-- **`validation.ts`**: Independent, pure functions testing regex patterns and checking for duplicate records in existing contact lists.
-- **`statistics.ts`**: Pure functions taking `Contact[]` and calculating counts using `filter()`, `reduce()`, and date comparisons.
-- **`contact-service.ts`**: State container holding in-memory contacts array, orchestrating additions, edits, removals, sorting, and CSV parsing.
-- **`contact-manager.ts`**: Bridges the state and DOM. Handles modal open/close lifecycles, user clicks, form submissions, and UI toasts.
-- **`main.ts`**: Bootstraps the app on `DOMContentLoaded`.
+---
+
+## 5. TypeScript Module Breakdown
+
+- **`types.ts`**: Core interfaces (`Contact`, `ContactFormData`, `ContactStatistics`, `ImportSummary`).
+- **`validation.ts`**: Centralized email, phone number, and duplicate contact detection (`findDuplicateContact`).
+- **`storage.ts`**: Encapsulates `localStorage` loading, saving, and initial seed dataset generation.
+- **`statistics.ts`**: Aggregates totals, active counts, and category breakdowns using `reduce()`.
+- **`contact-service.ts`**: Handles in-memory contact lists, filtering, sorting, and CSV parsing.
+- **`import-export.ts`**: Implements asynchronous Promise-based file reading for JSON imports and download generation.
+- **`contact-manager.ts`**: Manages modal popups, table rows, cards, and UI toasts.
+- **`main.ts`**: Application initialization script.
 
 ---
 
-## 🧠 TypeScript Concepts Applied
+## 6. How Concepts Work
 
-### 1. Interfaces & Object Shapes
-Explicit interfaces define the contracts for data passed across modules:
+### A. Centralized Duplicate Detection
+Before adding or importing any contact, `validation.ts` normalizes phone numbers (stripping whitespace, parentheses, and dashes) and checks for clashes:
 ```typescript
-export interface Contact {
-  id: string;
-  fullName: string;
-  phoneNumber: string;
-  email?: string;
-  age?: number;
-  company?: string;
-  jobTitle?: string;
-  address?: string;
-  category: ContactCategory;
-  status: ContactStatus;
-  isFavourite: boolean;
-  notes?: string;
-  createdAt: string;
-  updatedAt?: string;
+export function findDuplicateContact(
+  phone: string,
+  email: string | undefined,
+  existingContacts: Contact[],
+  excludeContactId?: string
+): Contact | undefined
+```
+
+### B. Promise-Based JSON Import
+```typescript
+public static readJSONFile(file: File): Promise<unknown> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(JSON.parse(reader.result as string));
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsText(file);
+  });
 }
 ```
 
-### 2. Type Aliases & Union Types
-Restricting variables to explicit sets of allowed string literals guarantees type safety at compile time:
-```typescript
-export type ContactStatus = "active" | "inactive";
-
-export type ContactCategory =
-  | "Family"
-  | "Friends"
-  | "Work"
-  | "Clients"
-  | "Business"
-  | "Other";
-
-export type SortField = "name" | "createdAt" | "company";
-export type SortOrder = "asc" | "desc";
-```
-
-### 3. Optional Properties (`?`)
-Optional properties allow fields like `email`, `age`, `company`, `address`, and `notes` to remain undefined without compiler errors. When displaying these in the UI, safe fallback operators (`??` or ternary checks) ensure `undefined` values render cleanly as `"-"` or `"Not provided"`.
-
-### 4. Array Methods (`map`, `filter`, `find`, `reduce`)
-- **`filter()`**: Powers multi-field search and status filters:
-  ```typescript
-  const activeContacts = contacts.filter((c: Contact) => c.status === "active");
-  ```
-- **`map()`**: Transforms `Contact` models into HTML table rows, mobile cards, and CSV row strings:
-  ```typescript
-  const rows = contacts.map(c => `<tr>...${c.fullName}...</tr>`).join("");
-  ```
-- **`find()`**: Locates an individual contact by unique ID for editing, viewing details, or toggling favourites:
-  ```typescript
-  const contact = contacts.find((c: Contact) => c.id === id);
-  ```
-- **`reduce()`**: Computes category breakdown statistics in a single pass:
-  ```typescript
-  const categoryCounts = contacts.reduce((acc, contact) => {
-    acc[contact.category] = (acc[contact.category] || 0) + 1;
-    return acc;
-  }, initialCategoryCounts);
-  ```
-
-### 5. Strict DOM Type Assertions
-Elements retrieved from the DOM are cast to their exact browser interfaces, unlocking typed properties like `.value`, `.checked`, and `.focus()`:
-```typescript
-const inputFullName = document.getElementById("inputFullName") as HTMLInputElement;
-const checkFavourite = document.getElementById("checkFavourite") as HTMLInputElement;
-```
-
 ---
 
-## ⚙️ How to Build and Run
+## 7. Installation & Build
 
-### 1. Build / Type Check
-From the root directory or inside `04-contact-manager`, run the TypeScript compiler:
 ```bash
-# Using local tsc
-& "..\01-simple-calculator\node_modules\.bin\tsc.cmd" --project .\tsconfig.json
+# Install dependencies
+npm install
 
-# Or if typescript is installed globally
-tsc --project tsconfig.json
+# Build TypeScript
+npm run build
+
+# Watch mode
+npm run watch
 ```
 
-### 2. Launching in Browser
-Because this project uses ES6 native browser modules (`<script type="module">`), open the project through a local static server or Live Server:
-- **VS Code / IDE**: Right-click `index.html` and choose **Open with Live Server**.
-- **Python static server**:
-  ```bash
-  python -m http.server 8080
-  ```
-  Navigate to `http://localhost:8080/04-contact-manager/index.html`.
+Run with any static web server (such as Live Server or `npx serve .`).
 
 ---
 
-## 🧪 Verification & Testing Status
+## 8. Manual Testing Checklist
 
-| Scenario | Status | Method |
-| :--- | :--- | :--- |
-| TypeScript strict compilation | **PASSED** | Compiled with zero errors under `"strict": true` |
-| Add contact (all fields) | **VERIFIED** | Automated logic check + form validation passing |
-| Add contact (optional fields omitted) | **VERIFIED** | Optional properties safely handled as `undefined` |
-| Form validation & duplicate phone/email detection | **VERIFIED** | Verified with automated test cases |
-| Live search (Name, Phone, Email, Company) | **VERIFIED** | Query filter matches across multiple fields |
-| Category and Status filtering | **VERIFIED** | Pure filter logic tested |
-| Favourite toggling | **VERIFIED** | In-memory and persistence logic confirmed |
-| Edit contact preserving identity | **VERIFIED** | Self-edit duplicate check bypass verified |
-| Delete contact & statistics update | **VERIFIED** | Array filtering & statistics recomputation verified |
-| CSV Export formatting | **VERIFIED** | Header generation and quote escaping verified |
-| CSV Import validation & duplicate skipping | **VERIFIED** | Line parser and field fallback checks passing |
-| Mobile & Desktop responsiveness | **VERIFIED** | Verified CSS media queries (`@media (max-width: 868px)`) |
-| Browser UI live interaction | **READY FOR MANUAL CHECK** | Requires opening `index.html` in an active browser |
-
+- [x] Initial seed contacts load into dashboard cards and table.
+- [x] Add contact: fill name, phone, tags, birthday, and follow-up date; verify card displays all details.
+- [x] Duplicate check: attempt to add a contact with an already existing phone number; verify proper validation error appears.
+- [x] Search by tag: enter a tag in the search bar and verify matching contacts appear.
+- [x] JSON export & import: click Export JSON to download backup; re-import the file to verify duplicate handling.
+- [x] CSV export & import: click Export CSV, import a valid CSV file, verify toast summary.

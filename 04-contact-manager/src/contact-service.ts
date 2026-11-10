@@ -67,6 +67,10 @@ export function addContact(formData: ContactFormData): {
   }
 
   // Create new contact object
+  const tagsList = formData.tags
+    ? formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+    : undefined;
+
   const newContact: Contact = {
     id: generateUniqueId(),
     fullName: formData.fullName.trim(),
@@ -80,6 +84,9 @@ export function addContact(formData: ContactFormData): {
     status: formData.status,
     isFavourite: formData.isFavourite,
     notes: formData.notes.trim().length > 0 ? formData.notes.trim() : undefined,
+    tags: tagsList && tagsList.length > 0 ? tagsList : undefined,
+    birthday: formData.birthday.trim().length > 0 ? formData.birthday.trim() : undefined,
+    reminderDate: formData.reminderDate.trim().length > 0 ? formData.reminderDate.trim() : undefined,
     createdAt: new Date().toISOString(),
   };
 
@@ -117,6 +124,10 @@ export function updateContact(
     return { success: false, validation };
   }
 
+  const tagsList = formData.tags
+    ? formData.tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+    : undefined;
+
   // Update contact fields
   existingContact.fullName = formData.fullName.trim();
   existingContact.phoneNumber = formData.phoneNumber.trim();
@@ -129,6 +140,9 @@ export function updateContact(
   existingContact.status = formData.status;
   existingContact.isFavourite = formData.isFavourite;
   existingContact.notes = formData.notes.trim().length > 0 ? formData.notes.trim() : undefined;
+  existingContact.tags = tagsList && tagsList.length > 0 ? tagsList : undefined;
+  existingContact.birthday = formData.birthday.trim().length > 0 ? formData.birthday.trim() : undefined;
+  existingContact.reminderDate = formData.reminderDate.trim().length > 0 ? formData.reminderDate.trim() : undefined;
   existingContact.updatedAt = new Date().toISOString();
 
   saveContactsToStorage(contacts);
@@ -185,13 +199,21 @@ export function clearAllContacts(): void {
 }
 
 /**
+ * Adds multiple contacts (e.g. from JSON import).
+ */
+export function addImportedContacts(newItems: Contact[]): void {
+  contacts = [...newItems, ...contacts];
+  saveContactsToStorage(contacts);
+}
+
+/**
  * Filters, searches, and sorts contacts according to filter options.
  * Demonstrates filter(), map(), and sort() array methods.
  */
 export function getFilteredContacts(options: FilterOptions): Contact[] {
   let result = [...contacts];
 
-  // 1. Text Search across Name, Phone, Email, Company
+  // 1. Text Search across Name, Phone, Email, Company, and Tags
   const query = options.searchQuery.trim().toLowerCase();
   if (query.length > 0) {
     result = result.filter((c: Contact) => {
@@ -199,7 +221,8 @@ export function getFilteredContacts(options: FilterOptions): Contact[] {
       const matchPhone = c.phoneNumber.toLowerCase().includes(query);
       const matchEmail = c.email ? c.email.toLowerCase().includes(query) : false;
       const matchCompany = c.company ? c.company.toLowerCase().includes(query) : false;
-      return matchName || matchPhone || matchEmail || matchCompany;
+      const matchTags = c.tags ? c.tags.some(t => t.toLowerCase().includes(query)) : false;
+      return matchName || matchPhone || matchEmail || matchCompany || matchTags;
     });
   }
 

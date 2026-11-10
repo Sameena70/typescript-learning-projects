@@ -32,6 +32,25 @@
         </div>
 
         <div class="header-actions">
+          <button id="exportJsonBtn" class="btn btn-outline" title="Export all contacts to JSON">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export JSON</span>
+          </button>
+
+          <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+          <button id="importJsonBtn" class="btn btn-outline" title="Import contacts from JSON file">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Import JSON</span>
+          </button>
+
           <button id="exportCsvBtn" class="btn btn-outline" title="Export all contacts to CSV">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -368,6 +387,23 @@
                   <option value="active">Active</option>
                   <option value="inactive">Inactive</option>
                 </select>
+              </div>
+
+              <!-- Tags / Groups (Optional) -->
+              <div class="form-group col-span-2">
+                <label for="inputTags" class="form-label">Tags / Groups <span class="label-opt">(comma separated)</span></label>
+                <input type="text" id="inputTags" class="form-control" placeholder="e.g. Developer, Project Lead, Badminton">
+              </div>
+
+              <!-- Birthday & Follow-up Reminder -->
+              <div class="form-group">
+                <label for="inputBirthday" class="form-label">Birthday <span class="label-opt">(optional)</span></label>
+                <input type="date" id="inputBirthday" class="form-control">
+              </div>
+
+              <div class="form-group">
+                <label for="inputReminder" class="form-label">Follow-up Reminder <span class="label-opt">(optional)</span></label>
+                <input type="date" id="inputReminder" class="form-control">
               </div>
 
               <!-- Favourite Toggle -->
