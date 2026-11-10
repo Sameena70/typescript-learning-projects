@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Load the compiled TypeScript code -->
-  <script src="dist/expense-tracker.js" defer></script>
+  <!-- Load the compiled TypeScript ES6 modules -->
+  <script type="module" src="dist/main.js" defer></script>
 </head>
 <body>
   <div class="app-wrapper">
@@ -26,6 +26,17 @@
           <h1>Expense Tracker</h1>
           <p class="subtitle">Smart Personal Budget & Expense Management</p>
         </div>
+      </div>
+
+      <!-- JSON Import/Export Actions in Header -->
+      <div class="header-io-actions">
+        <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
+        <button id="importJsonBtn" class="btn btn-secondary btn-sm" type="button" title="Import from JSON">
+          📥 Import JSON
+        </button>
+        <button id="exportJsonBtn" class="btn btn-secondary btn-sm" type="button" title="Export to JSON">
+          📤 Export JSON
+        </button>
       </div>
     </header>
 
@@ -66,6 +77,23 @@
         <div class="stat-value" id="remainingBalanceDisplay">₹0.00</div>
         <div class="progress-bar-container">
           <div class="progress-bar-fill" id="budgetProgressBar"></div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Card -->
+      <div class="stat-card stat-metrics">
+        <div class="stat-header">
+          <span class="stat-label">Insights</span>
+        </div>
+        <div class="metrics-row">
+          <div>
+            <span class="metric-label">Highest Expense:</span>
+            <span class="metric-val" id="highestExpenseDisplay">₹0.00</span>
+          </div>
+          <div>
+            <span class="metric-label">Average Expense:</span>
+            <span class="metric-val" id="avgExpenseDisplay">₹0.00</span>
+          </div>
         </div>
       </div>
     </section>
@@ -122,11 +150,18 @@
             </div>
           </div>
 
-          <!-- Date Field -->
-          <div class="form-group">
-            <label for="expenseDate">Expense Date <span class="required">*</span></label>
-            <input type="date" id="expenseDate">
-            <span class="error-msg" id="dateError"></span>
+          <!-- Date & Notes Row -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="expenseDate">Expense Date <span class="required">*</span></label>
+              <input type="date" id="expenseDate">
+              <span class="error-msg" id="dateError"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="expenseNotes">Optional Notes</label>
+              <input type="text" id="expenseNotes" placeholder="e.g. Paid via UPI">
+            </div>
           </div>
 
           <!-- Form Buttons -->
@@ -152,7 +187,18 @@
             <h2>Expense Records</h2>
             <p class="section-desc">Manage and track your logged transactions</p>
           </div>
-          <div class="header-filters">
+          <button id="clearAllBtn" class="btn-clear-all" type="button" title="Clear All Expenses">
+            Clear All
+          </button>
+        </div>
+
+        <!-- Filter & Search Toolbar -->
+        <div class="filter-toolbar">
+          <div class="search-box">
+            <input type="text" id="searchDescriptionInput" placeholder="🔍 Search description or notes...">
+          </div>
+
+          <div class="filter-controls-row">
             <select id="categoryFilter" class="filter-select">
               <option value="ALL">All Categories</option>
               <option value="Food & Dining">🍔 Food & Dining</option>
@@ -164,8 +210,25 @@
               <option value="Education">📚 Education</option>
               <option value="Other">📦 Other</option>
             </select>
-            <button id="clearAllBtn" class="btn-clear-all" type="button" title="Clear All Expenses">
-              Clear All
+
+            <div class="date-filter-group">
+              <input type="date" id="startDateFilter" title="Start date">
+              <span>to</span>
+              <input type="date" id="endDateFilter" title="End date">
+            </div>
+
+            <select id="sortBySelect" class="filter-select">
+              <option value="date">Sort by Date</option>
+              <option value="amount">Sort by Amount</option>
+            </select>
+
+            <select id="sortOrderSelect" class="filter-select">
+              <option value="desc">Descending</option>
+              <option value="asc">Ascending</option>
+            </select>
+
+            <button id="resetFiltersBtn" class="btn btn-secondary btn-sm" type="button" title="Reset all filters">
+              Reset Filters
             </button>
           </div>
         </div>
@@ -191,7 +254,7 @@
           <div id="emptyState" class="empty-state">
             <div class="empty-icon">💸</div>
             <h3>No expenses logged yet</h3>
-            <p>Fill out the form on the left to start tracking your daily spending!</p>
+            <p>Fill out the form on the left or adjust your search filters.</p>
           </div>
         </div>
       </section>
@@ -225,6 +288,57 @@
       </div>
     </div>
   </div>
+
+  <!-- Edit Expense Modal Dialog -->
+  <div id="editExpenseModal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Expense</h3>
+        <button id="closeEditModalBtn" class="modal-close" type="button">&times;</button>
+      </div>
+      <form id="editExpenseForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="editTitleInput">Description / Title <span class="required">*</span></label>
+            <input type="text" id="editTitleInput" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editAmountInput">Amount (₹) <span class="required">*</span></label>
+              <input type="number" id="editAmountInput" min="1" step="1" required>
+            </div>
+            <div class="form-group">
+              <label for="editCategorySelect">Category <span class="required">*</span></label>
+              <select id="editCategorySelect">
+                <option value="Food & Dining">🍔 Food & Dining</option>
+                <option value="Transportation">🚗 Transportation</option>
+                <option value="Shopping">🛍️ Shopping</option>
+                <option value="Entertainment">🎬 Entertainment</option>
+                <option value="Bills & Utilities">💡 Bills & Utilities</option>
+                <option value="Health">💊 Health & Fitness</option>
+                <option value="Education">📚 Education</option>
+                <option value="Other">📦 Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editDateInput">Date <span class="required">*</span></label>
+              <input type="date" id="editDateInput" required>
+            </div>
+            <div class="form-group">
+              <label for="editNotesInput">Notes</label>
+              <input type="text" id="editNotesInput">
+            </div>
+          </div>
+          <span id="editErrorMsg" class="error-msg"></span>
+        </div>
+        <div class="modal-footer">
+          <button id="cancelEditBtn" type="button" class="btn btn-secondary">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
 </body>
 </html>
-
