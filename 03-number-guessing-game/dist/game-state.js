@@ -32,8 +32,11 @@ export class GameStateModel {
         if (this.isGameOver) {
             throw new Error('Game has already ended. Please start a new game.');
         }
-        if (guess < this.minRange || guess > this.maxRange || isNaN(guess)) {
-            throw new Error(`Guess must be an integer between ${this.minRange} and ${this.maxRange}.`);
+        if (!Number.isInteger(guess)) {
+            throw new Error('Please enter a valid whole integer.');
+        }
+        if (guess < this.minRange || guess > this.maxRange) {
+            throw new Error(`Guess must be between ${this.minRange} and ${this.maxRange}.`);
         }
         const result = GameLogic.evaluateGuess(guess, this.secret, this.remainingAttempts, this.guesses);
         if (result.type !== 'DUPLICATE') {
@@ -57,13 +60,31 @@ export class GameStateModel {
         };
     }
     // Getters
-    getDifficulty() { return this.currentDifficulty; }
-    getMin() { return this.minRange; }
-    getMax() { return this.maxRange; }
-    getMaxAttempts() { return this.maxAttempts; }
-    getRemainingAttempts() { return this.remainingAttempts; }
-    getGuesses() { return [...this.guesses]; }
-    getIsGameOver() { return this.isGameOver; }
-    getHasWon() { return this.hasWon; }
-    getSecret() { return this.secret; }
+    getDifficulty() {
+        return this.currentDifficulty;
+    }
+    getMin() {
+        return this.minRange;
+    }
+    getMax() {
+        return this.maxRange;
+    }
+    getMaxAttempts() {
+        return this.maxAttempts;
+    }
+    getRemainingAttempts() {
+        return this.remainingAttempts;
+    }
+    getGuesses() {
+        return [...this.guesses];
+    }
+    getIsGameOver() {
+        return this.isGameOver;
+    }
+    getHasWon() {
+        return this.hasWon;
+    }
+    getSecret() {
+        return this.secret;
+    }
 }

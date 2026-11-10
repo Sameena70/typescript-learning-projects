@@ -3,20 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TypeScript Projects Showcase</title>
+  <title>TypeScript Portfolio Showcase | Production Client-Side Applications</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #f8fafc;
-      --card-bg: #ffffff;
-      --border: #e2e8f0;
-      --text-main: #0f172a;
-      --text-muted: #64748b;
-      --accent: #2563eb;
-      --accent-hover: #1d4ed8;
-      --shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-hover: #334155;
+      --border: #334155;
+      --border-accent: #3b82f6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --emerald: #10b981;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
     }
     * {
       margin: 0;
@@ -30,9 +35,12 @@
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      justify-content: center;
       align-items: center;
-      padding: 40px 20px;
+      padding: 48px 24px 64px;
+      line-height: 1.6;
+      background-image: 
+        radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.08) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(16, 185, 129, 0.06) 0px, transparent 50%);
     }
     .container {
       max-width: 1360px;
@@ -40,117 +48,257 @@
     }
     header {
       text-align: center;
-      margin-bottom: 32px;
+      margin-bottom: 48px;
+    }
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #60a5fa;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 6px 14px;
+      border-radius: 99px;
+      margin-bottom: 16px;
+    }
+    .badge-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
     }
     header h1 {
-      font-size: 2.2rem;
+      font-size: 2.8rem;
       font-weight: 800;
-      letter-spacing: -0.025em;
-      margin-bottom: 8px;
+      letter-spacing: -0.03em;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     header p {
       color: var(--text-muted);
-      font-size: 1.05rem;
+      font-size: 1.15rem;
+      max-width: 720px;
+      margin: 0 auto 20px;
+    }
+    .curriculum-meta {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      font-size: 0.88rem;
+      color: #cbd5e1;
+    }
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     .grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 18px;
+      gap: 24px;
+      margin-bottom: 48px;
     }
-    @media (max-width: 1180px) {
+    @media (max-width: 1200px) {
       .grid {
         grid-template-columns: repeat(2, 1fr);
       }
     }
-    @media (max-width: 640px) {
+    @media (max-width: 680px) {
       .grid {
         grid-template-columns: 1fr;
+      }
+      header h1 {
+        font-size: 2.1rem;
       }
     }
     .card {
       background: var(--card-bg);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 22px;
+      border-radius: 20px;
+      padding: 28px 24px;
       box-shadow: var(--shadow);
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
     }
     .card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 20px 30px -10px rgba(15, 23, 42, 0.12);
+      transform: translateY(-6px);
+      border-color: var(--border-accent);
+      background: var(--card-hover);
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
+    }
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
     }
     .card-icon {
-      font-size: 1.9rem;
-      margin-bottom: 10px;
+      font-size: 2.2rem;
+      background: rgba(255, 255, 255, 0.05);
+      width: 56px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .project-num {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: #64748b;
+      letter-spacing: 0.05em;
     }
     .card-title {
-      font-size: 1.15rem;
+      font-size: 1.35rem;
       font-weight: 700;
-      margin-bottom: 6px;
+      letter-spacing: -0.015em;
+      margin-bottom: 8px;
+      color: #ffffff;
     }
     .card-desc {
       color: var(--text-muted);
-      font-size: 0.875rem;
-      line-height: 1.5;
-      margin-bottom: 18px;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      margin-bottom: 20px;
+    }
+    .features-list {
+      list-style: none;
+      margin-bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .features-list li {
+      font-size: 0.82rem;
+      color: #cbd5e1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .features-list li::before {
+      content: "✓";
+      color: var(--emerald);
+      font-weight: 800;
     }
     .card-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
     .tag {
-      font-size: 0.7rem;
+      font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      padding: 3px 8px;
-      border-radius: 5px;
-      background: #eff6ff;
-      color: #2563eb;
-      border: 1px solid #dbeafe;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(59, 130, 246, 0.12);
+      color: #93c5fd;
+      border: 1px solid rgba(59, 130, 246, 0.24);
     }
     .launch-btn {
-      display: block;
-      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       background: var(--accent);
       color: #ffffff;
       text-decoration: none;
-      padding: 11px 16px;
-      border-radius: 8px;
+      padding: 13px 20px;
+      border-radius: 12px;
       font-weight: 600;
-      font-size: 0.88rem;
-      transition: background 0.15s ease;
+      font-size: 0.92rem;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
     }
     .launch-btn:hover {
       background: var(--accent-hover);
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+      transform: translateY(-1px);
+    }
+    .portfolio-footer {
+      border-top: 1px solid var(--border);
+      padding-top: 32px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 12px;
+    }
+    .footer-links a {
+      color: #93c5fd;
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.15s ease;
+    }
+    .footer-links a:hover {
+      color: #ffffff;
+      text-decoration: underline;
     }
   </style>
 </head>
 <body>
   <div class="container">
+    <!-- Header -->
     <header>
-      <h1>TypeScript Projects Showcase</h1>
-      <p>Interactive web applications built using TypeScript, HTML5 & CSS3</p>
+      <div class="badge-pill">
+        <span class="badge-dot"></span>
+        Production TypeScript Curriculum
+      </div>
+      <h1>TypeScript Portfolio Showcase</h1>
+      <p>
+        A progressive collection of four production-grade client-side applications built with strict TypeScript, modern HTML5, and CSS3. Zero runtime frameworks, 100% type safety.
+      </p>
+      <div class="curriculum-meta">
+        <div class="meta-item">⚡ 4 Modular Applications</div>
+        <div class="meta-item">🧪 90 Automated Vitest Tests</div>
+        <div class="meta-item">🛡️ Strict Type Safety &amp; ESLint</div>
+        <div class="meta-item">💾 LocalStorage Resilience</div>
+      </div>
     </header>
 
+    <!-- Grid of Projects -->
     <div class="grid">
       <!-- Project 1: Simple Calculator -->
       <div class="card">
         <div>
-          <div class="card-icon">🧮</div>
-          <h2 class="card-title">01. Simple Calculator</h2>
+          <div class="card-top">
+            <div class="card-icon">🧮</div>
+            <span class="project-num">PROJECT 01</span>
+          </div>
+          <h2 class="card-title">Simple Calculator</h2>
           <p class="card-desc">
-            Clean calculator supporting arithmetic operations, percentage, zero-division handling, and desktop keyboard accessibility.
+            Desktop arithmetic engine with floating-point precision math, 4-button memory store, sequential chained operations, and keyboard navigation.
           </p>
+          <ul class="features-list">
+            <li>Continuous chained calculations</li>
+            <li>MC, MR, M+, M− memory controls</li>
+            <li>50-entry history drawer with recall</li>
+            <li>Full desktop keyboard shortcuts</li>
+          </ul>
           <div class="card-tags">
             <span class="tag">TypeScript</span>
-            <span class="tag">Keyboard API</span>
-            <span class="tag">Math</span>
+            <span class="tag">State Machine</span>
+            <span class="tag">27 Tests</span>
           </div>
         </div>
         <a href="01-simple-calculator/index.html" class="launch-btn">Launch Calculator &rarr;</a>
@@ -159,15 +307,24 @@
       <!-- Project 2: Expense Tracker -->
       <div class="card">
         <div>
-          <div class="card-icon">💳</div>
-          <h2 class="card-title">02. Expense Tracker</h2>
+          <div class="card-top">
+            <div class="card-icon">💳</div>
+            <span class="project-num">PROJECT 02</span>
+          </div>
+          <h2 class="card-title">Finance &amp; Expense Tracker</h2>
           <p class="card-desc">
-            Personal budget manager with Indian Rupee (₹) formatting, category filtering, monthly limits, and localStorage persistence.
+            Personal finance manager featuring double-entry income &amp; expenses, category budgets, multi-currency support, visual charts, and trend reports.
           </p>
+          <ul class="features-list">
+            <li>Double-entry income &amp; expense tracking</li>
+            <li>Multi-currency: INR (₹), USD, EUR, GBP</li>
+            <li>Recurring transaction scheduler</li>
+            <li>RFC 4180 CSV &amp; JSON backup/restore</li>
+          </ul>
           <div class="card-tags">
             <span class="tag">TypeScript</span>
-            <span class="tag">INR (₹)</span>
-            <span class="tag">LocalStorage</span>
+            <span class="tag">Financial Visuals</span>
+            <span class="tag">23 Tests</span>
           </div>
         </div>
         <a href="02-expense-tracker/index.html" class="launch-btn">Launch Expense Tracker &rarr;</a>
@@ -176,15 +333,24 @@
       <!-- Project 3: Guess Master -->
       <div class="card">
         <div>
-          <div class="card-icon">🎮</div>
-          <h2 class="card-title">03. Guess Master</h2>
+          <div class="card-top">
+            <div class="card-icon">🎮</div>
+            <span class="project-num">PROJECT 03</span>
+          </div>
+          <h2 class="card-title">Guess Master Game</h2>
           <p class="card-desc">
-            Cyberpunk neon number guessing game with 3 difficulty tiers (1-100, 1-500, 1-1000), attempts progress, and session stats.
+            Cyberpunk neon number-guessing game featuring 4 difficulty tiers, custom range boundaries, attempts guidance, audio synthesis, and stats.
           </p>
+          <ul class="features-list">
+            <li>Easy, Medium, Hard &amp; Custom range modes</li>
+            <li>Dynamic directional arrow hints</li>
+            <li>Lifetime win rate, score &amp; average tries</li>
+            <li>Corrupted storage fallback guards</li>
+          </ul>
           <div class="card-tags">
             <span class="tag">TypeScript</span>
             <span class="tag">Game Engine</span>
-            <span class="tag">Cyberpunk UI</span>
+            <span class="tag">21 Tests</span>
           </div>
         </div>
         <a href="03-number-guessing-game/index.html" class="launch-btn">Launch Guess Master &rarr;</a>
@@ -193,21 +359,39 @@
       <!-- Project 4: Advanced Contact Manager -->
       <div class="card">
         <div>
-          <div class="card-icon">📇</div>
-          <h2 class="card-title">04. ContactHub Pro</h2>
+          <div class="card-top">
+            <div class="card-icon">📇</div>
+            <span class="project-num">PROJECT 04</span>
+          </div>
+          <h2 class="card-title">ContactHub Pro</h2>
           <p class="card-desc">
-            SaaS-grade contact management system with live dashboard metrics, full CRUD, dynamic search, multi-field filters, CSV export/import, and localStorage.
+            SaaS-grade CRM address book with live metrics, multi-field validation, duplicate detection, interaction activity logs, reminders, and CSV I/O.
           </p>
+          <ul class="features-list">
+            <li>Full CRUD with tags &amp; category pills</li>
+            <li>Phone &amp; email duplicate detection</li>
+            <li>Interaction history &amp; follow-up reminders</li>
+            <li>RFC 4180 CSV &amp; JSON data portability</li>
+          </ul>
           <div class="card-tags">
             <span class="tag">TypeScript</span>
-            <span class="tag">Dashboard</span>
-            <span class="tag">CSV Portability</span>
-            <span class="tag">LocalStorage</span>
+            <span class="tag">CRM Architecture</span>
+            <span class="tag">19 Tests</span>
           </div>
         </div>
         <a href="04-contact-manager/index.html" class="launch-btn">Launch ContactHub &rarr;</a>
       </div>
     </div>
+
+    <!-- Portfolio Footer -->
+    <footer class="portfolio-footer">
+      <div class="footer-links">
+        <a href="./README.md">Repository Documentation</a>
+        <a href="./CONTRIBUTING.md">Coding Standards</a>
+        <a href="https://github.com/Sameena-kausar070/type-script" target="_blank" rel="noopener">GitHub Repository</a>
+      </div>
+      <p>Built with TypeScript, HTML5, CSS3, Vitest, and ESLint. Released under the MIT License.</p>
+    </footer>
   </div>
 </body>
 </html>

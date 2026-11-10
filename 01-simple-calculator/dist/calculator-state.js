@@ -2,23 +2,34 @@ import { CalculatorLogic } from './calculator-logic.js';
 import { StorageService } from './storage.js';
 const MEMORY_STORAGE_KEY = 'ts_calculator_memory';
 /**
- * Manages the state and operations of the calculator.
+ * Manages the state machine and arithmetic flow of the calculator.
  */
 export class CalculatorStateModel {
     constructor() {
-        const savedMemory = StorageService.getItem(MEMORY_STORAGE_KEY, 0);
+        const savedMemory = StorageService.getItem(MEMORY_STORAGE_KEY, 0, (val) => typeof val === 'number' && !isNaN(val) && isFinite(val));
         this.state = {
             currentInput: '0',
             previousInput: '',
             selectedOperator: '',
             shouldResetDisplay: false,
-            memoryValue: typeof savedMemory === 'number' && !isNaN(savedMemory) ? savedMemory : 0
+            memoryValue: savedMemory,
+            lastExpression: '',
+            isError: false
         };
     }
     getState() {
         return Object.assign({}, this.state);
     }
+    /**
+     * Resets error state if a new action is performed.
+     */
+    dismissError() {
+        if (this.state.isError) {
+            this.clearAll();
+        }
+    }
     appendDigit(digit) {
+        this.dismissError();
         if (this.state.shouldResetDisplay) {
             this.state.currentInput = digit;
             this.state.shouldResetDisplay = false;
@@ -28,8 +39,8 @@ export class CalculatorStateModel {
                 this.state.currentInput = digit;
             }
             else {
-                // Prevent exceeding sensible length
-                if (this.state.currentInput.replace('-', '').length >= 15) {
+                // Prevent exceeding sensible display length (15 digits)
+                if (this.state.currentInput.replace(/[-.]/g, '').length >= 15) {
                     return;
                 }
                 this.state.currentInput += digit;
@@ -37,6 +48,7 @@ export class CalculatorStateModel {
         }
     }
     appendDecimal() {
+        this.dismissError();
         if (this.state.shouldResetDisplay) {
             this.state.currentInput = '0.';
             this.state.shouldResetDisplay = false;
@@ -46,7 +58,15 @@ export class CalculatorStateModel {
             this.state.currentInput += '.';
         }
     }
+    toggleSign() {
+        this.dismissError();
+        this.state.currentInput = CalculatorLogic.toggleSign(this.state.currentInput);
+    }
     deleteLast() {
+        if (this.state.isError) {
+            this.clearAll();
+            return;
+        }
         if (this.state.shouldResetDisplay) {
             return;
         }
@@ -56,6 +76,9 @@ export class CalculatorStateModel {
         }
         else {
             this.state.currentInput = this.state.currentInput.slice(0, -1);
+            if (this.state.currentInput === '-' || this.state.currentInput === '') {
+                this.state.currentInput = '0';
+            }
         }
     }
     clearAll() {
@@ -63,8 +86,11 @@ export class CalculatorStateModel {
         this.state.previousInput = '';
         this.state.selectedOperator = '';
         this.state.shouldResetDisplay = false;
+        this.state.lastExpression = '';
+        this.state.isError = false;
     }
     applyPercentage() {
+        this.dismissError();
         const value = parseFloat(this.state.currentInput);
         if (!isNaN(value)) {
             const result = CalculatorLogic.percentage(value);
@@ -72,19 +98,37 @@ export class CalculatorStateModel {
             this.state.shouldResetDisplay = true;
         }
     }
+    /**
+     * Sets the active operator.
+     * If an operator was already selected and a second operand is entered,
+     * it executes the intermediate calculation to support continuous chaining (e.g., 10 + 5 * 2).
+     * If the user presses a different operator before entering a second operand, it updates the operator.
+     */
     setOperator(operator) {
-        let resultOutcome = {};
+        this.dismissError();
+        let outcome = {};
         if (this.state.previousInput !== '' && this.state.selectedOperator !== '') {
             if (!this.state.shouldResetDisplay) {
-                resultOutcome = this.calculateResult();
+                // Execute pending calculation for chained operations
+                outcome = this.calculateResult();
+                if (outcome.error) {
+                    return outcome;
+                }
             }
         }
         this.state.previousInput = this.state.currentInput;
         this.state.selectedOperator = operator;
         this.state.shouldResetDisplay = true;
-        return resultOutcome;
+        return outcome;
     }
+    /**
+     * Calculates the arithmetic result of (previousInput selectedOperator currentInput).
+     */
     calculateResult() {
+        if (this.state.isError) {
+            this.clearAll();
+            return {};
+        }
         if (!this.state.selectedOperator || this.state.previousInput === '') {
             return {};
         }
@@ -92,6 +136,7 @@ export class CalculatorStateModel {
         const second = parseFloat(this.state.currentInput);
         const op = this.state.selectedOperator;
         if (isNaN(first) || isNaN(second)) {
+            this.state.isError = true;
             return { error: 'Invalid Input' };
         }
         const formattedOp = CalculatorLogic.formatOperator(op);
@@ -103,6 +148,8 @@ export class CalculatorStateModel {
             this.state.previousInput = '';
             this.state.selectedOperator = '';
             this.state.shouldResetDisplay = true;
+            this.state.lastExpression = `${expression} =`;
+            this.state.isError = false;
             return {
                 expressionToSave: `${expression} =`,
                 resultToSave: resultStr
@@ -110,6 +157,7 @@ export class CalculatorStateModel {
         }
         catch (error) {
             this.clearAll();
+            this.state.isError = true;
             const message = error instanceof Error ? error.message : 'Error';
             return { error: message };
         }
@@ -120,10 +168,12 @@ export class CalculatorStateModel {
         StorageService.setItem(MEMORY_STORAGE_KEY, 0);
     }
     memoryRecall() {
+        this.dismissError();
         this.state.currentInput = this.state.memoryValue.toString();
         this.state.shouldResetDisplay = true;
     }
     memoryAdd() {
+        this.dismissError();
         const current = parseFloat(this.state.currentInput);
         if (!isNaN(current)) {
             this.state.memoryValue = CalculatorLogic.roundToPrecision(this.state.memoryValue + current);
@@ -132,6 +182,7 @@ export class CalculatorStateModel {
         }
     }
     memorySubtract() {
+        this.dismissError();
         const current = parseFloat(this.state.currentInput);
         if (!isNaN(current)) {
             this.state.memoryValue = CalculatorLogic.roundToPrecision(this.state.memoryValue - current);

@@ -180,6 +180,17 @@ body {
   background-color: #2563eb;
 }
 
+.btn-operator.active-operator {
+  background-color: #1d4ed8;
+  outline: 2px solid #93c5fd;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+}
+
+.display-error {
+  color: #f87171 !important;
+  font-size: 1.8rem !important;
+}
+
 .btn-equals {
   background-color: #10b981;
   color: #ffffff;

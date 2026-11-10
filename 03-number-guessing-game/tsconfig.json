@@ -6,6 +6,7 @@
     "outDir": "./dist",
     "strict": true,
     "noImplicitAny": true,
+    "skipLibCheck": true,
     "lib": ["DOM", "ES2017"]
   },
   "include": ["src/**/*"]

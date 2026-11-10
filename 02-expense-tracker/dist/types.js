@@ -1,4 +1,4 @@
 /**
- * Core Type Definitions for Advanced Expense Tracker
+ * Core Type Definitions for Personal Finance & Expense Tracker
  */
 export {};

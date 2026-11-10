@@ -1,6 +1,7 @@
 import { CalculatorLogic } from './calculator-logic.js';
 /**
  * UI Renderer and DOM Manager for the Calculator.
+ * Employs safe element retrieval with defensive checks.
  */
 export class CalculatorUI {
     constructor() {
@@ -11,30 +12,57 @@ export class CalculatorUI {
         this.historyDrawer = document.getElementById('historyDrawer');
     }
     updateDisplay(state, overrideHistory) {
-        this.currentDisplay.textContent = state.currentInput;
-        if (overrideHistory !== undefined) {
-            this.historyDisplay.textContent = overrideHistory;
+        if (this.currentDisplay) {
+            this.currentDisplay.textContent = state.currentInput;
+            this.currentDisplay.classList.remove('display-error');
         }
-        else if (state.previousInput !== '' && state.selectedOperator !== '') {
-            const opSymbol = CalculatorLogic.formatOperator(state.selectedOperator);
-            this.historyDisplay.textContent = `${state.previousInput} ${opSymbol}`;
-        }
-        else {
-            this.historyDisplay.textContent = '';
+        if (this.historyDisplay) {
+            if (overrideHistory !== undefined) {
+                this.historyDisplay.textContent = overrideHistory;
+            }
+            else if (state.previousInput !== '' && state.selectedOperator !== '') {
+                const opSymbol = CalculatorLogic.formatOperator(state.selectedOperator);
+                this.historyDisplay.textContent = `${state.previousInput} ${opSymbol}`;
+            }
+            else if (state.lastExpression !== '') {
+                this.historyDisplay.textContent = state.lastExpression;
+            }
+            else {
+                this.historyDisplay.textContent = '';
+            }
         }
         if (this.memoryIndicator) {
             if (state.memoryValue !== 0) {
                 this.memoryIndicator.textContent = `M: ${state.memoryValue}`;
                 this.memoryIndicator.style.display = 'inline-block';
+                this.memoryIndicator.setAttribute('aria-label', `Stored in memory: ${state.memoryValue}`);
             }
             else {
                 this.memoryIndicator.style.display = 'none';
             }
         }
+        this.updateActiveOperator(state.selectedOperator);
     }
     showError(message) {
-        this.currentDisplay.textContent = message;
-        this.historyDisplay.textContent = '';
+        if (this.currentDisplay) {
+            this.currentDisplay.textContent = message;
+            this.currentDisplay.classList.add('display-error');
+        }
+        if (this.historyDisplay) {
+            this.historyDisplay.textContent = '';
+        }
+    }
+    updateActiveOperator(activeOperator) {
+        const operatorBtns = document.querySelectorAll('.btn-operator');
+        operatorBtns.forEach((btn) => {
+            const op = btn.getAttribute('data-operator');
+            if (op === activeOperator && activeOperator !== '') {
+                btn.classList.add('active-operator');
+            }
+            else {
+                btn.classList.remove('active-operator');
+            }
+        });
     }
     renderHistory(records, onSelectRecord) {
         if (!this.historyListEl)
@@ -47,25 +75,41 @@ export class CalculatorUI {
             this.historyListEl.appendChild(emptyMsg);
             return;
         }
-        records.forEach(rec => {
+        records.forEach((rec) => {
+            var _a;
             const item = document.createElement('div');
             item.className = 'history-item';
-            item.innerHTML = `
-        <div class="history-item-exp">${rec.expression}</div>
-        <div class="history-item-res">${rec.result}</div>
-      `;
+            item.tabIndex = 0;
+            item.setAttribute('role', 'button');
+            item.setAttribute('aria-label', `Recall calculation: ${rec.expression} ${rec.result}`);
+            const expDiv = document.createElement('div');
+            expDiv.className = 'history-item-exp';
+            expDiv.textContent = rec.expression;
+            const resDiv = document.createElement('div');
+            resDiv.className = 'history-item-res';
+            resDiv.textContent = rec.result;
+            item.appendChild(expDiv);
+            item.appendChild(resDiv);
             item.addEventListener('click', () => onSelectRecord(rec));
-            this.historyListEl.appendChild(item);
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelectRecord(rec);
+                }
+            });
+            (_a = this.historyListEl) === null || _a === void 0 ? void 0 : _a.appendChild(item);
         });
     }
     toggleHistoryPanel() {
         if (this.historyDrawer) {
-            this.historyDrawer.classList.toggle('open');
+            const isOpen = this.historyDrawer.classList.toggle('open');
+            this.historyDrawer.setAttribute('aria-hidden', (!isOpen).toString());
         }
     }
     closeHistoryPanel() {
         if (this.historyDrawer) {
             this.historyDrawer.classList.remove('open');
+            this.historyDrawer.setAttribute('aria-hidden', 'true');
         }
     }
 }

@@ -1,6 +1,6 @@
 /**
  * Calculator Type Definitions
- * 
+ *
  * Defines the core types, interfaces, and unions used across
  * the calculator application modules.
  */
@@ -20,5 +20,12 @@ export interface CalculatorState {
   selectedOperator: Operator | '';
   shouldResetDisplay: boolean;
   memoryValue: number;
+  lastExpression: string;
+  isError: boolean;
 }
 
+export interface CalculationOutcome {
+  expressionToSave?: string;
+  resultToSave?: string;
+  error?: string;
+}

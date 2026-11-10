@@ -1,0 +1,29 @@
+{
+  "name": "typescript-learning-curriculum",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Progressive client-side TypeScript learning and showcase curriculum",
+  "scripts": {
+    "build:01": "npm run --prefix 01-simple-calculator build",
+    "build:02": "npm run --prefix 02-expense-tracker build",
+    "build:03": "npm run --prefix 03-number-guessing-game build",
+    "build:04": "npm run --prefix 04-contact-manager build",
+    "build:all": "npm run build:01 && npm run build:02 && npm run build:03 && npm run build:04",
+    "test:01": "npm run --prefix 01-simple-calculator test",
+    "test:02": "npm run --prefix 02-expense-tracker test",
+    "test:03": "npm run --prefix 03-number-guessing-game test",
+    "test:04": "npm run --prefix 04-contact-manager test",
+    "test:all": "npm run test:01 && npm run test:02 && npm run test:03 && npm run test:04",
+    "lint:01": "npm run --prefix 01-simple-calculator lint",
+    "lint:02": "npm run --prefix 02-expense-tracker lint",
+    "lint:03": "npm run --prefix 03-number-guessing-game lint",
+    "lint:04": "npm run --prefix 04-contact-manager lint",
+    "lint:all": "npm run lint:01 && npm run lint:02 && npm run lint:03 && npm run lint:04",
+    "format:check:01": "npm run --prefix 01-simple-calculator format:check",
+    "format:check:02": "npm run --prefix 02-expense-tracker format:check",
+    "format:check:03": "npm run --prefix 03-number-guessing-game format:check",
+    "format:check:04": "npm run --prefix 04-contact-manager format:check",
+    "format:check:all": "npm run format:check:01 && npm run format:check:02 && npm run format:check:03 && npm run format:check:04"
+  }
+}
+

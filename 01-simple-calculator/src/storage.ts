@@ -1,26 +1,27 @@
 /**
  * Calculator Storage Module
- * 
- * Demonstrates safe JSON storage with try/catch and fallback error handling.
+ *
+ * Provides safe localStorage reading, writing, and quota management.
  */
 
 export class StorageService {
   /**
-   * Safely reads and parses data from localStorage.
-   * If parsing fails or storage is inaccessible, returns fallback.
+   * Safely reads and parses data from localStorage with schema validation.
    */
-  static getItem<T>(key: string, fallback: T): T {
+  static getItem<T>(key: string, fallback: T, validator?: (val: unknown) => val is T): T {
     try {
       const rawData = localStorage.getItem(key);
       if (rawData === null) {
         return fallback;
       }
-      return JSON.parse(rawData) as T;
+      const parsed: unknown = JSON.parse(rawData);
+      if (validator) {
+        return validator(parsed) ? parsed : fallback;
+      }
+      return parsed as T;
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.warn(`[StorageService] Failed to read "${key}":`, error.message);
-      } else {
-        console.warn(`[StorageService] Unknown error reading "${key}"`);
       }
       return fallback;
     }
@@ -55,4 +56,3 @@ export class StorageService {
     }
   }
 }
-

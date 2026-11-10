@@ -11,7 +11,8 @@ export interface DifficultyConfig {
   maxAttempts: number;
 }
 
-export type GuessFeedbackType = 'TOO_HIGH' | 'TOO_LOW' | 'CORRECT' | 'GAME_OVER' | 'DUPLICATE' | 'INVALID';
+export type GuessFeedbackType =
+  'TOO_HIGH' | 'TOO_LOW' | 'CORRECT' | 'GAME_OVER' | 'DUPLICATE' | 'INVALID';
 
 export interface GuessResult {
   type: GuessFeedbackType;
@@ -40,4 +41,3 @@ export interface LifetimeStatistics {
   bestScore: number | null; // Lowest attempts in a won game
   totalAttemptsUsed: number;
 }
-

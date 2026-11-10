@@ -2,52 +2,52 @@ import { GameRecord, GuessResult, LifetimeStatistics } from './types.js';
 import { GameStateModel } from './game-state.js';
 
 export class GameUI {
-  private targetRangeDisplay: HTMLElement;
-  private remainingAttemptsDisplay: HTMLElement;
-  private attemptsProgressBar: HTMLElement;
-  private feedbackBanner: HTMLElement;
-  private feedbackIcon: HTMLElement;
-  private feedbackTitle: HTMLElement;
-  private feedbackMessage: HTMLElement;
-  private guessInput: HTMLInputElement;
-  private submitGuessBtn: HTMLButtonElement;
-  private historyTagsContainer: HTMLElement;
-  private validationErrorMessage: HTMLElement;
+  private targetRangeDisplay: HTMLElement | null;
+  private remainingAttemptsDisplay: HTMLElement | null;
+  private attemptsProgressBar: HTMLElement | null;
+  private feedbackBanner: HTMLElement | null;
+  private feedbackIcon: HTMLElement | null;
+  private feedbackTitle: HTMLElement | null;
+  private feedbackMessage: HTMLElement | null;
+  private guessInput: HTMLInputElement | null;
+  private submitGuessBtn: HTMLButtonElement | null;
+  private historyTagsContainer: HTMLElement | null;
+  private validationErrorMessage: HTMLElement | null;
 
   // Stats elements
-  private statsGamesPlayed: HTMLElement;
-  private statsGamesWon: HTMLElement;
-  private statsGamesLost: HTMLElement;
-  private statsWinRate: HTMLElement;
-  private statsBestScore: HTMLElement;
-  private statsAvgAttempts: HTMLElement;
+  private statsGamesPlayed: HTMLElement | null;
+  private statsGamesWon: HTMLElement | null;
+  private statsGamesLost: HTMLElement | null;
+  private statsWinRate: HTMLElement | null;
+  private statsBestScore: HTMLElement | null;
+  private statsAvgAttempts: HTMLElement | null;
 
   // History panel elements
-  private gameHistoryDrawer: HTMLElement;
-  private gameHistoryList: HTMLElement;
+  private gameHistoryDrawer: HTMLElement | null;
+  private gameHistoryList: HTMLElement | null;
 
   constructor() {
-    this.targetRangeDisplay = document.getElementById('targetRangeDisplay')!;
-    this.remainingAttemptsDisplay = document.getElementById('remainingAttemptsDisplay')!;
-    this.attemptsProgressBar = document.getElementById('attemptsProgressBar')!;
-    this.feedbackBanner = document.getElementById('feedbackBanner')!;
-    this.feedbackIcon = document.getElementById('feedbackIcon')!;
-    this.feedbackTitle = document.getElementById('feedbackTitle')!;
-    this.feedbackMessage = document.getElementById('feedbackMessage')!;
-    this.guessInput = document.getElementById('guessInput') as HTMLInputElement;
-    this.submitGuessBtn = document.getElementById('submitGuessBtn') as HTMLButtonElement;
-    this.historyTagsContainer = document.getElementById('historyTagsContainer')!;
-    this.validationErrorMessage = document.getElementById('validationErrorMessage')!;
+    this.targetRangeDisplay = document.getElementById('targetRangeDisplay');
+    this.remainingAttemptsDisplay = document.getElementById('remainingAttemptsDisplay');
+    this.attemptsProgressBar = document.getElementById('attemptsProgressBar');
+    this.feedbackBanner = document.getElementById('feedbackBanner');
+    this.feedbackIcon = document.getElementById('feedbackIcon');
+    this.feedbackTitle = document.getElementById('feedbackTitle');
+    this.feedbackMessage = document.getElementById('feedbackMessage');
+    this.guessInput = document.getElementById('guessInput') as HTMLInputElement | null;
+    this.submitGuessBtn = document.getElementById('submitGuessBtn') as HTMLButtonElement | null;
+    this.historyTagsContainer = document.getElementById('historyTagsContainer');
+    this.validationErrorMessage = document.getElementById('validationErrorMessage');
 
-    this.statsGamesPlayed = document.getElementById('statsGamesPlayed')!;
-    this.statsGamesWon = document.getElementById('statsGamesWon')!;
-    this.statsGamesLost = document.getElementById('statsGamesLost')!;
-    this.statsWinRate = document.getElementById('statsWinRate')!;
-    this.statsBestScore = document.getElementById('statsBestScore')!;
-    this.statsAvgAttempts = document.getElementById('statsAvgAttempts')!;
+    this.statsGamesPlayed = document.getElementById('statsGamesPlayed');
+    this.statsGamesWon = document.getElementById('statsGamesWon');
+    this.statsGamesLost = document.getElementById('statsGamesLost');
+    this.statsWinRate = document.getElementById('statsWinRate');
+    this.statsBestScore = document.getElementById('statsBestScore');
+    this.statsAvgAttempts = document.getElementById('statsAvgAttempts');
 
-    this.gameHistoryDrawer = document.getElementById('gameHistoryDrawer')!;
-    this.gameHistoryList = document.getElementById('gameHistoryList')!;
+    this.gameHistoryDrawer = document.getElementById('gameHistoryDrawer');
+    this.gameHistoryList = document.getElementById('gameHistoryList');
   }
 
   public updateHUD(state: GameStateModel): void {
@@ -56,33 +56,45 @@ export class GameUI {
     const remaining = state.getRemainingAttempts();
     const maxAttempts = state.getMaxAttempts();
 
-    this.targetRangeDisplay.textContent = `${min} - ${max}`;
-    this.remainingAttemptsDisplay.textContent = `${remaining} / ${maxAttempts}`;
-    this.guessInput.min = min.toString();
-    this.guessInput.max = max.toString();
-
-    // Progress bar calculation
-    const percentage = (remaining / maxAttempts) * 100;
-    this.attemptsProgressBar.style.width = `${percentage}%`;
-
-    if (percentage > 50) {
-      this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #00f2fe, #4facfe)';
-    } else if (percentage > 25) {
-      this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #f6d365, #fda085)';
-    } else {
-      this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #ff0844, #ffb199)';
+    if (this.targetRangeDisplay) {
+      this.targetRangeDisplay.textContent = `${min} - ${max}`;
+    }
+    if (this.remainingAttemptsDisplay) {
+      this.remainingAttemptsDisplay.textContent = `${remaining} / ${maxAttempts}`;
+    }
+    if (this.guessInput) {
+      this.guessInput.min = min.toString();
+      this.guessInput.max = max.toString();
     }
 
-    if (state.getIsGameOver()) {
-      this.guessInput.disabled = true;
-      this.submitGuessBtn.disabled = true;
-    } else {
-      this.guessInput.disabled = false;
-      this.submitGuessBtn.disabled = false;
+    // Progress bar calculation
+    if (this.attemptsProgressBar) {
+      const percentage = (remaining / maxAttempts) * 100;
+      this.attemptsProgressBar.style.width = `${percentage}%`;
+
+      if (percentage > 50) {
+        this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #00f2fe, #4facfe)';
+      } else if (percentage > 25) {
+        this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #f6d365, #fda085)';
+      } else {
+        this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #ff0844, #ffb199)';
+      }
+    }
+
+    const isGameOver = state.getIsGameOver();
+    if (this.guessInput) {
+      this.guessInput.disabled = isGameOver;
+      if (!isGameOver) {
+        this.guessInput.focus();
+      }
+    }
+    if (this.submitGuessBtn) {
+      this.submitGuessBtn.disabled = isGameOver;
     }
   }
 
   public renderGuesses(guesses: number[], targetNumber: number, isGameOver: boolean): void {
+    if (!this.historyTagsContainer) return;
     this.historyTagsContainer.innerHTML = '';
 
     if (guesses.length === 0) {
@@ -90,7 +102,7 @@ export class GameUI {
       return;
     }
 
-    guesses.forEach(guess => {
+    guesses.forEach((guess) => {
       const tag = document.createElement('span');
       tag.className = 'guess-tag';
 
@@ -105,11 +117,20 @@ export class GameUI {
         tag.textContent = `${guess} ↑`;
       }
 
-      this.historyTagsContainer.appendChild(tag);
+      this.historyTagsContainer?.appendChild(tag);
     });
   }
 
   public showFeedback(result: GuessResult): void {
+    if (
+      !this.feedbackBanner ||
+      !this.feedbackIcon ||
+      !this.feedbackTitle ||
+      !this.feedbackMessage
+    ) {
+      return;
+    }
+
     this.feedbackBanner.className = 'feedback-box';
 
     switch (result.type) {
@@ -144,21 +165,31 @@ export class GameUI {
   }
 
   public resetFeedback(): void {
-    this.feedbackBanner.className = 'feedback-box state-neutral';
-    this.feedbackIcon.textContent = '🎯';
-    this.feedbackTitle.textContent = 'Make your first guess!';
-    this.feedbackMessage.textContent = 'Type an integer and hit submit.';
-    this.validationErrorMessage.textContent = '';
-    this.guessInput.value = '';
-    this.guessInput.focus();
+    if (this.feedbackBanner) this.feedbackBanner.className = 'feedback-box state-neutral';
+    if (this.feedbackIcon) this.feedbackIcon.textContent = '🎯';
+    if (this.feedbackTitle) this.feedbackTitle.textContent = 'Make your first guess!';
+    if (this.feedbackMessage) this.feedbackMessage.textContent = 'Type an integer and hit submit.';
+    if (this.validationErrorMessage) this.validationErrorMessage.textContent = '';
+    if (this.guessInput) {
+      this.guessInput.value = '';
+      this.guessInput.disabled = false;
+      this.guessInput.focus();
+    }
+    if (this.submitGuessBtn) {
+      this.submitGuessBtn.disabled = false;
+    }
   }
 
   public showValidationError(msg: string): void {
-    this.validationErrorMessage.textContent = msg;
+    if (this.validationErrorMessage) {
+      this.validationErrorMessage.textContent = msg;
+    }
   }
 
   public clearValidationError(): void {
-    this.validationErrorMessage.textContent = '';
+    if (this.validationErrorMessage) {
+      this.validationErrorMessage.textContent = '';
+    }
   }
 
   public updateStatistics(stats: LifetimeStatistics, winPct: number, avgAttempts: number): void {
@@ -166,8 +197,10 @@ export class GameUI {
     if (this.statsGamesWon) this.statsGamesWon.textContent = stats.gamesWon.toString();
     if (this.statsGamesLost) this.statsGamesLost.textContent = stats.gamesLost.toString();
     if (this.statsWinRate) this.statsWinRate.textContent = `${winPct}%`;
-    if (this.statsBestScore) this.statsBestScore.textContent = stats.bestScore !== null ? `${stats.bestScore} tries` : '-';
-    if (this.statsAvgAttempts) this.statsAvgAttempts.textContent = avgAttempts > 0 ? avgAttempts.toString() : '-';
+    if (this.statsBestScore)
+      this.statsBestScore.textContent = stats.bestScore !== null ? `${stats.bestScore} tries` : '-';
+    if (this.statsAvgAttempts)
+      this.statsAvgAttempts.textContent = avgAttempts > 0 ? avgAttempts.toString() : '-';
   }
 
   public renderGameHistory(records: GameRecord[]): void {
@@ -175,13 +208,15 @@ export class GameUI {
     this.gameHistoryList.innerHTML = '';
 
     if (records.length === 0) {
-      this.gameHistoryList.innerHTML = '<div class="no-history-msg">No game records saved yet.</div>';
+      this.gameHistoryList.innerHTML =
+        '<div class="no-history-msg">No game records saved yet.</div>';
       return;
     }
 
-    records.forEach(rec => {
+    records.forEach((rec) => {
       const item = document.createElement('div');
       item.className = `history-record-card ${rec.won ? 'rec-won' : 'rec-lost'}`;
+      item.tabIndex = 0;
       const dateStr = new Date(rec.timestamp).toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
@@ -189,10 +224,13 @@ export class GameUI {
         minute: '2-digit'
       });
 
+      const outcomeClass = rec.won ? 'won-text' : 'lost-text';
+      const outcomeText = rec.won ? 'WON' : 'LOST';
+
       item.innerHTML = `
         <div class="rec-header">
           <span class="rec-diff">${rec.difficulty.toUpperCase()}</span>
-          <span class="rec-outcome ${rec.won ? 'won-text' : 'lost-text'}">${rec.won ? 'WON' : 'LOST'}</span>
+          <span class="rec-outcome ${outcomeClass}">${outcomeText}</span>
         </div>
         <div class="rec-details">
           <span>Target: <strong>${rec.targetNumber}</strong></span>
@@ -201,7 +239,7 @@ export class GameUI {
         </div>
       `;
 
-      this.gameHistoryList.appendChild(item);
+      this.gameHistoryList?.appendChild(item);
     });
   }
 
@@ -213,4 +251,3 @@ export class GameUI {
     this.gameHistoryDrawer?.classList.remove('open');
   }
 }
-

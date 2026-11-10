@@ -67,18 +67,23 @@ class NumberGuessingGameApp {
   private bindEvents(): void {
     // Difficulty Buttons
     const diffButtons = document.querySelectorAll<HTMLButtonElement>('.diff-btn');
-    diffButtons.forEach(btn => {
+    diffButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         const diff = btn.getAttribute('data-difficulty') as DifficultyLevel;
         if (!diff) return;
 
         if (diff === 'custom') {
           // Open custom modal
-          document.getElementById('customDiffModal')?.classList.remove('hidden');
+          const modal = document.getElementById('customDiffModal');
+          if (modal) {
+            modal.classList.remove('hidden');
+            const minInput = document.getElementById('customMinInput') as HTMLInputElement | null;
+            minInput?.focus();
+          }
           return;
         }
 
-        diffButtons.forEach(b => b.classList.remove('active'));
+        diffButtons.forEach((b) => b.classList.remove('active'));
         btn.classList.add('active');
 
         this.stateModel.setDifficulty(diff);
@@ -87,26 +92,41 @@ class NumberGuessingGameApp {
     });
 
     // Custom Difficulty Form
-    const customForm = document.getElementById('customDiffForm') as HTMLFormElement;
+    const customForm = document.getElementById('customDiffForm') as HTMLFormElement | null;
     customForm?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const min = parseInt((document.getElementById('customMinInput') as HTMLInputElement).value, 10);
-      const max = parseInt((document.getElementById('customMaxInput') as HTMLInputElement).value, 10);
-      const attempts = parseInt((document.getElementById('customAttemptsInput') as HTMLInputElement).value, 10);
-      const errEl = document.getElementById('customDiffError')!;
+      const minInput = document.getElementById('customMinInput') as HTMLInputElement | null;
+      const maxInput = document.getElementById('customMaxInput') as HTMLInputElement | null;
+      const attemptsInput = document.getElementById(
+        'customAttemptsInput'
+      ) as HTMLInputElement | null;
+      const errEl = document.getElementById('customDiffError');
+
+      const rawMin = minInput?.value.trim() ?? '';
+      const rawMax = maxInput?.value.trim() ?? '';
+      const rawAttempts = attemptsInput?.value.trim() ?? '';
+
+      const min = parseInt(rawMin, 10);
+      const max = parseInt(rawMax, 10);
+      const attempts = parseInt(rawAttempts, 10);
+
+      if (isNaN(min) || isNaN(max) || isNaN(attempts)) {
+        if (errEl) errEl.textContent = 'Please enter valid whole numbers for all fields.';
+        return;
+      }
 
       try {
         this.configManager.setCustomConfig(min, max, attempts);
         document.getElementById('customDiffModal')?.classList.add('hidden');
-        errEl.textContent = '';
+        if (errEl) errEl.textContent = '';
 
-        diffButtons.forEach(b => b.classList.remove('active'));
+        diffButtons.forEach((b) => b.classList.remove('active'));
         document.querySelector('.diff-btn[data-difficulty="custom"]')?.classList.add('active');
 
         this.stateModel.setDifficulty('custom');
         this.restart();
       } catch (err: unknown) {
-        if (err instanceof Error) {
+        if (err instanceof Error && errEl) {
           errEl.textContent = err.message;
         }
       }
@@ -120,18 +140,29 @@ class NumberGuessingGameApp {
     });
 
     // Guess Form Submission
-    const guessForm = document.getElementById('guessForm') as HTMLFormElement;
-    const guessInput = document.getElementById('guessInput') as HTMLInputElement;
+    const guessForm = document.getElementById('guessForm') as HTMLFormElement | null;
+    const guessInput = document.getElementById('guessInput') as HTMLInputElement | null;
 
     guessForm?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const val = parseInt(guessInput.value.trim(), 10);
-      if (isNaN(val)) {
-        this.ui.showValidationError('Please enter a valid whole number.');
+      const rawVal = guessInput?.value.trim() ?? '';
+      if (rawVal === '') {
+        this.ui.showValidationError('Please enter a number to submit a guess.');
         return;
       }
+
+      if (!/^-?\d+$/.test(rawVal)) {
+        this.ui.showValidationError(
+          'Decimal values are not allowed. Please enter a whole integer.'
+        );
+        return;
+      }
+
+      const val = parseInt(rawVal, 10);
       this.handleGuess(val);
-      guessInput.value = '';
+      if (guessInput) {
+        guessInput.value = '';
+      }
     });
 
     // Restart button
@@ -152,10 +183,17 @@ class NumberGuessingGameApp {
         this.ui.renderGameHistory([]);
       }
     });
+
+    // Close drawers on Escape key
+    window.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        this.ui.closeHistoryDrawer();
+        document.getElementById('customDiffModal')?.classList.add('hidden');
+      }
+    });
   }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
   new NumberGuessingGameApp();
 });
-

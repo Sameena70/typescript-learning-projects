@@ -1,13 +1,18 @@
 /**
  * Storage utility for game statistics and history
+ * with runtime validation and schema protection.
  */
 
 export class GameStorage {
-  public static getItem<T>(key: string, fallback: T): T {
+  public static getItem<T>(key: string, fallback: T, validator?: (val: unknown) => val is T): T {
     try {
       const data = localStorage.getItem(key);
       if (data === null) return fallback;
-      return JSON.parse(data) as T;
+      const parsed: unknown = JSON.parse(data);
+      if (validator) {
+        return validator(parsed) ? parsed : fallback;
+      }
+      return parsed as T;
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.warn(`[GameStorage] Failed to read "${key}":`, error.message);
@@ -38,4 +43,3 @@ export class GameStorage {
     }
   }
 }
-

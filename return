@@ -1,0 +1,148 @@
+warning: in the working copy of '01-simple-calculator/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/dist/calculator-logic.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/dist/calculator-state.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/dist/history-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/dist/main.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/dist/storage.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/dist/ui.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/src/calculator-logic.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/src/calculator-state.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/src/history-service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/src/main.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/src/storage.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/src/types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/src/ui.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '01-simple-calculator/style.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/calculations.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/expense-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/import-export.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/main.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/storage.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/types.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/ui.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/dist/validation.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/calculations.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/expense-service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/import-export.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/main.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/storage.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/ui.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/src/validation.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '02-expense-tracker/style.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/dist/game-state.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/dist/main.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/dist/statistics.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/dist/storage.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/dist/ui.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/game-config.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/game-logic.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/game-state.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/main.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/statistics.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/storage.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/src/ui.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '03-number-guessing-game/tsconfig.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/dist/contact-manager.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/dist/contact-service.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/dist/import-export.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/dist/main.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/dist/statistics.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/dist/storage.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/dist/validation.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/contact-manager.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/contact-service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/import-export.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/main.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/statistics.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/storage.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/src/validation.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of '04-contact-manager/tsconfig.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'index.html', LF will be replaced by CRLF the next time Git touches it
+ .gitignore                                    |   1 [31m-[m
+ 01-simple-calculator/README.md                | 144 [32m++[m[31m---[m
+ 01-simple-calculator/dist/calculator-logic.js |  29 [32m+[m[31m-[m
+ 01-simple-calculator/dist/calculator-state.js |  67 [32m++[m[31m-[m
+ 01-simple-calculator/dist/history-service.js  |  21 [32m+[m[31m-[m
+ 01-simple-calculator/dist/main.js             |  19 [32m+[m[31m-[m
+ 01-simple-calculator/dist/storage.js          |  16 [32m+[m[31m-[m
+ 01-simple-calculator/dist/ui.js               |  80 [32m++[m[31m-[m
+ 01-simple-calculator/index.html               |   5 [32m+[m[31m-[m
+ 01-simple-calculator/package.json             |  13 [32m+[m[31m-[m
+ 01-simple-calculator/src/calculator-logic.ts  |  34 [32m+[m[31m-[m
+ 01-simple-calculator/src/calculator-state.ts  |  90 [32m++[m[31m-[m
+ 01-simple-calculator/src/history-service.ts   |  29 [32m+[m[31m-[m
+ 01-simple-calculator/src/main.ts              |  20 [32m+[m[31m-[m
+ 01-simple-calculator/src/storage.ts           |  18 [32m+[m[31m-[m
+ 01-simple-calculator/src/types.ts             |   9 [32m+[m[31m-[m
+ 01-simple-calculator/src/ui.ts                | 110 [32m+++[m[31m-[m
+ 01-simple-calculator/style.css                |  11 [32m+[m
+ 01-simple-calculator/tsconfig.json            |   1 [32m+[m
+ 02-expense-tracker/README.md                  | 198 [32m+++[m[31m----[m
+ 02-expense-tracker/dist/calculations.js       | 279 [32m+++++++[m[31m--[m
+ 02-expense-tracker/dist/expense-service.js    | 225 [32m+++++[m[31m--[m
+ 02-expense-tracker/dist/import-export.js      | 208 [32m++++++[m[31m-[m
+ 02-expense-tracker/dist/main.js               | 282 [32m+++++++[m[31m--[m
+ 02-expense-tracker/dist/storage.js            |  13 [32m+[m[31m-[m
+ 02-expense-tracker/dist/types.js              |   2 [32m+[m[31m-[m
+ 02-expense-tracker/dist/ui.js                 | 229 [32m++++++[m[31m-[m
+ 02-expense-tracker/dist/validation.js         |  21 [32m+[m[31m-[m
+ 02-expense-tracker/index.html                 | 360 [32m+++++++++[m[31m--[m
+ 02-expense-tracker/package.json               |  13 [32m+[m[31m-[m
+ 02-expense-tracker/src/calculations.ts        | 334 [32m+++++++++[m[31m--[m
+ 02-expense-tracker/src/expense-service.ts     | 285 [32m+++++++[m[31m--[m
+ 02-expense-tracker/src/import-export.ts       | 225 [32m++++++[m[31m-[m
+ 02-expense-tracker/src/main.ts                | 307 [32m++++++++[m[31m--[m
+ 02-expense-tracker/src/storage.ts             |  15 [32m+[m[31m-[m
+ 02-expense-tracker/src/types.ts               |  84 [32m++[m[31m-[m
+ 02-expense-tracker/src/ui.ts                  | 334 [32m+++++++++[m[31m--[m
+ 02-expense-tracker/src/validation.ts          |  31 [32m+[m[31m-[m
+ 02-expense-tracker/style.css                  | 822 [32m++++++++++++++++++[m[31m--------[m
+ 02-expense-tracker/tsconfig.json              |   3 [32m+[m[31m-[m
+ 03-number-guessing-game/README.md             | 159 [32m++[m[31m---[m
+ 03-number-guessing-game/dist/game-state.js    |  43 [32m+[m[31m-[m
+ 03-number-guessing-game/dist/main.js          |  66 [32m++[m[31m-[m
+ 03-number-guessing-game/dist/statistics.js    |  75 [32m++[m[31m-[m
+ 03-number-guessing-game/dist/storage.js       |   9 [32m+[m[31m-[m
+ 03-number-guessing-game/dist/ui.js            | 107 [32m++[m[31m--[m
+ 03-number-guessing-game/package.json          |  13 [32m+[m[31m-[m
+ 03-number-guessing-game/src/game-config.ts    |   1 [31m-[m
+ 03-number-guessing-game/src/game-logic.ts     |   4 [32m+[m[31m-[m
+ 03-number-guessing-game/src/game-state.ts     |  54 [32m+[m[31m-[m
+ 03-number-guessing-game/src/main.ts           |  74 [32m++[m[31m-[m
+ 03-number-guessing-game/src/statistics.ts     |  91 [32m++[m[31m-[m
+ 03-number-guessing-game/src/storage.ts        |  10 [32m+[m[31m-[m
+ 03-number-guessing-game/src/types.ts          |   4 [32m+[m[31m-[m
+ 03-number-guessing-game/src/ui.ts             | 191 [32m+++[m[31m---[m
+ 03-number-guessing-game/tsconfig.json         |   1 [32m+[m
+ 04-contact-manager/README.md                  | 163 [32m++[m[31m---[m
+ 04-contact-manager/dist/contact-manager.js    | 544 [32m++++++++[m[31m---------[m
+ 04-contact-manager/dist/contact-service.js    | 330 [32m++++++[m[31m-----[m
+ 04-contact-manager/dist/import-export.js      | 286 [32m+++++++[m[31m--[m
+ 04-contact-manager/dist/main.js               |   6 [32m+[m[31m-[m
+ 04-contact-manager/dist/statistics.js         |  19 [32m+[m[31m-[m
+ 04-contact-manager/dist/storage.js            | 263 [32m+++++[m[31m---[m
+ 04-contact-manager/dist/validation.js         |  24 [32m+[m[31m-[m
+ 04-contact-manager/package.json               |  13 [32m+[m[31m-[m
+ 04-contact-manager/src/contact-manager.ts     | 565 [32m+++++++++[m[31m---------[m
+ 04-contact-manager/src/contact-service.ts     | 367 [32m+++++++[m[31m-----[m
+ 04-contact-manager/src/import-export.ts       | 312 [32m++++++++[m[31m--[m
+ 04-contact-manager/src/main.ts                |  13 [32m+[m[31m-[m
+ 04-contact-manager/src/statistics.ts          |  29 [32m+[m[31m-[m
+ 04-contact-manager/src/storage.ts             | 290 [32m++++++[m[31m---[m
+ 04-contact-manager/src/types.ts               |  43 [32m+[m[31m-[m
+ 04-contact-manager/src/validation.ts          |  40 [32m+[m[31m-[m
+ 04-contact-manager/tsconfig.json              |   1 [32m+[m
+ README.md                                     | 332 [32m+++++[m[31m------[m
+ index.html                                    | 316 [32m+++++++[m[31m---[m
+ 76 files changed, 7007 insertions(+), 2838 deletions(-)

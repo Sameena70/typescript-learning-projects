@@ -1,139 +1,78 @@
-# ContactHub Pro — Advanced Contact Management System
+# Project 04: Advanced Contact Manager
 
-An enterprise-ready contact management dashboard built with modular TypeScript, ES6 modules, JSON/CSV two-way import/export, and complete contact metadata tracking (groups, tags, birthdays, and reminders).
+A CRM-style address book and directory application built with **TypeScript, HTML5, and CSS3**.
 
----
-
-## 1. Project Overview
-
-**ContactHub Pro** provides a complete directory solution for personal and professional networking. It allows users to manage contacts across multiple categories, organize with custom tags, track birthdays, schedule follow-up reminders, and perform safe data backups via CSV and JSON.
+This project demonstrates comprehensive TypeScript interfaces, multi-field form validation, duplicate contact prevention, aggregate statistics calculation using functional array methods (`filter`, `reduce`), seed data initialization, activity logging, reminder tracking, and asynchronous RFC 4180 CSV & JSON import/export operations.
 
 ---
 
-## 2. Features
+## ✨ Features
 
-- **Rich Contact Profiles**:
-  - Full Name, Phone, Email, Age, Company, Job Title, Address, Notes.
-  - **Tags / Groups**: Tag contacts (e.g. "Developer", "Client Lead", "Badminton").
-  - **Birthday & Reminder Tracking**: Store birthdays and follow-up alerts.
-  - Active/Inactive status toggle & Favourite starring.
-- **Search & Multi-Filter Engine**:
-  - Full-text search across Name, Phone, Email, Company, and Tags.
-  - Category filtering (Work, Clients, Business, Family, Friends, Other).
-  - Status and Favourites filtering.
-  - Multi-column sorting (Name, Creation Date, Company).
-- **Two-Way Data Portability (JSON & CSV)**:
-  - **JSON Export / Import**: Full fidelity schema backup and restore.
-  - **CSV Export / Import**: Excel and spreadsheet compatible data portability.
-  - Duplicate detection by phone number and email address.
-  - Granular import error reporting with imported vs skipped counts.
-- **Defensive Data Persistence**:
-  - Automatic pre-populated seed data on first launch.
-  - Safe parsing with error recovery for corrupted `localStorage`.
+- **Full CRUD Management:** Create, view, edit, and delete contacts with comprehensive profile fields: Full Name, Phone, Email, Age, Company, Job Title, Address, Notes, Tags, Birthday, and Follow-up Reminder Date.
+- **Categorization & Status:** Organize contacts by category (`Family`, `Friends`, `Work`, `Clients`, `Business`, `Other`) and lifecycle status (`Active` vs. `Inactive`).
+- **Favourites System:** One-click toggling to flag and filter VIP/favourite contacts.
+- **Activity & Interaction Logging:** Record calls, emails, meetings, and notes directly associated with each contact.
+- **Duplicate Prevention:** Form, CSV, and JSON import validation actively prevent duplicate entries matching on normalized phone numbers or case-insensitive emails.
+- **Dashboard Metrics:** Real-time counters showing total contacts, active count, inactive count, favourites, contacts with pending follow-up reminders, and contacts added within the last 7 days.
+- **Search & Multi-Filter:** Instantly filter contacts by category pills, search text (names, phones, emails, company, notes, tags), active status, tags, or favourites with dynamic sort ordering.
+- **Dual Display Modes:** View contacts in an interactive desktop table or responsive mobile-first profile cards.
+- **CSV & JSON Import/Export:** Export the entire contact database to standard RFC 4180 CSV or JSON backup files, or import external files with record-by-record schema validation without overwriting existing valid contacts.
+- **Resilient Persistence & Migrations:** Automatically migrates legacy keys and pre-populates realistic sample contacts for first-time visitors while persisting all updates to `localStorage`.
 
 ---
 
-## 3. Technology Stack
+## 🏛️ Project Architecture
 
-- **HTML5 & CSS3**: Responsive grid layout, Plus Jakarta Sans typography, modal dialogs.
-- **TypeScript 5.x**: Strict mode, ES6 modules, interfaces, and custom types.
-- **Async File APIs**: Promise-based `FileReader` for JSON and CSV file parsing.
-
----
-
-## 4. Folder Structure
-
-```
+```text
 04-contact-manager/
-├── dist/                  # Compiled JavaScript ES6 modules
-│   ├── contact-manager.js # DOM controller & modal management
-│   ├── contact-service.js # Business logic, CRUD & state
-│   ├── import-export.js   # JSON import/export & Promise FileReader
-│   ├── main.js            # Entry point
-│   ├── statistics.js      # Dashboard metric aggregations
-│   ├── storage.ts.js      # LocalStorage with seed data
-│   ├── types.js           # Shared interfaces & union types
-│   └── validation.js      # Centralized validation & duplicate detector
-├── src/                   # TypeScript source code
-│   ├── types.ts
-│   ├── storage.ts
-│   ├── validation.ts
-│   ├── statistics.ts
-│   ├── contact-service.ts
-│   ├── import-export.ts
-│   ├── contact-manager.ts
-│   └── main.ts
-├── index.html             # Application markup with type="module"
-├── style.css              # Dashboard stylesheet
-├── package.json           # Build scripts & dependencies
-├── tsconfig.json          # TypeScript compiler options
-└── README.md              # Project documentation
+├── index.html               # CRM dashboard, contact table, card container, and modals
+├── style.css                # Professional SaaS CRM styling and modal animations
+├── package.json             # Build, test, lint, and formatting scripts
+├── tsconfig.json            # Strict TypeScript configuration
+├── eslint.config.mjs        # Flat ESLint configuration
+├── src/
+│   ├── types.ts             # Contact interfaces, form types, activity contracts, and statistics
+│   ├── validation.ts        # Phone/email validators, form checks, and duplicate detection
+│   ├── statistics.ts        # Functional statistics calculations (filter, reduce)
+│   ├── storage.ts           # Resilient localStorage persistence, migrations, and seed contacts
+│   ├── contact-service.ts   # In-memory store, CRUD, activity log, filtering, sorting, and CSV parsing
+│   ├── import-export.ts     # Asynchronous JSON/CSV file readers, validators, and exporters
+│   ├── contact-manager.ts   # UI controller managing DOM elements, modals, and tables
+│   └── main.ts              # Application initialization and bootstrap
+├── tests/
+│   └── validation.test.ts   # Vitest unit test suite (19 tests covering validation, CRUD, duplicate detection, and I/O)
+└── dist/                    # Compiled ES6 JavaScript modules
 ```
 
 ---
 
-## 5. TypeScript Module Breakdown
+## 🛠️ Installation & Setup
 
-- **`types.ts`**: Core interfaces (`Contact`, `ContactFormData`, `ContactStatistics`, `ImportSummary`).
-- **`validation.ts`**: Centralized email, phone number, and duplicate contact detection (`findDuplicateContact`).
-- **`storage.ts`**: Encapsulates `localStorage` loading, saving, and initial seed dataset generation.
-- **`statistics.ts`**: Aggregates totals, active counts, and category breakdowns using `reduce()`.
-- **`contact-service.ts`**: Handles in-memory contact lists, filtering, sorting, and CSV parsing.
-- **`import-export.ts`**: Implements asynchronous Promise-based file reading for JSON imports and download generation.
-- **`contact-manager.ts`**: Manages modal popups, table rows, cards, and UI toasts.
-- **`main.ts`**: Application initialization script.
-
----
-
-## 6. How Concepts Work
-
-### A. Centralized Duplicate Detection
-Before adding or importing any contact, `validation.ts` normalizes phone numbers (stripping whitespace, parentheses, and dashes) and checks for clashes:
-```typescript
-export function findDuplicateContact(
-  phone: string,
-  email: string | undefined,
-  existingContacts: Contact[],
-  excludeContactId?: string
-): Contact | undefined
-```
-
-### B. Promise-Based JSON Import
-```typescript
-public static readJSONFile(file: File): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(JSON.parse(reader.result as string));
-    reader.onerror = () => reject(new Error("Failed to read file."));
-    reader.readAsText(file);
-  });
-}
-```
-
----
-
-## 7. Installation & Build
+Navigate into the project directory and install the local developer dependencies:
 
 ```bash
-# Install dependencies
+cd 04-contact-manager
 npm install
-
-# Build TypeScript
-npm run build
-
-# Watch mode
-npm run watch
 ```
-
-Run with any static web server (such as Live Server or `npx serve .`).
 
 ---
 
-## 8. Manual Testing Checklist
+## 💻 Available Scripts
 
-- [x] Initial seed contacts load into dashboard cards and table.
-- [x] Add contact: fill name, phone, tags, birthday, and follow-up date; verify card displays all details.
-- [x] Duplicate check: attempt to add a contact with an already existing phone number; verify proper validation error appears.
-- [x] Search by tag: enter a tag in the search bar and verify matching contacts appear.
-- [x] JSON export & import: click Export JSON to download backup; re-import the file to verify duplicate handling.
-- [x] CSV export & import: click Export CSV, import a valid CSV file, verify toast summary.
+- **`npm run build`**: Compiles TypeScript files from `src/` to `dist/` using `tsc`.
+- **`npm run watch`**: Starts the TypeScript compiler in watch mode for live recompilation.
+- **`npm run test`**: Executes unit test suites with **Vitest**.
+- **`npm run lint`**: Analyzes TypeScript code for potential issues with **ESLint**.
+- **`npm run format:check`**: Verifies code formatting against **Prettier** rules.
+
+---
+
+## 🌐 Running Locally
+
+Because this project uses native browser ES Modules, serve it using an HTTP server:
+
+```bash
+npx serve .
+```
+
+Open `http://localhost:3000/index.html` in your browser.

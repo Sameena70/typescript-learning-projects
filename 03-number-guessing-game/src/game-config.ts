@@ -47,4 +47,3 @@ export class GameConfigManager {
     return { ...this.customConfig };
   }
 }
-

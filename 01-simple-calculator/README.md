@@ -1,122 +1,76 @@
-# Advanced TypeScript Calculator
+# Project 01: Simple Calculator
 
-A modular, robust, and beginner-friendly dark-themed calculator web application built with modern TypeScript (ES6 modules).
+A modern, responsive client-side arithmetic calculator built with **TypeScript, HTML5, and CSS3**.
 
----
-
-## 1. Project Overview
-
-The **Advanced TypeScript Calculator** performs high-precision arithmetic computations, provides full calculation history stored in browser storage (`localStorage`), offers Memory registers (MC, MR, M+, M-), and delivers full keyboard support.
+This project demonstrates clean modular TypeScript architecture, strict type safety, safe `localStorage` persistence with runtime validation, continuous chained calculation support, floating-point precision handling, and responsive desktop keyboard shortcuts.
 
 ---
 
-## 2. Features
+## ✨ Features
 
-- **Full Arithmetic Operations**: Addition (`+`), subtraction (`−`), multiplication (`×`), division (`÷`), modulo (`%`), percentage.
-- **Floating-Point Precision**: Precision rounding using `Number.EPSILON` to resolve standard IEEE-754 precision quirks (e.g. `0.1 + 0.2 = 0.3`).
-- **Memory Operations**:
-  - `MC`: Memory Clear (resets memory register).
-  - `MR`: Memory Recall (retrieves stored value).
-  - `M+`: Adds current input to memory.
-  - `M-`: Subtracts current input from memory.
-- **Persistent Calculation History**:
-  - Slide-out history drawer.
-  - Calculation expressions and results persisted via JSON and `localStorage`.
-  - Click any past calculation result to reload it into the calculator.
-  - One-click clear history.
-- **Defensive Error Handling**:
-  - Graceful division-by-zero protection (`throw new Error()`, `try/catch`).
-  - Corrupted `localStorage` data handling with fallback values.
-- **Full Keyboard Navigation**: Numbers, decimals, operators, Enter/Equal, Backspace, and Escape.
+- **Core Operations:** Standard addition (`+`), subtraction (`−`), multiplication (`×`), division (`÷`), and modulo (`%`).
+- **Continuous Chained Calculations:** Easily compute sequential operations such as `10 + 5 × 2` (evaluating `10 + 5 = 15`, then `15 × 2 = 30`) without pressing equals between steps.
+- **Operator Switching:** Pressing a different operator button before typing the second operand seamlessly updates the active operation without breaking state.
+- **Sign Toggling (`±`):** Quickly negate numbers between positive and negative values.
+- **Precision Rounding:** Dedicated mathematical rounding logic prevents typical floating-point inaccuracies (e.g., `0.1 + 0.2 = 0.3`).
+- **Safety Checks:** Division and modulo by zero are caught defensively and present clean visual error feedback without crashing the state machine. Pressing any digit or clear dismisses the error gracefully.
+- **Memory Controls:** Four dedicated memory buttons (`MC` Memory Clear, `MR` Memory Recall, `M+` Memory Add, `M−` Memory Subtract) persisted across browser sessions via `localStorage` with runtime schema validation.
+- **Calculation History:** Persistent slide-out drawer storing up to 50 recent calculation records. Clicking or pressing Enter on any record recalls its result back to the display.
+- **Desktop Keyboard Support:** Seamlessly handles numbers (`0`–`9`), operators (`+`, `-`, `*`, `/`, `%`), decimal point (`.`), Enter/Equals (`=`), Backspace (`DEL`), Escape (`AC`), and `Ctrl+M` / `Cmd+M` for memory recall.
 
 ---
 
-## 3. Technology Stack
+## 🏛️ Project Architecture
 
-- **HTML5 & CSS3**: Pure CSS grid and flexbox, glassmorphic dark theme.
-- **TypeScript 5.x**: Strict mode, ES6 modules, typed interfaces.
-- **Storage**: Browser `localStorage` with `JSON.stringify()` and `JSON.parse()`.
-
----
-
-## 4. Folder Structure
-
-```
+```text
 01-simple-calculator/
-├── dist/                  # Compiled JavaScript ES6 modules
-│   ├── calculator-logic.js
-│   ├── calculator-state.js
-│   ├── history-service.js
-│   ├── main.js
-│   ├── storage.js
-│   ├── types.js
-│   └── ui.js
-├── src/                   # TypeScript source code
-│   ├── types.ts           # Interfaces & union types
-│   ├── storage.ts         # Generic safe localStorage module
-│   ├── calculator-logic.ts# Pure math functions & precision rounding
-│   ├── calculator-state.ts# Calculator state machine & memory
-│   ├── history-service.ts # History persistence service
-│   ├── ui.ts              # DOM display renderer & drawer UI
-│   └── main.ts            # Entry point & event listeners
-├── index.html             # Application markup with type="module"
-├── style.css              # Dark theme stylesheet
-├── package.json           # Build scripts & dependencies
-├── tsconfig.json          # TypeScript compiler options
-└── README.md              # Project documentation
+├── index.html               # Main user interface and history drawer
+├── style.css                # Dark theme, active operator styling, and drawer animations
+├── package.json             # Build, test, lint, and formatting scripts
+├── tsconfig.json            # Strict TypeScript configuration
+├── eslint.config.mjs        # Flat ESLint configuration
+├── src/
+│   ├── types.ts             # Type contracts (Operator, CalculationRecord, CalculatorState, CalculationOutcome)
+│   ├── calculator-logic.ts  # Pure arithmetic methods, sign toggling, and precision algorithms
+│   ├── calculator-state.ts  # Calculator state machine and memory management
+│   ├── history-service.ts   # Persistent history list manager with validation
+│   ├── storage.ts           # Safe generic localStorage wrapper with runtime schema guards
+│   ├── ui.ts                # DOM updating, operator highlighting, and drawer controller
+│   └── main.ts              # Entry point and event binding (clicks & keyboard)
+├── tests/
+│   └── calculator-logic.test.ts  # Vitest unit test suite (27 comprehensive tests)
+└── dist/                    # Compiled ES6 JavaScript modules
 ```
 
 ---
 
-## 5. TypeScript Module Breakdown
+## 🛠️ Installation & Setup
 
-- **`types.ts`**: Defines the `Operator` union type (`'+' | '-' | '*' | '/' | '%'`), `CalculationRecord` interface, and `CalculatorState` interface.
-- **`storage.ts`**: Implements `StorageService` using static methods with generic types (`getItem<T>`, `setItem<T>`). Uses `try/catch` and `instanceof Error` to protect against quota limits and malformed JSON.
-- **`calculator-logic.ts`**: Isolates pure mathematical operations from the DOM. Throws descriptive errors when dividing or performing modulo by zero.
-- **`calculator-state.ts`**: Encapsulates state modifications (`currentInput`, `previousInput`, `selectedOperator`, `memoryValue`).
-- **`history-service.ts`**: Manages the list of calculation records and serializes them to `localStorage`.
-- **`ui.ts`**: Pure DOM manipulation module that updates display digits, memory badges, and history list rendering.
-- **`main.ts`**: The application bootstrap that instantiates services, connects UI elements, and binds mouse and keyboard listeners.
-
----
-
-## 6. How Concepts Work
-
-### A. Import and Export
-Each file exports named classes or types (e.g., `export class CalculatorLogic`, `export type Operator`). Modules are imported with explicit relative paths (e.g., `import { CalculatorStateModel } from './calculator-state.js';`). In `index.html`, the script is loaded with `<script type="module" src="dist/main.js" defer></script>`.
-
-### B. JSON Storage
-Data is serialized using `JSON.stringify(records)` and deserialized using `JSON.parse(rawData)`. When reading, if `localStorage.getItem()` returns `null` or invalid data, a safe fallback default is returned.
-
-### C. Error Handling
-- Arithmetic errors (e.g. division by zero) use `throw new Error("Cannot divide by zero")`.
-- Callers wrap calculations in `try { ... } catch (error: unknown) { ... }`.
-- TypeScript's `error instanceof Error` checks ensure type-safe access to `error.message`.
-
----
-
-## 7. Installation & Build
+Navigate into the project directory and install the local developer dependencies:
 
 ```bash
-# Install dependencies
+cd 01-simple-calculator
 npm install
-
-# Compile TypeScript
-npm run build
-
-# Watch mode during development
-npm run watch
 ```
-
-To run in the browser, open `index.html` using any local development server (such as Live Server or `npx serve .`).
 
 ---
 
-## 8. Manual Testing Checklist
+## 💻 Available Scripts
 
-- [x] Basic addition: `12 + 8 = 20`
-- [x] Precision test: `0.1 + 0.2 = 0.3` (no long floating point artifacts)
-- [x] Division by zero: `10 ÷ 0 =` shows user-friendly error
-- [x] Memory test: enter `50`, press `M+`, clear display, press `MR` (displays `50`), press `MC` (clears memory badge)
-- [x] History panel: click the clock icon 🕒 to open drawer; verify past calculations appear; click an item to restore result; click Clear to empty history
-- [x] Keyboard input: type numbers and operators directly on your keyboard
+- **`npm run build`**: Compiles TypeScript files from `src/` to `dist/` using `tsc`.
+- **`npm run watch`**: Starts the TypeScript compiler in watch mode for live recompilation.
+- **`npm run test`**: Executes the 27 unit tests with **Vitest**.
+- **`npm run lint`**: Analyzes TypeScript code for potential issues with **ESLint**.
+- **`npm run format:check`**: Verifies code formatting against **Prettier** rules.
+
+---
+
+## 🌐 Running Locally
+
+Because this project uses native browser ES Modules, serve it using an HTTP server:
+
+```bash
+npx serve .
+```
+
+Open `http://localhost:3000/index.html` in your browser.

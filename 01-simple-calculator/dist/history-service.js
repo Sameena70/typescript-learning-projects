@@ -2,6 +2,18 @@ import { StorageService } from './storage.js';
 const STORAGE_KEY = 'ts_calculator_history';
 const MAX_HISTORY = 50;
 /**
+ * Type guard for CalculationRecord objects loaded from storage.
+ */
+function isValidRecord(item) {
+    if (!item || typeof item !== 'object')
+        return false;
+    const rec = item;
+    return (typeof rec.id === 'string' &&
+        typeof rec.expression === 'string' &&
+        typeof rec.result === 'string' &&
+        typeof rec.timestamp === 'number');
+}
+/**
  * Service to manage persistent calculation history using localStorage and JSON.
  */
 export class HistoryService {
@@ -10,14 +22,11 @@ export class HistoryService {
         this.loadHistory();
     }
     /**
-     * Loads history from localStorage.
+     * Loads history from localStorage with strict runtime filtering.
      */
     loadHistory() {
-        const records = StorageService.getItem(STORAGE_KEY, []);
-        // Validate records structure
-        this.history = Array.isArray(records)
-            ? records.filter(item => item && typeof item.expression === 'string' && typeof item.result === 'string')
-            : [];
+        const records = StorageService.getItem(STORAGE_KEY, [], (val) => Array.isArray(val));
+        this.history = records.filter(isValidRecord);
         return [...this.history];
     }
     /**

@@ -1,5 +1,4 @@
-import { DifficultyLevel, GuessResult } from './types.js';
-import { GameConfigManager } from './game-config.js';
+import { GuessResult } from './types.js';
 
 export class GameLogic {
   /**
@@ -74,4 +73,3 @@ export class GameLogic {
     }
   }
 }
-

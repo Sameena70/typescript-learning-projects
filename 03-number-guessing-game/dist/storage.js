@@ -1,13 +1,18 @@
 /**
  * Storage utility for game statistics and history
+ * with runtime validation and schema protection.
  */
 export class GameStorage {
-    static getItem(key, fallback) {
+    static getItem(key, fallback, validator) {
         try {
             const data = localStorage.getItem(key);
             if (data === null)
                 return fallback;
-            return JSON.parse(data);
+            const parsed = JSON.parse(data);
+            if (validator) {
+                return validator(parsed) ? parsed : fallback;
+            }
+            return parsed;
         }
         catch (error) {
             if (error instanceof Error) {

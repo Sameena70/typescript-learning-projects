@@ -1,147 +1,103 @@
-# Advanced Personal Expense Tracker
+# Project 02: Expense Tracker
 
-A modern personal finance web application built in strict TypeScript with ES6 modules, JSON export/import capabilities, and INR currency formatting.
+A comprehensive personal finance, expense ledger, and budget management application built with **TypeScript, HTML5, and CSS3**.
 
----
-
-## 1. Project Overview
-
-The **Advanced Expense Tracker** helps users manage daily expenses, set and monitor monthly budgets in Indian Rupees (₹), track category spending trends, filter and search transaction logs, and import/export expense data via JSON files.
+This project demonstrates clean architecture, modular TypeScript development, comprehensive domain models (income, expenses, recurring transactions, category budgets, multi-currency settings), runtime schema validation, interactive financial charts, monthly & yearly trend reporting, robust CSV/JSON data portability, and automated testing with Vitest.
 
 ---
 
-## 2. Features
+## ✨ Features
 
-- **Expense Management**:
-  - Add expenses with title, amount, category, date, and optional notes.
-  - Edit existing expenses via an interactive modal.
-  - Delete individual transactions or clear all records.
-- **Budgeting & Dashboard Analytics**:
-  - Custom monthly budget setting with remaining balance indicator.
-  - Visual color-coded progress bar (Green: Safe, Orange: Warning >80%, Red: Over budget).
-  - Spending metrics: Total spent, Monthly spending, Highest transaction, Average expense.
-- **Search, Filter & Sorting**:
-  - Real-time text search across expense descriptions and notes.
-  - Filter by category (Food, Transport, Bills, Shopping, etc.).
-  - Date range filtering (Start Date to End Date).
-  - Multi-criteria sorting by Date or Amount (Ascending/Descending).
-- **JSON Import & Export**:
-  - Export all expense records to a clean `.json` file.
-  - Import expense records from JSON using `FileReader` and `Promises`.
-  - Schema validation and duplicate record detection.
-- **Error Handling**:
-  - Validates required fields, positive amounts, and realistic dates.
-  - Catches corrupted or unavailable `localStorage`.
-  - Non-intrusive floating toast notifications for user feedback.
+- **Double-Entry Income & Expense Management:**
+  - Track both incoming revenue (Salary, Freelance, Investment) and outgoing expenditures.
+  - Complete CRUD operations: Add, edit, delete, and view transactions with title, amount, category, date, and optional notes.
+- **Interactive Visualizations & Charts:**
+  - **Spending by Category Breakdown:** Real-time percentage bars for every expense category.
+  - **Income vs. Expense Ratio Bar:** Visual cash flow balance with interactive percentages and monetary indicators.
+  - **Dynamic Insights Feed:** Intelligent advice highlighting budget utilization, top spending categories, and savings patterns.
+- **Historical Reports & Trends:**
+  - **Monthly Performance Table:** Tracks historical monthly income, expenses, net savings, and savings rate (`%`).
+  - **Yearly Overview Table:** High-level annual aggregates calculating multi-year savings trajectories.
+- **Budgeting & Category Caps:**
+  - Set an overall monthly spending budget with real-time budget progress visualization (Safe, Warning >80%, Exceeded >100%).
+  - Set per-category budget limits (Food & Dining, Utilities, Shopping, etc.) and track individual progress.
+- **Financial Dashboard & Metrics:**
+  - Net Balance calculation (`Total Income - Total Expenses`).
+  - Total Income, Total Expenses, and Net Savings breakdown.
+  - Monthly spending vs. income analysis.
+  - Highest transaction and average transaction metrics.
+- **Recurring Transactions Engine:**
+  - Configure daily, weekly, monthly, and yearly recurring income or expenses.
+  - Automated detection and generation on application startup without duplicate entries.
+- **Multi-Currency Support:**
+  - Switch seamlessly between `INR` (₹), `USD` ($), `EUR` (€), and `GBP` (£).
+  - Formatted via native `Intl.NumberFormat`.
+- **Advanced Filtering & Sorting:**
+  - Filter by transaction type (`All`, `Expenses Only`, `Income Only`).
+  - Filter by category and date ranges (start date to end date).
+  - Real-time text search through descriptions and notes.
+  - Multi-attribute sorting by Date, Amount, Category, and Title (ascending / descending).
+- **Comprehensive Import / Export Portability:**
+  - **CSV Spreadsheet Export & Import:** Complies with RFC 4180 parsing and escaping.
+  - **JSON Backup & Restore:** Export full state or restore records with duplicate prevention and ID collision safety.
+- **Resilient Local Persistence:**
+  - Built upon a generic typed `StorageService` with fallback defaults and runtime error isolation.
+  - Backward compatible with legacy records.
 
 ---
 
-## 3. Technology Stack
+## 🏛️ Project Architecture
 
-- **HTML5 & CSS3**: Modern dashboard layout with Plus Jakarta Sans typography.
-- **TypeScript 5.x**: Strict mode, interfaces, union types, array methods (`reduce`, `filter`, `find`, `sort`).
-- **Async File APIs**: Browser `FileReader` wrapped in typed ES6 `Promise`s.
-
----
-
-## 4. Folder Structure
-
-```
+```text
 02-expense-tracker/
-├── dist/                  # Compiled JavaScript ES6 modules
-│   ├── calculations.js
-│   ├── expense-service.js
-│   ├── import-export.js
-│   ├── main.js
-│   ├── storage.js
-│   ├── types.js
-│   ├── ui.js
-│   └── validation.js
-├── src/                   # TypeScript source code
-│   ├── types.ts           # Interfaces & union types
-│   ├── storage.ts         # Safe localStorage persistence
-│   ├── validation.ts      # Expense form & import data validators
-│   ├── calculations.ts    # Financial math & INR currency formatters
-│   ├── expense-service.ts # CRUD & in-memory transaction store
-│   ├── import-export.ts   # Promise-based JSON import/export
-│   ├── ui.ts              # DOM renderer & toasts
-│   └── main.ts            # Application bootstrap & event listeners
-├── index.html             # Application markup with type="module"
-├── style.css              # Custom styling
-├── package.json           # Build scripts & dependencies
-├── tsconfig.json          # TypeScript compiler options
-└── README.md              # Project documentation
+├── index.html               # Semantic dashboard layout, forms, charts, and modal dialogs
+├── style.css                # Polished responsive design with modern badge/chart/progress styles
+├── package.json             # Build, test, lint, and formatting configurations
+├── tsconfig.json            # Strict TypeScript compiler options (DOM, ES2022)
+├── eslint.config.mjs        # Flat ESLint configuration
+├── src/
+│   ├── types.ts             # Domain contracts (Expense, RecurringRule, PeriodSummary, etc.)
+│   ├── calculations.ts      # Pure financial math, aggregations, trends, and currency formatters
+│   ├── validation.ts        # Runtime schema validation & type guards
+│   ├── storage.ts           # Resilient localStorage service
+│   ├── expense-service.ts   # Core business logic: CRUD, recurring engine, filtering, import
+│   ├── import-export.ts     # JSON backup/restore & RFC 4180 CSV parser/exporter
+│   ├── ui.ts                # Dynamic DOM rendering, charts, KPI metrics, and toasts
+│   └── main.ts              # Event orchestration and lifecycle management
+├── tests/
+│   └── calculations.test.ts # Vitest unit test suite (23 tests covering logic, validation, trends & I/O)
+└── dist/                    # Compiled ES6 JavaScript modules
 ```
 
 ---
 
-## 5. TypeScript Module Breakdown
+## 🛠️ Installation & Setup
 
-- **`types.ts`**: Declares `Expense`, `ExpenseCategory`, `ExpenseFilterOptions`, and `ExpenseDashboardSummary`.
-- **`storage.ts`**: Generic persistence methods with `try/catch` and fallback data.
-- **`validation.ts`**: Pure functions `validateExpense()` and `isValidExpenseObject()`.
-- **`calculations.ts`**: Pure functions using array methods (`reduce`, `filter`, `map`) to calculate totals, monthly spend, category breakdown, and formatted INR strings.
-- **`expense-service.ts`**: Manages state, sorting, filtering, deduplication, and updates.
-- **`import-export.ts`**: Demonstrates Promise-based asynchronous file reading (`readJSONFile`) and JSON downloads.
-- **`ui.ts`**: DOM updates, table rendering, and toast alerts.
-- **`main.ts`**: Event orchestration and user interaction bindings.
-
----
-
-## 6. How Concepts Work
-
-### A. Async/Await & Promises
-When a user uploads a `.json` backup:
-```typescript
-public static readJSONFile(file: File): Promise<unknown> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(JSON.parse(reader.result as string));
-    reader.onerror = () => reject(new Error('Failed to read file.'));
-    reader.readAsText(file);
-  });
-}
-```
-The caller consumes this cleanly using `await ExpenseImportExport.parseAndValidateImport(file)`.
-
-### B. Safe JSON Parsing
-All `localStorage` and uploaded JSON operations are wrapped in `try/catch`:
-```typescript
-try {
-  return JSON.parse(rawData);
-} catch (error: unknown) {
-  if (error instanceof Error) {
-    console.warn("Corrupted JSON:", error.message);
-  }
-  return fallback;
-}
-```
-
----
-
-## 7. Installation & Build
+Navigate into the project directory and install the local developer dependencies:
 
 ```bash
-# Install dependencies
+cd 02-expense-tracker
 npm install
-
-# Build TypeScript
-npm run build
-
-# Watch mode
-npm run watch
 ```
-
-Run with any static web server (such as Live Server or `npx serve .`).
 
 ---
 
-## 8. Manual Testing Checklist
+## 💻 Available Scripts
 
-- [x] Add new expense: enter title, amount, category, date, and notes; verify row appears in table.
-- [x] Edit expense: click ✏️, edit title or amount, save and verify changes persist.
-- [x] Filter & Search: type keywords in the search bar, select a category, and verify table filters immediately.
-- [x] Set monthly budget: click Edit in the Monthly Budget card, set a new limit, and verify progress bar recalculates.
-- [x] Export JSON: click 📤 Export JSON, verify `.json` file downloads.
-- [x] Import JSON: click 📥 Import JSON, upload the exported file, verify duplicate records are safely skipped with toast feedback.
-- [x] Delete expense: click 🗑️ to delete a single expense with confirmation.
+- **`npm run build`**: Compiles TypeScript files from `src/` to `dist/` using `tsc`.
+- **`npm run watch`**: Starts the TypeScript compiler in watch mode for live recompilation.
+- **`npm run test`**: Executes unit test suites with **Vitest**.
+- **`npm run lint`**: Analyzes TypeScript code for potential issues with **ESLint**.
+- **`npm run format:check`**: Verifies code formatting against **Prettier** rules.
+
+---
+
+## 🌐 Running Locally
+
+Because this project uses native browser ES Modules, serve it using a local HTTP server:
+
+```bash
+npx serve .
+```
+
+Open `http://localhost:3000/index.html` in your browser.

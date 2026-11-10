@@ -1,8 +1,8 @@
-import { Expense, ImportResult } from './types.js';
+import { Expense, ImportResult, TransactionType } from './types.js';
 import { ExpenseValidator } from './validation.js';
 
 /**
- * Handles Promise-based asynchronous file operations for JSON import/export.
+ * Handles Promise-based asynchronous file operations for JSON and CSV import/export.
  */
 export class ExpenseImportExport {
   /**
@@ -12,27 +12,45 @@ export class ExpenseImportExport {
     try {
       const dataStr = JSON.stringify(expenses, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = filename;
-      document.body.appendChild(link);
-      link.click();
-
-      // Cleanup
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      this.triggerDownload(blob, filename);
     } catch (error: unknown) {
       if (error instanceof Error) {
-        throw new Error(`Export failed: ${error.message}`);
+        throw new Error(`Export failed: ${error.message}`, { cause: error });
       }
-      throw new Error('An unknown error occurred during export.');
+      throw new Error('An unknown error occurred during export.', { cause: error });
     }
   }
 
   /**
-   * Asynchronously reads and parses an uploaded JSON file using Promise and FileReader.
+   * Generates a CSV file from expenses and triggers browser download.
+   */
+  public static exportToCSV(expenses: Expense[], filename = 'expenses-export.csv'): void {
+    try {
+      const headers = ['ID', 'Type', 'Title', 'Amount', 'Category', 'Date', 'Notes', 'IsRecurring'];
+      const rows = expenses.map((exp) => [
+        this.escapeCSVField(exp.id),
+        this.escapeCSVField(exp.type || 'expense'),
+        this.escapeCSVField(exp.title),
+        exp.amount.toString(),
+        this.escapeCSVField(exp.category),
+        this.escapeCSVField(exp.date),
+        this.escapeCSVField(exp.notes || ''),
+        exp.isRecurring ? 'true' : 'false'
+      ]);
+
+      const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      this.triggerDownload(blob, filename);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        throw new Error(`CSV Export failed: ${error.message}`, { cause: error });
+      }
+      throw new Error('An unknown error occurred during CSV export.', { cause: error });
+    }
+  }
+
+  /**
+   * Reads and parses an uploaded JSON file.
    */
   public static readJSONFile(file: File): Promise<unknown> {
     return new Promise((resolve, reject) => {
@@ -42,13 +60,12 @@ export class ExpenseImportExport {
       }
 
       const reader = new FileReader();
-
       reader.onload = () => {
         try {
           const content = reader.result as string;
           const parsed = JSON.parse(content);
           resolve(parsed);
-        } catch (error: unknown) {
+        } catch {
           reject(new Error('Malformed JSON: File contains invalid JSON syntax.'));
         }
       };
@@ -57,6 +74,22 @@ export class ExpenseImportExport {
         reject(new Error('Failed to read the file from storage.'));
       };
 
+      reader.readAsText(file);
+    });
+  }
+
+  /**
+   * Reads an uploaded text file (such as CSV).
+   */
+  public static readTextFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve((reader.result as string) || '');
+      };
+      reader.onerror = () => {
+        reject(new Error('Failed to read text file.'));
+      };
       reader.readAsText(file);
     });
   }
@@ -80,7 +113,10 @@ export class ExpenseImportExport {
 
     rawData.forEach((item, index) => {
       if (ExpenseValidator.isValidExpenseObject(item)) {
-        validItems.push(item);
+        validItems.push({
+          ...item,
+          type: item.type === 'income' ? 'income' : 'expense'
+        });
       } else {
         skippedCount++;
         errors.push(`Record #${index + 1} is invalid or missing required fields.`);
@@ -97,5 +133,158 @@ export class ExpenseImportExport {
       }
     };
   }
-}
 
+  /**
+   * Parses, validates, and imports transactions from a CSV file.
+   */
+  public static async parseAndValidateCSV(file: File): Promise<{
+    validItems: Expense[];
+    importResult: ImportResult;
+  }> {
+    const text = await this.readTextFile(file);
+    const lines = this.splitCSVLines(text);
+
+    if (lines.length < 2) {
+      throw new Error('CSV file must have a header row and at least one data row.');
+    }
+
+    const headers = this.parseCSVLine(lines[0]).map((h) => h.trim().toLowerCase());
+    const validItems: Expense[] = [];
+    const errors: string[] = [];
+    let skippedCount = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+
+      const columns = this.parseCSVLine(line);
+      const rowObj: Record<string, string> = {};
+      headers.forEach((header, index) => {
+        rowObj[header] = columns[index] !== undefined ? columns[index].trim() : '';
+      });
+
+      const title = rowObj['title'] || rowObj['description'] || '';
+      const amount = parseFloat(rowObj['amount'] || '0');
+      const category = (rowObj['category'] || 'Other') as Expense['category'];
+      const date = rowObj['date'] || '';
+      const notes = rowObj['notes'] || '';
+      const rawType = (rowObj['type'] || 'expense').toLowerCase();
+      const type: TransactionType = rawType === 'income' ? 'income' : 'expense';
+      const isRecurring = rowObj['isrecurring'] === 'true';
+
+      const validation = ExpenseValidator.validateExpense({
+        title,
+        amount,
+        category,
+        date,
+        type,
+        notes
+      });
+
+      if (validation.isValid) {
+        validItems.push({
+          id: rowObj['id'] || `csv_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+          title: title.trim(),
+          amount,
+          category,
+          date,
+          type,
+          notes: notes ? notes.trim() : undefined,
+          isRecurring
+        });
+      } else {
+        skippedCount++;
+        errors.push(`Row ${i + 1}: ${Object.values(validation.errors).join(', ')}`);
+      }
+    }
+
+    return {
+      validItems,
+      importResult: {
+        success: validItems.length > 0,
+        importedCount: validItems.length,
+        skippedCount,
+        errors
+      }
+    };
+  }
+
+  private static triggerDownload(blob: Blob, filename: string): void {
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  public static escapeCSVField(field: string): string {
+    if (
+      field.includes(',') ||
+      field.includes('"') ||
+      field.includes('\n') ||
+      field.includes('\r')
+    ) {
+      return `"${field.replace(/"/g, '""')}"`;
+    }
+    return field;
+  }
+
+  public static parseCSVLine(line: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++; // skip escaped quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(current);
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current);
+    return result;
+  }
+
+  public static splitCSVLines(text: string): string[] {
+    const lines: string[] = [];
+    let currentLine = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      if (char === '"') {
+        if (inQuotes && text[i + 1] === '"') {
+          currentLine += '""';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+          currentLine += '"';
+        }
+      } else if ((char === '\n' || char === '\r') && !inQuotes) {
+        if (char === '\r' && text[i + 1] === '\n') {
+          i++; // handle CRLF
+        }
+        lines.push(currentLine);
+        currentLine = '';
+      } else {
+        currentLine += char;
+      }
+    }
+    if (currentLine.length > 0) {
+      lines.push(currentLine);
+    }
+    return lines;
+  }
+}

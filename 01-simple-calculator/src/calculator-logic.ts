@@ -2,10 +2,9 @@ import { Operator } from './types.js';
 
 /**
  * Core Calculator Arithmetic & Validation Logic
- * 
+ *
  * Provides pure mathematical operations and precision handling.
  */
-
 export class CalculatorLogic {
   /**
    * Adds two numbers.
@@ -34,7 +33,7 @@ export class CalculatorLogic {
    */
   static divide(a: number, b: number): number {
     if (b === 0) {
-      throw new Error("Cannot divide by zero");
+      throw new Error('Cannot divide by zero');
     }
     return a / b;
   }
@@ -45,7 +44,7 @@ export class CalculatorLogic {
    */
   static modulo(a: number, b: number): number {
     if (b === 0) {
-      throw new Error("Cannot divide by zero");
+      throw new Error('Cannot divide by zero');
     }
     return a % b;
   }
@@ -58,9 +57,22 @@ export class CalculatorLogic {
   }
 
   /**
-   * Rounds a number to avoid typical floating point inaccuracies (e.g., 0.1 + 0.2 = 0.30000000000000004).
+   * Negates a numeric string or toggles its sign safely.
    */
-  static roundToPrecision(value: number, decimalPlaces: number = 8): number {
+  static toggleSign(input: string): string {
+    if (input === '0' || input === '' || input === '0.') {
+      return input;
+    }
+    if (input.startsWith('-')) {
+      return input.slice(1);
+    }
+    return '-' + input;
+  }
+
+  /**
+   * Rounds a number to avoid typical floating point inaccuracies.
+   */
+  static roundToPrecision(value: number, decimalPlaces: number = 10): number {
     if (!Number.isFinite(value)) {
       return value;
     }
@@ -116,5 +128,13 @@ export class CalculatorLogic {
         return '';
     }
   }
-}
 
+  /**
+   * Validates if a string is a valid numeric input.
+   */
+  static isValidNumber(value: string): boolean {
+    if (value.trim() === '') return false;
+    const num = Number(value);
+    return !isNaN(num) && isFinite(num);
+  }
+}

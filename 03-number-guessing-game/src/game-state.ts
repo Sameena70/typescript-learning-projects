@@ -1,4 +1,4 @@
-import { DifficultyLevel, DifficultyConfig, GuessResult, GameRecord } from './types.js';
+import { DifficultyLevel, GuessResult, GameRecord } from './types.js';
 import { GameConfigManager } from './game-config.js';
 import { GameLogic } from './game-logic.js';
 
@@ -41,11 +41,20 @@ export class GameStateModel {
       throw new Error('Game has already ended. Please start a new game.');
     }
 
-    if (guess < this.minRange || guess > this.maxRange || isNaN(guess)) {
-      throw new Error(`Guess must be an integer between ${this.minRange} and ${this.maxRange}.`);
+    if (!Number.isInteger(guess)) {
+      throw new Error('Please enter a valid whole integer.');
     }
 
-    const result = GameLogic.evaluateGuess(guess, this.secret, this.remainingAttempts, this.guesses);
+    if (guess < this.minRange || guess > this.maxRange) {
+      throw new Error(`Guess must be between ${this.minRange} and ${this.maxRange}.`);
+    }
+
+    const result = GameLogic.evaluateGuess(
+      guess,
+      this.secret,
+      this.remainingAttempts,
+      this.guesses
+    );
 
     if (result.type !== 'DUPLICATE') {
       this.guesses.push(guess);
@@ -71,14 +80,31 @@ export class GameStateModel {
   }
 
   // Getters
-  public getDifficulty(): DifficultyLevel { return this.currentDifficulty; }
-  public getMin(): number { return this.minRange; }
-  public getMax(): number { return this.maxRange; }
-  public getMaxAttempts(): number { return this.maxAttempts; }
-  public getRemainingAttempts(): number { return this.remainingAttempts; }
-  public getGuesses(): number[] { return [...this.guesses]; }
-  public getIsGameOver(): boolean { return this.isGameOver; }
-  public getHasWon(): boolean { return this.hasWon; }
-  public getSecret(): number { return this.secret; }
+  public getDifficulty(): DifficultyLevel {
+    return this.currentDifficulty;
+  }
+  public getMin(): number {
+    return this.minRange;
+  }
+  public getMax(): number {
+    return this.maxRange;
+  }
+  public getMaxAttempts(): number {
+    return this.maxAttempts;
+  }
+  public getRemainingAttempts(): number {
+    return this.remainingAttempts;
+  }
+  public getGuesses(): number[] {
+    return [...this.guesses];
+  }
+  public getIsGameOver(): boolean {
+    return this.isGameOver;
+  }
+  public getHasWon(): boolean {
+    return this.hasWon;
+  }
+  public getSecret(): number {
+    return this.secret;
+  }
 }
-

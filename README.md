@@ -1,19 +1,32 @@
-# TypeScript Learning Projects Portfolio
+# TypeScript Learning Curriculum & Projects Showcase
 
-A structured collection of three beginner-to-intermediate modern web applications built using **TypeScript, HTML5, and CSS3**.
+A comprehensive, progressive curriculum of four production-grade client-side applications built with **TypeScript, modern HTML5, and CSS3**.
 
-This repository was developed to practice core TypeScript fundamentals through practical, real-world implementations. Over six progressive learning phases, each project was systematically enhanced—improving code organization, type safety, scope handling, reusable helpers, array callbacks, and null-safety without altering user interface design or core application workflows.
+This repository guides developers from core algorithmic TypeScript logic to modular state machines, asynchronous I/O, robust data validation, and responsive CRM frontend architecture. All four applications run natively in modern web browsers using ES modules without external runtime framework dependencies.
 
 ---
 
 ## 🚀 Projects Overview
 
-| Project | Description | Main Features | Technologies |
-| :--- | :--- | :--- | :--- |
-| **[01. Simple Calculator](./01-simple-calculator)** | Responsive web arithmetic calculator | Addition, subtraction, multiplication, division, modulo, percentage, division-by-zero protection, precision rounding, and full desktop keyboard support | HTML5, CSS3, TypeScript |
-| **[02. Expense Tracker](./02-expense-tracker)** | Personal finance and monthly budget tracker | Expense logging (title, amount, category, date), Indian Rupee (₹ INR) currency formatting, category filter, single deletion, monthly budget modal, remaining balance, color-coded badges, and `localStorage` persistence | HTML5, CSS3, TypeScript |
-| **[03. Number Guessing Game](./03-number-guessing-game)** | Cyberpunk-themed interactive guess game | 3 difficulty tiers (Easy 1–100, Medium 1–500, Hard 1–1000), dynamic attempts progress bar, directional hints ("Too High!", "Too Low!"), input validation without penalty, guess history tags, and session win rate statistics | HTML5, CSS3, TypeScript |
-| **[04. Advanced Contact Manager](./04-contact-manager)** | SaaS-grade directory & address book application | Dashboard metrics (total, active, inactive, favourites, recent), multi-field contact creation & editing, duplicate phone/email validation, detailed profile modal, multi-field search, category & status filters, CSV import/export, and `localStorage` persistence | HTML5, CSS3, TypeScript |
+| # | Project | Description | Core Capabilities | TypeScript Concepts Demonstrated |
+| :-: | :--- | :--- | :--- | :--- |
+| **01** | **[Simple Calculator](./01-simple-calculator)** | Desktop-grade arithmetic calculator | Standard arithmetic, precision rounding, percentage, 4-button memory store (`MC`, `MR`, `M+`, `M−`), persistent history drawer, keyboard shortcuts. | Classes, Union Types, Type Narrowing, Floating-Point Precision, LocalStorage Serialization. |
+| **02** | **[Expense Tracker](./02-expense-tracker)** | Comprehensive personal finance & budget ledger | Double-entry income & expenses, category budget caps, multi-currency support (`INR`, `USD`, `EUR`, `GBP`), recurring transactions engine, visual category charts, income vs. expense ratios, monthly & yearly trend tables, RFC 4180 CSV & JSON backup/restore. | Interfaces, Custom Type Guards, Financial Aggregations, Async `FileReader` Promises, Trend Calculations. |
+| **03** | **[Number Guessing Game](./03-number-guessing-game)** | Code-cracking interactive guessing game | 4 difficulty tiers (Easy, Medium, Hard, Custom), dynamic visual range guidance, lifetime statistics (win rate, best score, average tries), game history drawer, audio/haptic feedback. | Pure Business Logic, Boundary Validation, Immutable State Models, Persistent Statistics. |
+| **04** | **[Contact Manager](./04-contact-manager)** | CRM-style directory & address book | Full CRUD operations, duplicate phone/email detection, category segmentation, active/inactive states, favourites, interaction activity logs, follow-up reminders, tags, RFC 4180 CSV & JSON import/export, seed data. | Advanced Interfaces, Form Validation, Array Callbacks (`filter`, `reduce`), File Downloads, Modal Orchestration. |
+
+---
+
+## 🏛️ Architectural Highlights & Quality Standards
+
+- **Zero Framework Runtime:** Pure vanilla TypeScript leveraging native DOM APIs and standard browser ES Modules (`<script type="module">`).
+- **Completely Independent Projects:** Each project contains its own `package.json`, `package-lock.json`, `tsconfig.json`, and isolated dependencies. No dependency hoisting or forced workspace coupling.
+- **Enterprise Tooling:**
+  - **Type Checking:** Strict mode enabled (`"strict": true`, `"noImplicitAny": true`).
+  - **Automated Testing:** Powered by **Vitest** for fast unit testing of pure arithmetic, statistics, calculations, and data validation rules (**90 passing tests** across repository).
+  - **Linting:** Configured with modern flat **ESLint** (`typescript-eslint`).
+  - **Formatting:** Enforced via repository-wide **Prettier** standards.
+- **GitHub Pages Ready:** Pre-compiled distribution files are located in each project's `dist/` directory, and relative asset routing ensures live static hosting out of the box.
 
 ---
 
@@ -21,202 +34,175 @@ This repository was developed to practice core TypeScript fundamentals through p
 
 ```text
 typescript-learning-projects/
-├── .gitignore                   # Excludes node_modules, logs, and system cache files
-├── .nojekyll                    # Ensures clean asset loading for GitHub Pages
-├── index.html                   # Central portfolio showcase landing page
+├── .gitignore                   # Ignores node_modules, logs, and OS caches
+├── .nojekyll                    # Ensures static asset loading for GitHub Pages
+├── .prettierrc                  # Central Prettier formatting standards
+├── .prettierignore              # Ignores build artifacts and dependencies from formatting
+├── index.html                   # Central portfolio showcase portal
+├── package.json                 # Root script orchestration (build, test, lint, format)
+├── CONTRIBUTING.md              # Coding standards, workflow, and style guide
 ├── README.md                    # Root repository documentation
 │
-├── 01-simple-calculator/        # Project 1: Simple Calculator
-│   ├── index.html               # Calculator interface
-│   ├── style.css                # Dark-themed calculator styles
-│   ├── package.json             # Build script & TypeScript dev dependency
-│   ├── tsconfig.json            # Strict TypeScript configuration (Target: ES6)
-│   ├── README.md                # Project-specific documentation
-│   ├── src/
-│   │   └── calculator.ts        # Source TypeScript implementation
-│   └── dist/
-│       └── calculator.js        # Compiled JavaScript loaded by index.html
+├── 01-simple-calculator/        # Project 01: Simple Calculator (27 tests)
+│   ├── index.html               # Main calculator interface
+│   ├── style.css                # Dark theme and drawer animations
+│   ├── package.json             # Project dependencies & scripts
+│   ├── tsconfig.json            # TypeScript configuration
+│   ├── eslint.config.mjs        # Project ESLint flat config
+│   ├── src/                     # Modular TypeScript source code
+│   │   ├── types.ts             # Operators and state contracts
+│   │   ├── calculator-logic.ts  # Pure arithmetic & precision methods
+│   │   ├── calculator-state.ts  # State management & memory store
+│   │   ├── history-service.ts   # Persistent calculation history
+│   │   ├── storage.ts           # Safe localStorage wrapper
+│   │   ├── ui.ts                # DOM rendering & drawer controller
+│   │   └── main.ts              # Entry point & keyboard listener
+│   ├── tests/                   # Vitest unit test suites
+│   │   └── calculator-logic.test.ts
+│   └── dist/                    # Compiled ES6 distribution files
 │
-├── 02-expense-tracker/          # Project 2: Expense Tracker
-│   ├── index.html               # Expense tracker & budget modal markup
-│   ├── style.css                # Warm-gray styling, responsive grid & badges
-│   ├── package.json             # Build script & TypeScript dev dependency
-│   ├── tsconfig.json            # Strict TypeScript configuration (Target: ES6)
-│   ├── README.md                # Project-specific documentation
-│   ├── src/
-│   │   └── expense-tracker.ts   # Source TypeScript implementation
-│   └── dist/
-│       └── expense-tracker.js   # Compiled JavaScript loaded by index.html
+├── 02-expense-tracker/          # Project 02: Expense Tracker (23 tests)
+│   ├── index.html               # Expense tracker interface, charts & modals
+│   ├── style.css                # Financial dashboard layout, charts & badges
+│   ├── package.json             # Project dependencies & scripts
+│   ├── tsconfig.json            # TypeScript configuration
+│   ├── eslint.config.mjs        # Project ESLint flat config
+│   ├── src/                     # Modular TypeScript source code
+│   │   ├── types.ts             # Expense interfaces & categories
+│   │   ├── calculations.ts      # Pure metric, financial math & trend calculators
+│   │   ├── validation.ts        # Input rules & custom type guards
+│   │   ├── storage.ts           # Safe localStorage service
+│   │   ├── expense-service.ts   # In-memory CRUD, recurring engine, search & filter store
+│   │   ├── import-export.ts     # RFC 4180 CSV & JSON backup handler
+│   │   ├── ui.ts                # DOM table, KPI, visual charts & modal controller
+│   │   └── main.ts              # Bootstrap entry point
+│   ├── tests/                   # Vitest unit test suites
+│   │   └── calculations.test.ts
+│   └── dist/                    # Compiled ES6 distribution files
 │
-├── 03-number-guessing-game/     # Project 3: Number Guessing Game
-│   ├── index.html               # Cyberpunk gaming interface
-│   ├── style.css                # Neon glow theme, custom badges & progress bar
-│   ├── package.json             # Build script & TypeScript dev dependency
-│   ├── tsconfig.json            # Strict TypeScript configuration (Target: ES6)
-│   ├── README.md                # Project-specific documentation
-│   ├── src/
-│   │   └── number-guessing-game.ts # Source TypeScript implementation
-│   └── dist/
-│       └── number-guessing-game.js # Compiled JavaScript loaded by index.html
+├── 03-number-guessing-game/     # Project 03: Number Guessing Game (21 tests)
+│   ├── index.html               # Game console interface & history drawer
+│   ├── style.css                # Modern cyberpunk styling
+│   ├── package.json             # Project dependencies & scripts
+│   ├── tsconfig.json            # TypeScript configuration
+│   ├── eslint.config.mjs        # Project ESLint flat config
+│   ├── src/                     # Modular TypeScript source code
+│   │   ├── types.ts             # Difficulty configs & game record models
+│   │   ├── game-config.ts       # Boundaries manager (preset & custom)
+│   │   ├── game-logic.ts        # Pure secret generator & guess evaluation
+│   │   ├── game-state.ts        # Active match state model
+│   │   ├── statistics.ts        # Lifetime stats & match record manager
+│   │   ├── storage.ts           # Persistence layer
+│   │   ├── ui.ts                # Feedback, range & drawer renderer
+│   │   └── main.ts              # Game lifecycle & event orchestrator
+│   ├── tests/                   # Vitest unit test suites
+│   │   └── game-logic.test.ts
+│   └── dist/                    # Compiled ES6 distribution files
 │
-└── 04-contact-manager/          # Project 4: Advanced Contact Manager
-    ├── index.html               # SaaS directory interface & modals
-    ├── style.css                # SaaS design system, responsive table & cards
-    ├── package.json             # Build script & TypeScript dev dependency
-    ├── tsconfig.json            # Strict TypeScript configuration (Target: ES6)
-    ├── README.md                # Project-specific documentation & concepts walkthrough
-    ├── src/
-    │   ├── types.ts             # TypeScript interfaces, type aliases & union types
-    │   ├── storage.ts           # LocalStorage persistence & seed data
-    │   ├── validation.ts        # Pure input & duplicate validation helpers
-    │   ├── statistics.ts        # Pure calculation helpers (totals, active, categories)
-    │   ├── contact-service.ts   # State management, CRUD, filters & CSV import/export
-    │   ├── contact-manager.ts   # DOM controller, modal management & UI rendering
-    │   └── main.ts              # Application entry point & lifecycle bootstrap
-    └── dist/
-        ├── types.js
-        ├── storage.js
-        ├── validation.js
-        ├── statistics.js
-        ├── contact-service.js
-        ├── contact-manager.js
-        └── main.js
+└── 04-contact-manager/          # Project 04: Advanced Contact Manager (19 tests)
+    ├── index.html               # Address book interface & detailed modals
+    ├── style.css                # Clean SaaS CRM layout & styling
+    ├── package.json             # Project dependencies & scripts
+    ├── tsconfig.json            # TypeScript configuration
+    ├── eslint.config.mjs        # Project ESLint flat config
+    ├── src/                     # Modular TypeScript source code
+    │   ├── types.ts             # Contact interfaces, activity log & form models
+    │   ├── validation.ts        # Duplicate check & input validators
+    │   ├── statistics.ts        # Category breakdown & summary metrics
+    │   ├── storage.ts           # Local storage resilience & initial seed loader
+    │   ├── contact-service.ts   # Central data store, CRUD & activity logger
+    │   ├── import-export.ts     # RFC 4180 CSV & JSON import/export handler
+    │   ├── contact-manager.ts   # UI controller & DOM event coordinator
+    │   └── main.ts              # Application initialization
+    ├── tests/                   # Vitest unit test suites
+    │   └── validation.test.ts
+    └── dist/                    # Compiled ES6 distribution files
 ```
 
 ---
 
-## 🧠 TypeScript Concepts Practised
-
-Throughout the repository, the following core concepts have been applied to real application logic:
-
-1. **Variables and Data Types**: Primitive types (`number`, `string`, `boolean`) and arrays (`number[]`, `Expense[]`).
-2. **Functions, Parameters & Arguments**: Explicit parameter type annotations preventing invalid data inputs (e.g., `calculate(first: number, second: number, operator: string)`).
-3. **Explicit Return Types & `void`**: Functions returning values explicitly state their type (`: number`, `: string`, `: boolean`). Side-effect-only functions (such as UI updates or event listeners) are strictly annotated with `: void`.
-4. **Union Types**: Modeling multiple valid states or error conditions (e.g., `number | null` in `calculate()` for division by zero; `DifficultyLevel = "easy" | "medium" | "hard"`).
-5. **Arrow Functions**: Concise function expressions with lexical scope (e.g., `const calculateWinRate = (won: number, total: number): number => ...`).
-6. **Callbacks & Event Listeners**: Passing functions as arguments to event listeners (`btn.addEventListener("click", computeResult)`) and button iterations.
-7. **Array Methods with Typed Callbacks**:
-   - `forEach()`: Iterating through DOM node collections to attach click handlers.
-   - `map()`: Transforming historical guess numbers into styled HTML badge tags (`guessHistory.map(...)`), and mapping `Expense` objects into table row HTML strings.
-   - `filter()`: Filtering expenses by selected category dropdown, and removing items by ID (`expenses.filter(item => item.id !== id)`).
-   - `reduce()`: Accumulating total spending from an array of expenses (`expenses.reduce((total, item) => total + item.amount, 0)`).
-8. **Global, Local & Block Scope**:
-   - *Global Scope*: Persistent application state (`expenses`, `monthlyBudget`, `currentInput`, `guessHistory`) kept accessible across asynchronous event listeners.
-   - *Local / Function Scope*: Calculation variables (`factor`, `firstOperand`, `totalSpent`) isolated within function bodies.
-   - *Block Scope*: Temporary variables within `if` branches declared using `const` or `let`.
-9. **Reusable Helper Functions**:
-   - `roundToPrecision(value, decimalPlaces)`: Pure rounding helper eliminating floating-point errors.
-   - `calculate(first, second, operator)`: Pure arithmetic dispatcher decoupled from DOM UI.
-   - `resetExpenseForm()`: Reusable helper eliminating duplicate form reset and validation-clearing code.
-   - `calculateBudgetPercentage(spent, budget)`: Pure budget consumption calculation helper.
-10. **Optional Parameters (`?`)**:
-    - `formatDate(dateString?: string, fallbackText: string = "-")`: Safely handles omitted or undefined date inputs.
-11. **Default Parameters**:
-    - `roundToPrecision(value: number, decimalPlaces: number = 8)`: Omits need to manually pass precision on standard operations.
-    - `generateRandomNumber(min: number = 1, max: number = 100)`: Supplies default range bounds.
-    - `formatCurrency(amount: number, currencyCode: string = "INR", locale: string = "en-IN")`: Provides standard formatting defaults while allowing overrides.
-12. **Nullish Coalescing (`??`)**:
-    - Replaces `null` or `undefined` with safe fallback values without overwriting valid falsy values like `0` or `""`:
-      - `localStorage.getItem(STORAGE_EXPENSES_KEY) ?? "[]"`
-      - `btn.getAttribute("data-number") ?? ""`
-      - `btn.getAttribute("data-difficulty") ?? ""`
-13. **TypeScript Strict Mode**: Enabled in all three projects (`"strict": true`, `"noImplicitAny": true`) ensuring zero unhandled types.
-14. **TypeScript Compilation**: Transforming `.ts` source files inside `src/` to browser-ready `.js` files inside `dist/`.
-
----
-
-## 📈 Learning Phases Completed
-
-The codebase was enhanced through six structured learning phases:
-
-- **Phase 1: Project Analysis & Upgrade Preparation**: Audited repository health, verified TypeScript compile status, inspected code organization, and established individual project refactoring goals.
-- **Phase 2: Functions, Parameters & Return Types**: Extracted pure arithmetic dispatching (`calculate()`) and precision rounding (`roundToPrecision()`) in the Calculator, strictly typing all parameters and return signatures (`number | null`, `void`).
-- **Phase 3: Arrow Functions & Callbacks**: Replaced imperative `for` loops with functional `.map()` transformations for guess tags in Guess Master, refactored win rate calculations with typed arrow functions, and enforced explicit return annotations on all array callbacks.
-- **Phase 4: Scope & Reusable Code**: Reviewed global vs. local variable boundaries. Extracted repeated form-resetting and budget calculation logic into reusable helpers (`resetExpenseForm()`, `calculateBudgetPercentage()`), eliminating code duplication.
-- **Phase 5: Optional Parameters, Default Parameters & Nullish Coalescing (`??`)**: Added optional parameters (`formatDate`), default parameter fallbacks (`roundToPrecision`, `generateRandomNumber`, `formatCurrency`), and converted DOM attribute and storage reads to use `??` for safe nullish handling.
-- **Phase 6: Final Testing, Code Review & GitHub Verification**: Executed automated validation scripts for all extracted logic, ran compilation across all projects, reviewed Git diffs, and updated project documentation.
-
----
-
-## 🛠️ Technologies Used
-
-- **HTML5**: Semantic web structure (forms, tables, modal dialogs, status badges).
-- **CSS3**: Responsive layouts (Flexbox, CSS Grid), custom properties/variables, modern dark theme styling, and animations.
-- **TypeScript (v5.x)**: Type annotations, strict mode, interfaces, union types, arrow functions, and ES6 compilation.
-- **JavaScript (ES6)**: Compiled output executed by web browsers.
-- **Git & GitHub**: Version control and repository hosting.
-
----
-
-## 💻 Setup and Execution Instructions
+## 🛠️ Quick Start & Installation
 
 ### Prerequisites
-Make sure [Node.js](https://nodejs.org/) (which includes `npm` and `npx`) is installed.
+- **Node.js**: v18.0.0 or later (v22.x recommended)
+- **npm**: v9.0.0 or later
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/Sameena70/typescript-learning-projects.git
-cd typescript-learning-projects
+git clone https://github.com/Sameena-kausar070/type-script.git
+cd type-script
 ```
 
-### 2. Compiling TypeScript Code
-Source files are located in `src/` and compile directly into `dist/`. You can compile any project using its local `tsconfig.json`:
-
+### 2. Install Dependencies
+Install dependencies for each project:
 ```bash
-# Compile Simple Calculator
-tsc --project ./01-simple-calculator/tsconfig.json
-
-# Compile Expense Tracker
-tsc --project ./02-expense-tracker/tsconfig.json
-
-# Compile Number Guessing Game
-tsc --project ./03-number-guessing-game/tsconfig.json
-
-# Compile Advanced Contact Manager
-tsc --project ./04-contact-manager/tsconfig.json
+npm install --prefix 01-simple-calculator
+npm install --prefix 02-expense-tracker
+npm install --prefix 03-number-guessing-game
+npm install --prefix 04-contact-manager
 ```
 
-Or run watch mode while developing:
+---
+
+## 💻 Available Scripts
+
+The root `package.json` provides unified commands to manage all four projects sequentially:
+
+### Compilation
 ```bash
-tsc --project ./01-simple-calculator/tsconfig.json --watch
+# Build all four projects sequentially
+npm run build:all
+
+# Or build individual projects
+npm run build:01
+npm run build:02
+npm run build:03
+npm run build:04
 ```
 
-### 3. Running the Applications
-No web server setup is required. You can launch the applications directly:
-- **Central Portfolio Showcase**: Open root `index.html` in your web browser.
-- **Individual Projects**:
-  - `01-simple-calculator/index.html`
-  - `02-expense-tracker/index.html`
-  - `03-number-guessing-game/index.html`
-  - `04-contact-manager/index.html`
+### Automated Testing
+```bash
+# Run all unit tests across all four projects (90 tests total)
+npm run test:all
 
-On Windows PowerShell, open any file directly:
-```powershell
-Start-Process "01-simple-calculator/index.html"
+# Or test individual projects
+npm run test:01
+npm run test:02
+npm run test:03
+npm run test:04
+```
+
+### Code Quality (Linting & Formatting)
+```bash
+# Run ESLint checks across all four projects
+npm run lint:all
+
+# Verify Prettier formatting across all four projects
+npm run format:check:all
 ```
 
 ---
 
-## 📊 Current Project Status
+## 🌐 Running Applications Locally
 
-- **Compilation**: All four projects compile cleanly with **0 errors and 0 warnings** under `strict: true`.
-- **Logic Validation**: Automated logic tests for calculations, date/currency formatters, win rate formulas, and contact manager CRUD/validation completed with 100% pass rate.
-- **Manual Verification**: Interactive browser testing (clicking through buttons and keyboards) remains open for manual user confirmation.
-- **Git Status**: Changes remain in the local branch, uncommitted and ready for review.
+Because all applications use native browser ES modules, serve them through a local HTTP development server rather than opening `.html` files directly via `file://`.
+
+### Using Node.js `npx serve`:
+```bash
+# Serve the entire repository from the root
+npx serve .
+```
+Then navigate to:
+- **Central Showcase Hub:** `http://localhost:3000/index.html`
+- **Calculator:** `http://localhost:3000/01-simple-calculator/index.html`
+- **Expense Tracker:** `http://localhost:3000/02-expense-tracker/index.html`
+- **Number Guessing Game:** `http://localhost:3000/03-number-guessing-game/index.html`
+- **Contact Manager:** `http://localhost:3000/04-contact-manager/index.html`
+
+Alternatively, use the **VS Code Live Server** extension by right-clicking `index.html` and choosing *Open with Live Server*.
 
 ---
 
-## 🎯 Future Learning Goals
+## 📜 Contributing & Coding Standards
 
-The next stages of learning will focus on:
-- Advanced DOM manipulation and Browser Web APIs.
-- JSON data serialization and parsing patterns.
-- Asynchronous TypeScript (Promises, `async`/`await`).
-- Working with the Fetch API for remote data integration.
-- Connecting frontend clients to backend services and REST APIs.
-- Object-Oriented Programming (OOP) with TypeScript Classes and Generics.
-
----
-
-## 📄 License
-Open-source under the [MIT License](https://opensource.org/licenses/MIT).
+Please review [CONTRIBUTING.md](./CONTRIBUTING.md) for detailed guidelines on TypeScript conventions, code formatting, test requirements, and the recommended development workflow.

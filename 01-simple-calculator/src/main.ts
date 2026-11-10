@@ -28,7 +28,7 @@ class CalculatorApp {
   private refreshHistory(): void {
     const history = this.historyService.getHistory();
     this.ui.renderHistory(history, (record: CalculationRecord) => {
-      // Allow user to reuse past result
+      // Recall past result into current display
       this.stateModel.clearAll();
       this.stateModel.appendDigit(record.result);
       this.ui.updateDisplay(this.stateModel.getState(), record.expression);
@@ -65,7 +65,7 @@ class CalculatorApp {
   private bindEvents(): void {
     // Number buttons
     const numberBtns = document.querySelectorAll<HTMLButtonElement>('.btn-number[data-number]');
-    numberBtns.forEach(btn => {
+    numberBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const num = btn.getAttribute('data-number');
         if (num !== null) {
@@ -82,9 +82,16 @@ class CalculatorApp {
       this.ui.updateDisplay(this.stateModel.getState());
     });
 
+    // Negation button (toggle sign)
+    const signBtn = document.getElementById('signBtn');
+    signBtn?.addEventListener('click', () => {
+      this.stateModel.toggleSign();
+      this.ui.updateDisplay(this.stateModel.getState());
+    });
+
     // Operator buttons
     const operatorBtns = document.querySelectorAll<HTMLButtonElement>('.btn-operator');
-    operatorBtns.forEach(btn => {
+    operatorBtns.forEach((btn) => {
       btn.addEventListener('click', () => {
         const op = btn.getAttribute('data-operator') as Operator;
         if (op) {
@@ -168,6 +175,12 @@ class CalculatorApp {
       } else if (key === 'Escape') {
         this.stateModel.clearAll();
         this.ui.updateDisplay(this.stateModel.getState());
+      } else if (key === 'm' || key === 'M') {
+        if (event.ctrlKey || event.metaKey) {
+          event.preventDefault();
+          this.stateModel.memoryRecall();
+          this.ui.updateDisplay(this.stateModel.getState());
+        }
       }
     });
   }
@@ -177,4 +190,3 @@ class CalculatorApp {
 window.addEventListener('DOMContentLoaded', () => {
   new CalculatorApp();
 });
-

@@ -1,24 +1,25 @@
 /**
  * Storage Service for Expense Tracker
  *
- * Safely persists expenses and budget configurations in browser localStorage.
+ * Safely persists transactions, recurring rules, and financial settings in localStorage.
  * Handles missing, malformed, or corrupted data gracefully with try/catch.
  */
 export class StorageService {
-    static getItem(key, fallback) {
+    static getItem(key, fallback, validator) {
         try {
             const raw = localStorage.getItem(key);
             if (raw === null) {
                 return fallback;
             }
-            return JSON.parse(raw);
+            const parsed = JSON.parse(raw);
+            if (validator) {
+                return validator(parsed) ? parsed : fallback;
+            }
+            return parsed;
         }
         catch (error) {
             if (error instanceof Error) {
                 console.warn(`[StorageService] Failed to read "${key}":`, error.message);
-            }
-            else {
-                console.warn(`[StorageService] Corrupted storage for key: "${key}"`);
             }
             return fallback;
         }

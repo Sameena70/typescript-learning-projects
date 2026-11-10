@@ -25,38 +25,51 @@ export class GameUI {
         const max = state.getMax();
         const remaining = state.getRemainingAttempts();
         const maxAttempts = state.getMaxAttempts();
-        this.targetRangeDisplay.textContent = `${min} - ${max}`;
-        this.remainingAttemptsDisplay.textContent = `${remaining} / ${maxAttempts}`;
-        this.guessInput.min = min.toString();
-        this.guessInput.max = max.toString();
+        if (this.targetRangeDisplay) {
+            this.targetRangeDisplay.textContent = `${min} - ${max}`;
+        }
+        if (this.remainingAttemptsDisplay) {
+            this.remainingAttemptsDisplay.textContent = `${remaining} / ${maxAttempts}`;
+        }
+        if (this.guessInput) {
+            this.guessInput.min = min.toString();
+            this.guessInput.max = max.toString();
+        }
         // Progress bar calculation
-        const percentage = (remaining / maxAttempts) * 100;
-        this.attemptsProgressBar.style.width = `${percentage}%`;
-        if (percentage > 50) {
-            this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #00f2fe, #4facfe)';
+        if (this.attemptsProgressBar) {
+            const percentage = (remaining / maxAttempts) * 100;
+            this.attemptsProgressBar.style.width = `${percentage}%`;
+            if (percentage > 50) {
+                this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #00f2fe, #4facfe)';
+            }
+            else if (percentage > 25) {
+                this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #f6d365, #fda085)';
+            }
+            else {
+                this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #ff0844, #ffb199)';
+            }
         }
-        else if (percentage > 25) {
-            this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #f6d365, #fda085)';
+        const isGameOver = state.getIsGameOver();
+        if (this.guessInput) {
+            this.guessInput.disabled = isGameOver;
+            if (!isGameOver) {
+                this.guessInput.focus();
+            }
         }
-        else {
-            this.attemptsProgressBar.style.background = 'linear-gradient(90deg, #ff0844, #ffb199)';
-        }
-        if (state.getIsGameOver()) {
-            this.guessInput.disabled = true;
-            this.submitGuessBtn.disabled = true;
-        }
-        else {
-            this.guessInput.disabled = false;
-            this.submitGuessBtn.disabled = false;
+        if (this.submitGuessBtn) {
+            this.submitGuessBtn.disabled = isGameOver;
         }
     }
     renderGuesses(guesses, targetNumber, isGameOver) {
+        if (!this.historyTagsContainer)
+            return;
         this.historyTagsContainer.innerHTML = '';
         if (guesses.length === 0) {
             this.historyTagsContainer.innerHTML = '<span class="no-history">No guesses yet</span>';
             return;
         }
-        guesses.forEach(guess => {
+        guesses.forEach((guess) => {
+            var _a;
             const tag = document.createElement('span');
             tag.className = 'guess-tag';
             if (guess === targetNumber && isGameOver) {
@@ -71,10 +84,16 @@ export class GameUI {
                 tag.classList.add('tag-low');
                 tag.textContent = `${guess} ↑`;
             }
-            this.historyTagsContainer.appendChild(tag);
+            (_a = this.historyTagsContainer) === null || _a === void 0 ? void 0 : _a.appendChild(tag);
         });
     }
     showFeedback(result) {
+        if (!this.feedbackBanner ||
+            !this.feedbackIcon ||
+            !this.feedbackTitle ||
+            !this.feedbackMessage) {
+            return;
+        }
         this.feedbackBanner.className = 'feedback-box';
         switch (result.type) {
             case 'CORRECT':
@@ -106,19 +125,34 @@ export class GameUI {
         this.feedbackMessage.textContent = result.message;
     }
     resetFeedback() {
-        this.feedbackBanner.className = 'feedback-box state-neutral';
-        this.feedbackIcon.textContent = '🎯';
-        this.feedbackTitle.textContent = 'Make your first guess!';
-        this.feedbackMessage.textContent = 'Type an integer and hit submit.';
-        this.validationErrorMessage.textContent = '';
-        this.guessInput.value = '';
-        this.guessInput.focus();
+        if (this.feedbackBanner)
+            this.feedbackBanner.className = 'feedback-box state-neutral';
+        if (this.feedbackIcon)
+            this.feedbackIcon.textContent = '🎯';
+        if (this.feedbackTitle)
+            this.feedbackTitle.textContent = 'Make your first guess!';
+        if (this.feedbackMessage)
+            this.feedbackMessage.textContent = 'Type an integer and hit submit.';
+        if (this.validationErrorMessage)
+            this.validationErrorMessage.textContent = '';
+        if (this.guessInput) {
+            this.guessInput.value = '';
+            this.guessInput.disabled = false;
+            this.guessInput.focus();
+        }
+        if (this.submitGuessBtn) {
+            this.submitGuessBtn.disabled = false;
+        }
     }
     showValidationError(msg) {
-        this.validationErrorMessage.textContent = msg;
+        if (this.validationErrorMessage) {
+            this.validationErrorMessage.textContent = msg;
+        }
     }
     clearValidationError() {
-        this.validationErrorMessage.textContent = '';
+        if (this.validationErrorMessage) {
+            this.validationErrorMessage.textContent = '';
+        }
     }
     updateStatistics(stats, winPct, avgAttempts) {
         if (this.statsGamesPlayed)
@@ -139,22 +173,27 @@ export class GameUI {
             return;
         this.gameHistoryList.innerHTML = '';
         if (records.length === 0) {
-            this.gameHistoryList.innerHTML = '<div class="no-history-msg">No game records saved yet.</div>';
+            this.gameHistoryList.innerHTML =
+                '<div class="no-history-msg">No game records saved yet.</div>';
             return;
         }
-        records.forEach(rec => {
+        records.forEach((rec) => {
+            var _a;
             const item = document.createElement('div');
             item.className = `history-record-card ${rec.won ? 'rec-won' : 'rec-lost'}`;
+            item.tabIndex = 0;
             const dateStr = new Date(rec.timestamp).toLocaleDateString(undefined, {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit'
             });
+            const outcomeClass = rec.won ? 'won-text' : 'lost-text';
+            const outcomeText = rec.won ? 'WON' : 'LOST';
             item.innerHTML = `
         <div class="rec-header">
           <span class="rec-diff">${rec.difficulty.toUpperCase()}</span>
-          <span class="rec-outcome ${rec.won ? 'won-text' : 'lost-text'}">${rec.won ? 'WON' : 'LOST'}</span>
+          <span class="rec-outcome ${outcomeClass}">${outcomeText}</span>
         </div>
         <div class="rec-details">
           <span>Target: <strong>${rec.targetNumber}</strong></span>
@@ -162,7 +201,7 @@ export class GameUI {
           <span>Date: <strong>${dateStr}</strong></span>
         </div>
       `;
-            this.gameHistoryList.appendChild(item);
+            (_a = this.gameHistoryList) === null || _a === void 0 ? void 0 : _a.appendChild(item);
         });
     }
     toggleHistoryDrawer() {
