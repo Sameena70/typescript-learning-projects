@@ -5,20 +5,32 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TypeScript Calculator</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Link the compiled JavaScript file -->
-  <script src="dist/calculator.js" defer></script>
+  <!-- Link the compiled JavaScript module -->
+  <script type="module" src="dist/main.js" defer></script>
 </head>
 <body>
   <div class="calculator-container">
     <div class="calculator-card">
       <div class="calculator-header">
         <span class="app-title">TypeScript Calculator</span>
+        <div class="header-right">
+          <span id="memoryIndicator" class="memory-badge" style="display: none;">M: 0</span>
+          <button id="toggleHistoryBtn" class="icon-btn" title="View History" type="button">🕒</button>
+        </div>
       </div>
 
       <!-- Calculator Display -->
       <div class="display-screen">
         <div id="historyDisplay" class="history-text"></div>
         <div id="currentDisplay" class="current-text">0</div>
+      </div>
+
+      <!-- Memory Row -->
+      <div class="memory-grid">
+        <button id="mcBtn" class="btn btn-memory" type="button">MC</button>
+        <button id="mrBtn" class="btn btn-memory" type="button">MR</button>
+        <button id="mPlusBtn" class="btn btn-memory" type="button">M+</button>
+        <button id="mMinusBtn" class="btn btn-memory" type="button">M−</button>
       </div>
 
       <!-- Buttons Grid -->
@@ -52,8 +64,21 @@
         <button id="decimalBtn" class="btn btn-number" type="button">.</button>
         <button id="equalsBtn" class="btn btn-equals" type="button">=</button>
       </div>
+
+      <!-- History Drawer (Collapsible) -->
+      <div id="historyDrawer" class="history-drawer">
+        <div class="drawer-header">
+          <span class="drawer-title">Calculation History</span>
+          <div class="drawer-actions">
+            <button id="clearHistoryBtn" class="btn-text-danger" type="button">Clear</button>
+            <button id="closeHistoryBtn" class="btn-text-close" type="button">✕</button>
+          </div>
+        </div>
+        <div id="historyList" class="history-list">
+          <!-- History items injected dynamically -->
+        </div>
+      </div>
     </div>
   </div>
 </body>
 </html>
-

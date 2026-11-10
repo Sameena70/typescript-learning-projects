@@ -20,6 +20,7 @@ body {
 }
 
 .calculator-card {
+  position: relative;
   background: #1e293b;
   border-radius: 20px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.08);
@@ -32,6 +33,36 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.memory-badge {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 600;
+  border: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 4px;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.icon-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .app-title {
@@ -47,7 +78,7 @@ body {
   background-color: #0f172a;
   border-radius: 12px;
   padding: 18px 16px;
-  margin-bottom: 20px;
+  margin-bottom: 14px;
   text-align: right;
   min-height: 100px;
   display: flex;
@@ -71,6 +102,28 @@ body {
   font-size: 2.3rem;
   font-weight: 600;
   line-height: 1.2;
+}
+
+/* Memory Grid */
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.btn-memory {
+  height: 38px !important;
+  font-size: 0.85rem !important;
+  background-color: #1e293b !important;
+  color: #94a3b8 !important;
+  border: 1px solid #334155 !important;
+  font-weight: 600;
+}
+
+.btn-memory:hover {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
 }
 
 /* Buttons Grid */
@@ -142,6 +195,121 @@ body {
   grid-column: span 2;
 }
 
+/* History Drawer (Collapsible Overlay) */
+.history-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.96);
+  backdrop-filter: blur(8px);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(105%);
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+}
+
+.history-drawer.open {
+  transform: translateY(0);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 12px;
+}
+
+.drawer-title {
+  color: #f8fafc;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.drawer-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.btn-text-danger {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-text-danger:hover {
+  text-decoration: underline;
+}
+
+.btn-text-close {
+  background: #334155;
+  color: #f8fafc;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+}
+
+.btn-text-close:hover {
+  background: #475569;
+}
+
+.history-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 4px;
+}
+
+.history-empty {
+  color: #64748b;
+  text-align: center;
+  margin-top: 40px;
+  font-size: 0.9rem;
+}
+
+.history-item {
+  background: #1e293b;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: background 0.15s;
+  text-align: right;
+}
+
+.history-item:hover {
+  background: #334155;
+}
+
+.history-item-exp {
+  font-size: 0.85rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.history-item-res {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
 /* Responsive tweaking */
 @media (max-width: 380px) {
   .calculator-card {
@@ -155,4 +323,3 @@ body {
     font-size: 1.9rem;
   }
 }
-
