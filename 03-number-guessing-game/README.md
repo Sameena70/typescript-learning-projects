@@ -1,130 +1,124 @@
-# Guess Master — Number Guessing Game (TypeScript)
+# GUESS MASTER — Cyberpunk Number Guessing Game
 
-A sleek, cyberpunk-styled **Number Guessing Game Web Application** built using **HTML5, CSS3, and modern TypeScript (compiled to JavaScript)**.
-
-Designed with practical TypeScript implementations, this game incorporates custom type aliases, mapped record configurations, array transformation callbacks (`.map()`), typed arrow functions, and nullish coalescing.
+An interactive, neon-styled number guessing game engineered in modern TypeScript with ES6 modules, custom difficulty configuration, lifetime statistics, and match history persistence.
 
 ---
 
-## 🎮 Game Overview
+## 1. Project Overview
 
-The application generates a secret random number within a designated range based on your chosen difficulty level. Your objective is to deduce the hidden code before your allowed attempts run out:
-- **Easy**: Numbers between **1 – 100** (7 attempts)
-- **Medium**: Numbers between **1 – 500** (9 attempts)
-- **Hard**: Numbers between **1 – 1000** (10 attempts)
-
-After every guess, immediate directional feedback is provided:
-- **"Too Low! Try a Higher Number"** ($\uparrow$)
-- **"Too High! Try a Lower Number"** ($\downarrow$)
-- **"CYBER CODE CRACKED! YOU WON!"** ($\checkmark$) upon exact match
-- **"SYSTEM LOCKED: YOU LOST!"** if you exhaust all attempts
+**GUESS MASTER** challenges players to crack a randomly generated secret numeric code within a limited number of attempts. It includes dynamic visual feedback, progress tracking, session and lifetime player statistics, and match history logs stored in browser storage.
 
 ---
 
-## ✨ Features
+## 2. Features
 
-1. **Dynamic Difficulty Settings**: Switch between Easy, Medium, and Hard with auto-adjusting ranges and attempt caps.
-2. **Safe Input Validation**:
-   - Rejects empty strings.
-   - Rejects decimal numbers/floats.
-   - Rejects non-numeric text.
-   - Rejects out-of-range guesses without deducting player attempts.
-3. **Attempt Progress Bar**: Visual progress indicator that dynamically transitions colors as remaining attempts decrease (Cyan $\to$ Amber $\to$ Rose).
-4. **Functional Guess History**: Chronological history badges generated via `.map()` displaying past guesses with directional indicators.
-5. **Session Statistics**: Real-time tracking of **Games Played**, **Games Won**, **Games Lost**, and **Win Rate %** calculated via a dedicated arrow helper.
-6. **Game State Reset**: One-click restart button with visual glow animations upon game completion.
-
----
-
-## 🛠️ Technologies Used
-
-- **TypeScript (v5.x)**: Union types, Record mappings, arrow functions, `.map()` callback rendering, and default parameters.
-- **HTML5**: Form controls, HUD badges, and semantic game sections.
-- **CSS3**: Cyberpunk / neon theme with CSS variables, glowing borders, gradients, and responsive breakpoints.
-- **JavaScript (ES6)**: Compiled browser output.
+- **Multiple Difficulty Modes**:
+  - **Easy**: 1 – 100 range with 7 attempts.
+  - **Medium**: 1 – 500 range with 9 attempts.
+  - **Hard**: 1 – 1,000 range with 10 attempts.
+  - **Custom Mode**: Configure your own custom minimum, maximum, and allowed attempts.
+- **Intelligent Game Logic**:
+  - Duplicate guess prevention (repeated numbers do not penalize remaining attempts).
+  - Post-game input lockdown prevents guessing after victory or defeat.
+  - Range validation ensures guesses remain strictly within current bounds.
+- **Lifetime Statistics & History**:
+  - Tracks Total Games, Wins, Losses, Win Rate %, Best Score (fewest attempts used), and Average Attempts.
+  - Slide-out Match History drawer recording target numbers, attempts used, difficulties, and timestamps.
+  - Persisted using `localStorage` and `JSON.stringify()`.
+- **Cyberpunk UI & Visual Feedback**:
+  - Dynamic neon glow progress bar reflecting attempts left.
+  - Color-coded feedback banner (Victory, System Overload, Too High, Too Low, Duplicate).
 
 ---
 
-## 📂 Project Structure
+## 3. Technology Stack
 
-```text
+- **HTML5 & CSS3**: Cyberpunk/neon aesthetic with ambient glow orbs and glassmorphism.
+- **TypeScript 5.x**: Strict mode, custom types, object models, and generic storage.
+- **Storage**: Browser `localStorage` with `JSON.stringify()` and `JSON.parse()`.
+
+---
+
+## 4. Folder Structure
+
+```
 03-number-guessing-game/
-├── dist/
-│   └── number-guessing-game.js      # Compiled JavaScript output consumed by index.html
-├── src/
-│   └── number-guessing-game.ts      # TypeScript source code (state, callbacks, DOM)
-├── index.html                       # Application game interface
-├── style.css                        # Cyberpunk styling, neon glows, and HUD progress bar
-├── package.json                     # NPM package scripts (build: "tsc", watch: "tsc --watch")
-├── tsconfig.json                    # Compiler configuration (Target: ES6, Strict: true)
-└── README.md                        # Project documentation
+├── dist/                  # Compiled JavaScript ES6 modules
+│   ├── game-config.js
+│   ├── game-logic.js
+│   ├── game-state.js
+│   ├── main.js
+│   ├── statistics.js
+│   ├── storage.js
+│   ├── types.js
+│   └── ui.js
+├── src/                   # TypeScript source code
+│   ├── types.ts           # Game types & record interfaces
+│   ├── storage.ts         # Generic localStorage wrapper
+│   ├── game-config.ts     # Difficulty configuration model
+│   ├── game-logic.ts      # Pure game rules & guess evaluation
+│   ├── game-state.ts      # Active round state machine
+│   ├── statistics.ts      # Lifetime stats & history management
+│   ├── ui.ts              # DOM HUD renderer & history drawer
+│   └── main.ts            # Entry point & event listeners
+├── index.html             # Application markup with type="module"
+├── style.css              # Cyberpunk dark theme stylesheet
+├── package.json           # Build scripts & dependencies
+├── tsconfig.json          # TypeScript compiler options
+└── README.md              # Project documentation
 ```
 
 ---
 
-## 🧠 TypeScript Concepts Practised in this Project
+## 5. TypeScript Module Breakdown
 
-1. **Type Aliases & Mapped Record Configurations**:
-   ```typescript
-   type DifficultyLevel = "easy" | "medium" | "hard";
-
-   interface DifficultyConfig {
-     name: string;
-     min: number;
-     max: number;
-     maxAttempts: number;
-   }
-
-   const DIFFICULTY_SETTINGS: Record<DifficultyLevel, DifficultyConfig> = { ... };
-   ```
-2. **Functional Array Transformation with `.map()`**:
-   - Transformed numerical guess history into styled HTML tags cleanly replacing imperative `for` loops:
-     ```typescript
-     const tagsHtml: string = guessHistory
-       .map((val: number): string => {
-         // evaluate class and directional arrow
-         return `<span class="history-tag ${tagClass}">${val} ${arrow}</span>`;
-       })
-       .join("");
-     ```
-3. **Typed Arrow Functions**:
-   - Pure win rate calculation with division-by-zero protection:
-     ```typescript
-     const calculateWinRate = (won: number, total: number): number => {
-       return total === 0 ? 0 : Math.round((won / total) * 100);
-     };
-     ```
-4. **Default Parameters**:
-   - `generateRandomNumber(min: number = 1, max: number = 100): number`
-5. **Safe Data Attribute Retrieval & Nullish Coalescing (`??`)**:
-   - Safely reading button difficulty attributes with a fallback string:
-     ```typescript
-     const rawLevel: string = btn.getAttribute("data-difficulty") ?? "";
-     if (rawLevel === "easy" || rawLevel === "medium" || rawLevel === "hard") { ... }
-     ```
+- **`types.ts`**: Defines `DifficultyLevel`, `GuessFeedbackType`, `GuessResult`, `GameRecord`, and `LifetimeStatistics`.
+- **`game-config.ts`**: Provides defaults and validates custom user configurations.
+- **`game-logic.ts`**: Evaluates guesses against secret numbers and generates typed feedback results (`CORRECT`, `GAME_OVER`, `TOO_HIGH`, `TOO_LOW`, `DUPLICATE`).
+- **`game-state.ts`**: Tracks the ongoing game state (secret number, remaining tries, guess history).
+- **`statistics.ts`**: Updates and serializes lifetime player records to `localStorage`.
+- **`ui.ts`**: Handles HUD updates, guess tags, and modal controls.
+- **`main.ts`**: Connects user input to game logic and handles difficulty switching.
 
 ---
 
-## 🚀 How to Run and Compile
+## 6. How Concepts Work
 
-### 1. Open in Browser
-Double-click `index.html` or launch it via PowerShell:
-```powershell
-Start-Process "03-number-guessing-game/index.html"
+### A. Separation of Game Logic from UI
+The game rules in `game-logic.ts` contain zero references to `document` or HTML elements. They receive numbers and arrays, returning typed `GuessResult` objects. The `ui.ts` module is solely responsible for translating those results into DOM updates and animations.
+
+### B. Persistent Statistics
+Every completed match triggers:
+```typescript
+const record = this.stateModel.createGameRecord();
+this.statsManager.recordGame(record);
 ```
+Stats are saved as JSON strings and immediately restored when the browser reloads.
 
-### 2. Compiling TypeScript
-To compile `src/number-guessing-game.ts` into `dist/number-guessing-game.js`:
+---
+
+## 7. Installation & Build
+
 ```bash
-# Using local tsconfig
-tsc --project ./03-number-guessing-game/tsconfig.json
+# Install dependencies
+npm install
 
-# Or using the package script inside this folder:
-cd 03-number-guessing-game
+# Build TypeScript
 npm run build
-```
 
-Watch mode for automatic re-compilation on save:
-```bash
+# Watch mode
 npm run watch
 ```
+
+Run with any static web server (such as Live Server or `npx serve .`).
+
+---
+
+## 8. Manual Testing Checklist
+
+- [x] Standard game loop: select Easy, enter guesses, verify feedback banners change properly.
+- [x] Duplicate check: enter `42`, then enter `42` again; verify warning banner appears without decrementing remaining attempts.
+- [x] Out-of-bounds check: enter a number below `min` or above `max`; verify error message is shown.
+- [x] Custom difficulty: click ⚙️ Custom, set min: 10, max: 80, attempts: 5, start game and verify HUD updates.
+- [x] Match history: click 📜 Game History, verify past completed matches appear with result and timestamp.
+- [x] Refresh page: reload browser and confirm played/won/lost counters remain intact.

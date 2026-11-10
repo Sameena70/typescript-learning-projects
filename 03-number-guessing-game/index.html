@@ -8,8 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <!-- Compiled TypeScript logic -->
-  <script src="dist/number-guessing-game.js" defer></script>
+  <!-- Compiled TypeScript ES6 module -->
+  <script type="module" src="dist/main.js" defer></script>
 </head>
 <body>
   <!-- Ambient background glow particles -->
@@ -17,10 +17,15 @@
   <div class="glow-orb glow-magenta"></div>
 
   <div class="game-container">
-    <!-- Top badge -->
-    <div class="header-pill">
-      <span class="pill-dot"></span>
-      TypeScript Game Project
+    <!-- Top badge & History Toggle -->
+    <div class="top-nav-bar">
+      <div class="header-pill">
+        <span class="pill-dot"></span>
+        TypeScript Game Project
+      </div>
+      <button id="openGameHistoryBtn" class="btn-neon-outline" type="button" title="View Game History">
+        📜 Game History
+      </button>
     </div>
 
     <!-- Hero Titles -->
@@ -35,17 +40,21 @@
       <section id="difficultySection" class="view-section">
         <p class="section-title">Select Difficulty Level</p>
         <div class="difficulty-options">
-          <button type="button" class="diff-btn active" data-difficulty="easy" data-max="100" data-attempts="7">
+          <button type="button" class="diff-btn active" data-difficulty="easy">
             <span class="diff-name">Easy</span>
-            <span class="diff-range">(1 - 100) • 7 Attempts</span>
+            <span class="diff-range">(1 - 100) • 7 Tries</span>
           </button>
-          <button type="button" class="diff-btn" data-difficulty="medium" data-max="500" data-attempts="9">
+          <button type="button" class="diff-btn" data-difficulty="medium">
             <span class="diff-name">Medium</span>
-            <span class="diff-range">(1 - 500) • 9 Attempts</span>
+            <span class="diff-range">(1 - 500) • 9 Tries</span>
           </button>
-          <button type="button" class="diff-btn" data-difficulty="hard" data-max="1000" data-attempts="10">
+          <button type="button" class="diff-btn" data-difficulty="hard">
             <span class="diff-name">Hard</span>
-            <span class="diff-range">(1 - 1000) • 10 Attempts</span>
+            <span class="diff-range">(1 - 1000) • 10 Tries</span>
+          </button>
+          <button type="button" class="diff-btn" data-difficulty="custom">
+            <span class="diff-name">⚙️ Custom</span>
+            <span class="diff-range">Set Custom Range</span>
           </button>
         </div>
       </section>
@@ -108,7 +117,7 @@
         </div>
       </div>
 
-      <!-- 6. Control Actions (Restart & Change Difficulty) -->
+      <!-- 6. Control Actions (Restart) -->
       <div class="action-row">
         <button type="button" id="restartGameBtn" class="btn-glass">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -120,7 +129,7 @@
       </div>
     </main>
 
-    <!-- Session Stats Bar -->
+    <!-- Session & Lifetime Stats Bar -->
     <footer class="stats-glass-bar">
       <div class="stat-pill">
         <span class="stat-val" id="statsGamesPlayed">0</span>
@@ -138,7 +147,60 @@
         <span class="stat-val neon-cyan" id="statsWinRate">0%</span>
         <span class="stat-lbl">Win Rate</span>
       </div>
+      <div class="stat-pill">
+        <span class="stat-val neon-magenta" id="statsBestScore">-</span>
+        <span class="stat-lbl">Best Score</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-val" id="statsAvgAttempts">-</span>
+        <span class="stat-lbl">Avg Attempts</span>
+      </div>
     </footer>
+  </div>
+
+  <!-- Custom Difficulty Modal -->
+  <div id="customDiffModal" class="neon-modal hidden">
+    <div class="neon-modal-card">
+      <div class="neon-modal-header">
+        <h3>Custom Difficulty Settings</h3>
+        <button id="closeCustomModalBtn" class="close-x" type="button">&times;</button>
+      </div>
+      <form id="customDiffForm">
+        <div class="neon-modal-body">
+          <div class="input-block">
+            <label for="customMinInput">Minimum Range Number</label>
+            <input type="number" id="customMinInput" value="1" min="1" required>
+          </div>
+          <div class="input-block">
+            <label for="customMaxInput">Maximum Range Number</label>
+            <input type="number" id="customMaxInput" value="200" min="2" max="100000" required>
+          </div>
+          <div class="input-block">
+            <label for="customAttemptsInput">Maximum Attempts Allowed</label>
+            <input type="number" id="customAttemptsInput" value="8" min="1" max="50" required>
+          </div>
+          <div id="customDiffError" class="modal-error"></div>
+        </div>
+        <div class="neon-modal-footer">
+          <button type="button" id="cancelCustomBtn" class="btn-glass">Cancel</button>
+          <button type="submit" class="btn-neon-action">Apply & Start Game</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Game History Drawer -->
+  <div id="gameHistoryDrawer" class="neon-drawer">
+    <div class="drawer-top">
+      <h3>Match Records</h3>
+      <div class="drawer-btns">
+        <button id="clearGameHistoryBtn" class="btn-clear-records" type="button">Clear</button>
+        <button id="closeGameHistoryBtn" class="close-x" type="button">&times;</button>
+      </div>
+    </div>
+    <div id="gameHistoryList" class="drawer-records-list">
+      <!-- Records injected here -->
+    </div>
   </div>
 </body>
 </html>
