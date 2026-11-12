@@ -1,7 +1,7 @@
 import { CalculatorLogic } from './calculator-logic.js';
 /**
  * UI Renderer and DOM Manager for the Calculator.
- * Employs safe element retrieval with defensive checks.
+ * Employs safe element retrieval with defensive checks and type-safe operator formatting.
  */
 export class CalculatorUI {
     constructor() {
@@ -20,7 +20,7 @@ export class CalculatorUI {
             if (overrideHistory !== undefined) {
                 this.historyDisplay.textContent = overrideHistory;
             }
-            else if (state.previousInput !== '' && state.selectedOperator !== '') {
+            else if (state.previousInput !== '' && state.selectedOperator !== null) {
                 const opSymbol = CalculatorLogic.formatOperator(state.selectedOperator);
                 this.historyDisplay.textContent = `${state.previousInput} ${opSymbol}`;
             }
@@ -56,7 +56,7 @@ export class CalculatorUI {
         const operatorBtns = document.querySelectorAll('.btn-operator');
         operatorBtns.forEach((btn) => {
             const op = btn.getAttribute('data-operator');
-            if (op === activeOperator && activeOperator !== '') {
+            if (op === activeOperator && activeOperator !== null && activeOperator !== '') {
                 btn.classList.add('active-operator');
             }
             else {
@@ -102,14 +102,17 @@ export class CalculatorUI {
     }
     toggleHistoryPanel() {
         if (this.historyDrawer) {
-            const isOpen = this.historyDrawer.classList.toggle('open');
-            this.historyDrawer.setAttribute('aria-hidden', (!isOpen).toString());
+            this.historyDrawer.classList.toggle('open');
+        }
+    }
+    openHistoryPanel() {
+        if (this.historyDrawer) {
+            this.historyDrawer.classList.add('open');
         }
     }
     closeHistoryPanel() {
         if (this.historyDrawer) {
             this.historyDrawer.classList.remove('open');
-            this.historyDrawer.setAttribute('aria-hidden', 'true');
         }
     }
 }

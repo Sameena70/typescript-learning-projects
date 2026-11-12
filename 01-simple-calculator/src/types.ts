@@ -1,12 +1,18 @@
 /**
  * Calculator Type Definitions
  *
- * Defines the core types, interfaces, and unions used across
- * the calculator application modules.
+ * Defines domain-specific types, discriminated unions, interfaces,
+ * and generic storage models for the Simple Calculator application.
  */
 
+/**
+ * Valid arithmetic operator literal types.
+ */
 export type Operator = '+' | '-' | '*' | '/' | '%';
 
+/**
+ * Calculation Record persisted in history storage.
+ */
 export interface CalculationRecord {
   id: string;
   expression: string;
@@ -14,18 +20,46 @@ export interface CalculationRecord {
   timestamp: number;
 }
 
+/**
+ * Comprehensive Calculator State.
+ * Replaced the empty-string sentinel with `Operator | null` for type-safe operator representation.
+ */
 export interface CalculatorState {
   currentInput: string;
   previousInput: string;
-  selectedOperator: Operator | '';
+  selectedOperator: Operator | null;
   shouldResetDisplay: boolean;
   memoryValue: number;
   lastExpression: string;
   isError: boolean;
 }
 
-export interface CalculationOutcome {
-  expressionToSave?: string;
-  resultToSave?: string;
-  error?: string;
-}
+/**
+ * Discriminated Union for Calculation Outcomes.
+ * Eliminates conflicting states (e.g. error and result simultaneously populated or empty).
+ */
+export type CalculationOutcome =
+  | {
+      status: 'success';
+      expressionToSave: string;
+      resultToSave: string;
+      /** Backward compatibility helper for legacy code/tests expecting resultToSave directly */
+      error?: undefined;
+    }
+  | {
+      status: 'error';
+      error: string;
+      expressionToSave?: undefined;
+      resultToSave?: undefined;
+    }
+  | {
+      status: 'idle';
+      error?: undefined;
+      expressionToSave?: undefined;
+      resultToSave?: undefined;
+    };
+
+/**
+ * Storage item validator predicate function type.
+ */
+export type StorageValidator<T> = (val: unknown) => val is T;

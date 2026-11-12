@@ -1,7 +1,7 @@
 /**
  * Calculator Type Definitions
  *
- * Defines the core types, interfaces, and unions used across
- * the calculator application modules.
+ * Defines domain-specific types, discriminated unions, interfaces,
+ * and generic storage models for the Simple Calculator application.
  */
 export {};

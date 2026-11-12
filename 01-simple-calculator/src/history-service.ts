@@ -6,16 +6,30 @@ const MAX_HISTORY = 50;
 
 /**
  * Type guard for CalculationRecord objects loaded from storage.
+ * Uses typeof and the 'in' operator to safely inspect arbitrary unknown JSON inputs.
  */
 function isValidRecord(item: unknown): item is CalculationRecord {
-  if (!item || typeof item !== 'object') return false;
-  const rec = item as Record<string, unknown>;
-  return (
-    typeof rec.id === 'string' &&
-    typeof rec.expression === 'string' &&
-    typeof rec.result === 'string' &&
-    typeof rec.timestamp === 'number'
-  );
+  if (typeof item !== 'object' || item === null) {
+    return false;
+  }
+
+  // Type narrowing using 'in' operator
+  if ('id' in item && 'expression' in item && 'result' in item && 'timestamp' in item) {
+    const candidate = item as {
+      id: unknown;
+      expression: unknown;
+      result: unknown;
+      timestamp: unknown;
+    };
+    return (
+      typeof candidate.id === 'string' &&
+      typeof candidate.expression === 'string' &&
+      typeof candidate.result === 'string' &&
+      typeof candidate.timestamp === 'number'
+    );
+  }
+
+  return false;
 }
 
 /**
@@ -29,7 +43,7 @@ export class HistoryService {
   }
 
   /**
-   * Loads history from localStorage with strict runtime filtering.
+   * Loads history from localStorage with strict runtime filtering and generic type guards.
    */
   public loadHistory(): CalculationRecord[] {
     const records = StorageService.getItem<CalculationRecord[]>(

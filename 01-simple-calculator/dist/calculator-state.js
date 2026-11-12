@@ -10,7 +10,7 @@ export class CalculatorStateModel {
         this.state = {
             currentInput: '0',
             previousInput: '',
-            selectedOperator: '',
+            selectedOperator: null,
             shouldResetDisplay: false,
             memoryValue: savedMemory,
             lastExpression: '',
@@ -84,7 +84,7 @@ export class CalculatorStateModel {
     clearAll() {
         this.state.currentInput = '0';
         this.state.previousInput = '';
-        this.state.selectedOperator = '';
+        this.state.selectedOperator = null;
         this.state.shouldResetDisplay = false;
         this.state.lastExpression = '';
         this.state.isError = false;
@@ -106,12 +106,12 @@ export class CalculatorStateModel {
      */
     setOperator(operator) {
         this.dismissError();
-        let outcome = {};
-        if (this.state.previousInput !== '' && this.state.selectedOperator !== '') {
+        let outcome = { status: 'idle' };
+        if (this.state.previousInput !== '' && this.state.selectedOperator !== null) {
             if (!this.state.shouldResetDisplay) {
                 // Execute pending calculation for chained operations
                 outcome = this.calculateResult();
-                if (outcome.error) {
+                if (outcome.status === 'error') {
                     return outcome;
                 }
             }
@@ -123,21 +123,22 @@ export class CalculatorStateModel {
     }
     /**
      * Calculates the arithmetic result of (previousInput selectedOperator currentInput).
+     * Returns a type-safe discriminated union (`CalculationOutcome`).
      */
     calculateResult() {
         if (this.state.isError) {
             this.clearAll();
-            return {};
+            return { status: 'idle' };
         }
-        if (!this.state.selectedOperator || this.state.previousInput === '') {
-            return {};
+        if (this.state.selectedOperator === null || this.state.previousInput === '') {
+            return { status: 'idle' };
         }
         const first = parseFloat(this.state.previousInput);
         const second = parseFloat(this.state.currentInput);
         const op = this.state.selectedOperator;
         if (isNaN(first) || isNaN(second)) {
             this.state.isError = true;
-            return { error: 'Invalid Input' };
+            return { status: 'error', error: 'Invalid Input' };
         }
         const formattedOp = CalculatorLogic.formatOperator(op);
         const expression = `${first} ${formattedOp} ${second}`;
@@ -146,11 +147,12 @@ export class CalculatorStateModel {
             const resultStr = result.toString();
             this.state.currentInput = resultStr;
             this.state.previousInput = '';
-            this.state.selectedOperator = '';
+            this.state.selectedOperator = null;
             this.state.shouldResetDisplay = true;
             this.state.lastExpression = `${expression} =`;
             this.state.isError = false;
             return {
+                status: 'success',
                 expressionToSave: `${expression} =`,
                 resultToSave: resultStr
             };
@@ -159,7 +161,7 @@ export class CalculatorStateModel {
             this.clearAll();
             this.state.isError = true;
             const message = error instanceof Error ? error.message : 'Error';
-            return { error: message };
+            return { status: 'error', error: message };
         }
     }
     // Memory functions

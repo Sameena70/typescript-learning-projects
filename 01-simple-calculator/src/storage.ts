@@ -1,14 +1,17 @@
+import { StorageValidator } from './types.js';
+
 /**
  * Calculator Storage Module
  *
  * Provides safe localStorage reading, writing, and quota management.
+ * Leverages TypeScript generics `<T>`, generic type guards, and error narrowing.
  */
-
 export class StorageService {
   /**
-   * Safely reads and parses data from localStorage with schema validation.
+   * Safely reads and parses data from localStorage with type guard validation.
+   * Uses unknown for parsed JSON and type narrows via validator predicate.
    */
-  static getItem<T>(key: string, fallback: T, validator?: (val: unknown) => val is T): T {
+  static getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T {
     try {
       const rawData = localStorage.getItem(key);
       if (rawData === null) {
@@ -52,6 +55,19 @@ export class StorageService {
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error(`[StorageService] Failed to remove "${key}":`, error.message);
+      }
+    }
+  }
+
+  /**
+   * Clears all calculator data from localStorage.
+   */
+  static clear(): void {
+    try {
+      localStorage.clear();
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('[StorageService] Failed to clear storage:', error.message);
       }
     }
   }

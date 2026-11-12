@@ -1,7 +1,16 @@
 /**
+ * Compile-time and runtime exhaustiveness assertion helper.
+ * When used in default switch branches, TypeScript will ensure that the parameter `x`
+ * is narrowed to `never`. If a new operator is added to `Operator` union without
+ * handling it in the switch, TypeScript emits a compile error.
+ */
+export function assertNever(x, message = 'Unexpected value encountered') {
+    throw new Error(`${message}: ${String(x)}`);
+}
+/**
  * Core Calculator Arithmetic & Validation Logic
  *
- * Provides pure mathematical operations and precision handling.
+ * Provides pure mathematical operations, precision handling, and exhaustive operator computation.
  */
 export class CalculatorLogic {
     /**
@@ -71,7 +80,7 @@ export class CalculatorLogic {
         return Math.round((value + Number.EPSILON) * factor) / factor;
     }
     /**
-     * Executes calculation based on operator.
+     * Executes calculation based on operator with compile-time exhaustiveness checking.
      */
     static compute(first, second, operator) {
         let result;
@@ -92,14 +101,19 @@ export class CalculatorLogic {
                 result = this.modulo(first, second);
                 break;
             default:
-                throw new Error(`Unsupported operator: ${operator}`);
+                // operator is guaranteed to be never if all operators in union are covered
+                return assertNever(operator, 'Unsupported operator');
         }
         return this.roundToPrecision(result);
     }
     /**
      * Converts symbol to user-facing display operator.
+     * Accepts Operator, null, or empty string for backwards compatibility with UI components.
      */
     static formatOperator(operator) {
+        if (operator === null || operator === '') {
+            return '';
+        }
         switch (operator) {
             case '+':
                 return '+';
@@ -112,16 +126,22 @@ export class CalculatorLogic {
             case '%':
                 return '%';
             default:
-                return '';
+                return assertNever(operator, 'Unknown operator symbol');
         }
     }
     /**
-     * Validates if a string is a valid numeric input.
+     * Validates if a string is a valid numeric input using typeof and Number checks.
      */
     static isValidNumber(value) {
-        if (value.trim() === '')
-            return false;
-        const num = Number(value);
-        return !isNaN(num) && isFinite(num);
+        if (typeof value === 'number') {
+            return !isNaN(value) && isFinite(value);
+        }
+        if (typeof value === 'string') {
+            if (value.trim() === '')
+                return false;
+            const num = Number(value);
+            return !isNaN(num) && isFinite(num);
+        }
+        return false;
     }
 }

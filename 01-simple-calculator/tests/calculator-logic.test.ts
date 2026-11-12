@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CalculatorLogic } from '../src/calculator-logic.js';
+import { CalculatorLogic, assertNever } from '../src/calculator-logic.js';
 import { CalculatorStateModel } from '../src/calculator-state.js';
 import { HistoryService } from '../src/history-service.js';
 import { StorageService } from '../src/storage.js';
@@ -61,6 +61,18 @@ describe('CalculatorLogic (Pure Arithmetic & Validation)', () => {
     expect(() => CalculatorLogic.modulo(10, 0)).toThrow('Cannot divide by zero');
   });
 
+  it('computes all supported operators via compute()', () => {
+    expect(CalculatorLogic.compute(10, 5, '+')).toBe(15);
+    expect(CalculatorLogic.compute(10, 5, '-')).toBe(5);
+    expect(CalculatorLogic.compute(10, 5, '*')).toBe(50);
+    expect(CalculatorLogic.compute(10, 5, '/')).toBe(2);
+    expect(CalculatorLogic.compute(10, 4, '%')).toBe(2);
+  });
+
+  it('assertNever throws runtime error if an unhandled value is passed at runtime', () => {
+    expect(() => assertNever('^' as unknown as never)).toThrow('Unexpected value encountered: ^');
+  });
+
   it('converts values to percentages', () => {
     expect(CalculatorLogic.percentage(50)).toBe(0.5);
     expect(CalculatorLogic.percentage(100)).toBe(1);
@@ -80,11 +92,14 @@ describe('CalculatorLogic (Pure Arithmetic & Validation)', () => {
     expect(CalculatorLogic.roundToPrecision(0.00000000012, 10)).toBe(0.0000000001);
   });
 
-  it('validates numeric strings', () => {
+  it('validates numeric strings using type guard isValidNumber', () => {
     expect(CalculatorLogic.isValidNumber('123')).toBe(true);
+    expect(CalculatorLogic.isValidNumber(456)).toBe(true);
     expect(CalculatorLogic.isValidNumber('-45.67')).toBe(true);
     expect(CalculatorLogic.isValidNumber('abc')).toBe(false);
     expect(CalculatorLogic.isValidNumber('')).toBe(false);
+    expect(CalculatorLogic.isValidNumber(null)).toBe(false);
+    expect(CalculatorLogic.isValidNumber(undefined)).toBe(false);
   });
 
   it('formats operators into display symbols', () => {
@@ -93,6 +108,7 @@ describe('CalculatorLogic (Pure Arithmetic & Validation)', () => {
     expect(CalculatorLogic.formatOperator('*')).toBe('×');
     expect(CalculatorLogic.formatOperator('/')).toBe('÷');
     expect(CalculatorLogic.formatOperator('%')).toBe('%');
+    expect(CalculatorLogic.formatOperator(null)).toBe('');
     expect(CalculatorLogic.formatOperator('')).toBe('');
   });
 });
@@ -105,11 +121,11 @@ describe('CalculatorStateModel (State Machine & Chained Calculations)', () => {
     model = new CalculatorStateModel();
   });
 
-  it('initializes with default zero state', () => {
+  it('initializes with default zero state and null operator', () => {
     const state = model.getState();
     expect(state.currentInput).toBe('0');
     expect(state.previousInput).toBe('');
-    expect(state.selectedOperator).toBe('');
+    expect(state.selectedOperator).toBeNull();
     expect(state.memoryValue).toBe(0);
   });
 
@@ -150,14 +166,24 @@ describe('CalculatorStateModel (State Machine & Chained Calculations)', () => {
     expect(model.getState().currentInput).toBe('0');
   });
 
-  it('performs basic two-operand calculations', () => {
+  it('returns status: success discriminated outcome on valid calculation', () => {
     model.appendDigit('8');
     model.setOperator('+');
     model.appendDigit('4');
     const outcome = model.calculateResult();
 
-    expect(outcome.resultToSave).toBe('12');
+    expect(outcome.status).toBe('success');
+    if (outcome.status === 'success') {
+      expect(outcome.resultToSave).toBe('12');
+      expect(outcome.expressionToSave).toBe('8 + 4 =');
+    }
     expect(model.getState().currentInput).toBe('12');
+  });
+
+  it('returns status: idle outcome when operator is missing', () => {
+    model.appendDigit('8');
+    const outcome = model.calculateResult();
+    expect(outcome.status).toBe('idle');
   });
 
   it('supports continuous chained calculations (e.g. 10 + 5 * 2)', () => {
@@ -167,14 +193,20 @@ describe('CalculatorStateModel (State Machine & Chained Calculations)', () => {
     model.appendDigit('5'); // 5
     const chain1 = model.setOperator('*'); // intermediate calculation: 10 + 5 = 15
 
-    expect(chain1.resultToSave).toBe('15');
+    expect(chain1.status).toBe('success');
+    if (chain1.status === 'success') {
+      expect(chain1.resultToSave).toBe('15');
+    }
     expect(model.getState().currentInput).toBe('15');
     expect(model.getState().previousInput).toBe('15');
     expect(model.getState().selectedOperator).toBe('*');
 
     model.appendDigit('2'); // 2
     const finalOutcome = model.calculateResult(); // 15 * 2 = 30
-    expect(finalOutcome.resultToSave).toBe('30');
+    expect(finalOutcome.status).toBe('success');
+    if (finalOutcome.status === 'success') {
+      expect(finalOutcome.resultToSave).toBe('30');
+    }
     expect(model.getState().currentInput).toBe('30');
   });
 
@@ -185,16 +217,22 @@ describe('CalculatorStateModel (State Machine & Chained Calculations)', () => {
     expect(model.getState().selectedOperator).toBe('*');
     model.appendDigit('3');
     const outcome = model.calculateResult();
-    expect(outcome.resultToSave).toBe('27');
+    expect(outcome.status).toBe('success');
+    if (outcome.status === 'success') {
+      expect(outcome.resultToSave).toBe('27');
+    }
   });
 
-  it('handles division by zero gracefully without crashing state', () => {
+  it('handles division by zero with status: error discriminated union', () => {
     model.appendDigit('9');
     model.setOperator('/');
     model.appendDigit('0');
     const outcome = model.calculateResult();
 
-    expect(outcome.error).toBe('Cannot divide by zero');
+    expect(outcome.status).toBe('error');
+    if (outcome.status === 'error') {
+      expect(outcome.error).toBe('Cannot divide by zero');
+    }
     expect(model.getState().isError).toBe(true);
 
     // Typing a new digit dismisses error cleanly
@@ -255,7 +293,7 @@ describe('HistoryService and Storage Resilience', () => {
     expect(historyService.getHistory()).toHaveLength(0);
   });
 
-  it('safely filters out corrupted records from localStorage', () => {
+  it('safely filters out corrupted records from localStorage using in-operator type guard', () => {
     localStorage.setItem(
       'ts_calculator_history',
       JSON.stringify([
@@ -278,12 +316,12 @@ describe('HistoryService and Storage Resilience', () => {
     expect(historyService.getHistory()).toEqual([]);
   });
 
-  it('StorageService falls back safely when reading corrupted storage', () => {
+  it('StorageService falls back safely when reading corrupted storage with generic validator', () => {
     localStorage.setItem('ts_calculator_memory', 'not-a-number');
     const result = StorageService.getItem<number>(
       'ts_calculator_memory',
       0,
-      (val): val is number => typeof val === 'number'
+      (val: unknown): val is number => typeof val === 'number'
     );
     expect(result).toBe(0);
   });

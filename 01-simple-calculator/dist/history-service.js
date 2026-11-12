@@ -3,15 +3,21 @@ const STORAGE_KEY = 'ts_calculator_history';
 const MAX_HISTORY = 50;
 /**
  * Type guard for CalculationRecord objects loaded from storage.
+ * Uses typeof and the 'in' operator to safely inspect arbitrary unknown JSON inputs.
  */
 function isValidRecord(item) {
-    if (!item || typeof item !== 'object')
+    if (typeof item !== 'object' || item === null) {
         return false;
-    const rec = item;
-    return (typeof rec.id === 'string' &&
-        typeof rec.expression === 'string' &&
-        typeof rec.result === 'string' &&
-        typeof rec.timestamp === 'number');
+    }
+    // Type narrowing using 'in' operator
+    if ('id' in item && 'expression' in item && 'result' in item && 'timestamp' in item) {
+        const candidate = item;
+        return (typeof candidate.id === 'string' &&
+            typeof candidate.expression === 'string' &&
+            typeof candidate.result === 'string' &&
+            typeof candidate.timestamp === 'number');
+    }
+    return false;
 }
 /**
  * Service to manage persistent calculation history using localStorage and JSON.
@@ -22,7 +28,7 @@ export class HistoryService {
         this.loadHistory();
     }
     /**
-     * Loads history from localStorage with strict runtime filtering.
+     * Loads history from localStorage with strict runtime filtering and generic type guards.
      */
     loadHistory() {
         const records = StorageService.getItem(STORAGE_KEY, [], (val) => Array.isArray(val));

@@ -2,10 +2,12 @@
  * Calculator Storage Module
  *
  * Provides safe localStorage reading, writing, and quota management.
+ * Leverages TypeScript generics `<T>`, generic type guards, and error narrowing.
  */
 export class StorageService {
     /**
-     * Safely reads and parses data from localStorage with schema validation.
+     * Safely reads and parses data from localStorage with type guard validation.
+     * Uses unknown for parsed JSON and type narrows via validator predicate.
      */
     static getItem(key, fallback, validator) {
         try {
@@ -52,6 +54,19 @@ export class StorageService {
         catch (error) {
             if (error instanceof Error) {
                 console.error(`[StorageService] Failed to remove "${key}":`, error.message);
+            }
+        }
+    }
+    /**
+     * Clears all calculator data from localStorage.
+     */
+    static clear() {
+        try {
+            localStorage.clear();
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('[StorageService] Failed to clear storage:', error.message);
             }
         }
     }

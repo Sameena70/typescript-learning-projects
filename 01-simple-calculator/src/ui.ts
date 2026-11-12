@@ -1,9 +1,9 @@
-import { CalculationRecord, CalculatorState } from './types.js';
+import { CalculationRecord, CalculatorState, Operator } from './types.js';
 import { CalculatorLogic } from './calculator-logic.js';
 
 /**
  * UI Renderer and DOM Manager for the Calculator.
- * Employs safe element retrieval with defensive checks.
+ * Employs safe element retrieval with defensive checks and type-safe operator formatting.
  */
 export class CalculatorUI {
   private currentDisplay: HTMLElement | null;
@@ -29,7 +29,7 @@ export class CalculatorUI {
     if (this.historyDisplay) {
       if (overrideHistory !== undefined) {
         this.historyDisplay.textContent = overrideHistory;
-      } else if (state.previousInput !== '' && state.selectedOperator !== '') {
+      } else if (state.previousInput !== '' && state.selectedOperator !== null) {
         const opSymbol = CalculatorLogic.formatOperator(state.selectedOperator);
         this.historyDisplay.textContent = `${state.previousInput} ${opSymbol}`;
       } else if (state.lastExpression !== '') {
@@ -62,11 +62,11 @@ export class CalculatorUI {
     }
   }
 
-  public updateActiveOperator(activeOperator: string): void {
+  public updateActiveOperator(activeOperator: Operator | null | string): void {
     const operatorBtns = document.querySelectorAll<HTMLButtonElement>('.btn-operator');
     operatorBtns.forEach((btn) => {
       const op = btn.getAttribute('data-operator');
-      if (op === activeOperator && activeOperator !== '') {
+      if (op === activeOperator && activeOperator !== null && activeOperator !== '') {
         btn.classList.add('active-operator');
       } else {
         btn.classList.remove('active-operator');
@@ -121,15 +121,19 @@ export class CalculatorUI {
 
   public toggleHistoryPanel(): void {
     if (this.historyDrawer) {
-      const isOpen = this.historyDrawer.classList.toggle('open');
-      this.historyDrawer.setAttribute('aria-hidden', (!isOpen).toString());
+      this.historyDrawer.classList.toggle('open');
+    }
+  }
+
+  public openHistoryPanel(): void {
+    if (this.historyDrawer) {
+      this.historyDrawer.classList.add('open');
     }
   }
 
   public closeHistoryPanel(): void {
     if (this.historyDrawer) {
       this.historyDrawer.classList.remove('open');
-      this.historyDrawer.setAttribute('aria-hidden', 'true');
     }
   }
 }
