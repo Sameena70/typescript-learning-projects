@@ -1,5 +1,6 @@
 import { StorageService } from './storage.js';
 import { ExpenseValidator } from './validation.js';
+import { sortByField, filterItems } from './calculations.js';
 const STORAGE_EXPENSES_KEY = 'ts_expense_tracker_items';
 const STORAGE_BUDGET_KEY = 'ts_expense_tracker_budget';
 const STORAGE_RECURRING_KEY = 'ts_expense_tracker_recurring';
@@ -77,9 +78,9 @@ export class ExpenseService {
         StorageService.setItem(STORAGE_BUDGET_KEY, newBudget);
     }
     getCategoryBudgets() {
-        return Object.entries(this.settings.categoryBudgets).map(([category, budget]) => ({
+        return Object.keys(this.settings.categoryBudgets).map((category) => ({
             category: category,
-            budget
+            budget: this.settings.categoryBudgets[category]
         }));
     }
     setCategoryBudget(category, amount) {
@@ -91,15 +92,18 @@ export class ExpenseService {
     addExpense(data) {
         var _a;
         const id = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        const txType = data.type || 'expense';
         const newTransaction = {
             id,
             title: data.title.trim(),
             amount: data.amount,
-            type: data.type || 'expense',
+            type: txType,
             category: data.category,
             date: data.date,
             notes: ((_a = data.notes) === null || _a === void 0 ? void 0 : _a.trim()) || undefined,
-            isRecurring: Boolean(data.isRecurring)
+            isRecurring: Boolean(data.isRecurring),
+            paymentMethod: data.paymentMethod,
+            status: data.status || 'completed'
         };
         this.transactions.unshift(newTransaction);
         this.save();
@@ -134,137 +138,116 @@ export class ExpenseService {
         return this.transactions.find((e) => e.id === id);
     }
     /**
-     * Filters and sorts transactions using array methods.
+     * Filters and sorts transactions using generic filtering and sorting helpers.
      */
     filterExpenses(options) {
         let list = [...this.transactions];
         // Type filter
         if (options.type && options.type !== 'ALL') {
-            list = list.filter((tx) => tx.type === options.type);
+            list = filterItems(list, (tx) => tx.type === options.type);
         }
         // Category filter
         if (options.category && options.category !== 'ALL') {
-            list = list.filter((exp) => exp.category === options.category);
+            list = filterItems(list, (exp) => exp.category === options.category);
         }
         // Search query (title or notes)
         if (options.searchQuery && options.searchQuery.trim() !== '') {
             const q = options.searchQuery.toLowerCase().trim();
-            list = list.filter((exp) => exp.title.toLowerCase().includes(q) || (exp.notes && exp.notes.toLowerCase().includes(q)));
+            list = filterItems(list, (exp) => exp.title.toLowerCase().indexOf(q) !== -1 ||
+                (exp.notes ? exp.notes.toLowerCase().indexOf(q) !== -1 : false));
         }
         // Date range filter
         if (options.startDate) {
-            list = list.filter((exp) => exp.date >= options.startDate);
+            list = filterItems(list, (exp) => exp.date >= options.startDate);
         }
         if (options.endDate) {
-            list = list.filter((exp) => exp.date <= options.endDate);
+            list = filterItems(list, (exp) => exp.date <= options.endDate);
         }
         // Specific Month filter (YYYY-MM)
         if (options.month) {
-            list = list.filter((exp) => exp.date.startsWith(options.month));
+            list = filterItems(list, (exp) => exp.date.indexOf(options.month) === 0);
         }
         // Specific Year filter (YYYY)
         if (options.year) {
-            list = list.filter((exp) => exp.date.startsWith(options.year));
+            list = filterItems(list, (exp) => exp.date.indexOf(options.year) === 0);
         }
-        // Sorting
+        // Sorting via generic sortByField utility
         if (options.sortBy) {
-            const order = options.sortOrder === 'asc' ? 1 : -1;
-            list.sort((a, b) => {
-                if (options.sortBy === 'amount') {
-                    return (a.amount - b.amount) * order;
-                }
-                else if (options.sortBy === 'title') {
-                    return a.title.localeCompare(b.title) * order;
-                }
-                else if (options.sortBy === 'category') {
-                    return a.category.localeCompare(b.category) * order;
-                }
-                else {
-                    return a.date.localeCompare(b.date) * order;
-                }
-            });
+            const sortField = options.sortBy;
+            const order = options.sortOrder || 'desc';
+            list = sortByField(list, sortField, order);
         }
         return list;
     }
-    /**
-     * Recurring Rules Management.
-     */
+    // Recurring Rules Management
     getRecurringRules() {
         return [...this.recurringRules];
     }
     addRecurringRule(rule) {
         const id = `rec_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-        const newRule = Object.assign(Object.assign({}, rule), { id, active: true });
+        const newRule = Object.assign(Object.assign({}, rule), { id });
         this.recurringRules.push(newRule);
         this.saveRecurring();
-        this.processRecurringTransactions();
         return newRule;
     }
     deleteRecurringRule(id) {
         this.recurringRules = this.recurringRules.filter((r) => r.id !== id);
         this.saveRecurring();
     }
+    toggleRecurringRule(id) {
+        const rule = this.recurringRules.find((r) => r.id === id);
+        if (rule) {
+            rule.active = !rule.active;
+            this.saveRecurring();
+        }
+    }
+    /**
+     * Generates pending recurring transactions if due.
+     */
     processRecurringTransactions() {
         const today = new Date().toISOString().slice(0, 10);
-        let generatedCount = 0;
+        let count = 0;
         for (const rule of this.recurringRules) {
             if (!rule.active)
                 continue;
-            const lastDate = rule.lastGeneratedDate || rule.startDate;
-            if (lastDate <= today) {
-                // Create recurring transaction if not already made today
-                const title = `[Recurring] ${rule.title}`;
-                const alreadyExists = this.transactions.some((t) => t.title === title && t.date === today && t.amount === rule.amount);
-                if (!alreadyExists) {
-                    this.addExpense({
-                        title,
-                        amount: rule.amount,
-                        type: rule.type,
-                        category: rule.category,
-                        date: today,
-                        notes: `Auto-generated from recurring ${rule.frequency} rule`,
-                        isRecurring: true
-                    });
-                    rule.lastGeneratedDate = today;
-                    generatedCount++;
-                }
+            const nextDue = rule.nextDueDate || rule.startDate;
+            if (nextDue <= today) {
+                this.addExpense({
+                    title: `[Recurring] ${rule.title}`,
+                    amount: rule.amount,
+                    type: rule.type,
+                    category: rule.category,
+                    date: nextDue,
+                    notes: `Auto-generated recurring transaction (${rule.frequency})`,
+                    isRecurring: true
+                });
+                rule.lastGeneratedDate = nextDue;
+                rule.nextDueDate = this.calculateNextDate(nextDue, rule.frequency);
+                count++;
             }
         }
-        if (generatedCount > 0) {
+        if (count > 0) {
             this.saveRecurring();
         }
-        return generatedCount;
+        return count;
     }
-    /**
-     * Bulk import with deduplication and ID safety.
-     */
-    bulkImport(newItems) {
-        let added = 0;
-        let skipped = 0;
-        const existingIds = new Set(this.transactions.map((e) => e.id));
-        for (const rawItem of newItems) {
-            const item = Object.assign(Object.assign({}, rawItem), { type: rawItem.type || 'expense' });
-            // Check if duplicate content exists
-            const duplicate = this.transactions.some((e) => e.title.toLowerCase() === item.title.toLowerCase() &&
-                e.date === item.date &&
-                e.amount === item.amount &&
-                e.type === item.type);
-            if (duplicate) {
-                skipped++;
-            }
-            else {
-                // Regenerate ID if conflicting with an existing ID
-                const finalId = existingIds.has(item.id)
-                    ? `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`
-                    : item.id;
-                existingIds.add(finalId);
-                this.transactions.push(Object.assign(Object.assign({}, item), { id: finalId }));
-                added++;
-            }
+    calculateNextDate(currentDateStr, frequency) {
+        const date = new Date(currentDateStr);
+        switch (frequency) {
+            case 'daily':
+                date.setDate(date.getDate() + 1);
+                break;
+            case 'weekly':
+                date.setDate(date.getDate() + 7);
+                break;
+            case 'monthly':
+                date.setMonth(date.getMonth() + 1);
+                break;
+            case 'yearly':
+                date.setFullYear(date.getFullYear() + 1);
+                break;
         }
-        this.transactions.sort((a, b) => b.date.localeCompare(a.date));
-        this.save();
-        return { added, skipped };
+        return date.toISOString().slice(0, 10);
     }
     save() {
         StorageService.setItem(STORAGE_EXPENSES_KEY, this.transactions);

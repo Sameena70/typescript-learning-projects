@@ -86,292 +86,174 @@ class ExpenseApp {
         if (!expense)
             return;
         this.currentEditingId = id;
-        const modal = document.getElementById('editExpenseModal');
-        const titleInput = document.getElementById('editTitleInput');
-        const amountInput = document.getElementById('editAmountInput');
-        const categoryInput = document.getElementById('editCategorySelect');
-        const dateInput = document.getElementById('editDateInput');
-        const notesInput = document.getElementById('editNotesInput');
-        const expenseRadio = document.getElementById('editTypeExpense');
-        const incomeRadio = document.getElementById('editTypeIncome');
-        if (expense.type === 'income') {
-            incomeRadio.checked = true;
-        }
-        else {
-            expenseRadio.checked = true;
-        }
-        titleInput.value = expense.title;
-        amountInput.value = expense.amount.toString();
-        categoryInput.value = expense.category;
-        dateInput.value = expense.date;
-        notesInput.value = expense.notes || '';
-        modal.classList.remove('hidden');
+        const editModal = document.getElementById('editModal');
+        const editTitle = document.getElementById('editTitle');
+        const editAmount = document.getElementById('editAmount');
+        const editType = document.getElementById('editType');
+        const editCategory = document.getElementById('editCategory');
+        const editDate = document.getElementById('editDate');
+        const editNotes = document.getElementById('editNotes');
+        if (editTitle)
+            editTitle.value = expense.title;
+        if (editAmount)
+            editAmount.value = expense.amount.toString();
+        if (editType)
+            editType.value = expense.type || 'expense';
+        if (editCategory)
+            editCategory.value = expense.category;
+        if (editDate)
+            editDate.value = expense.date;
+        if (editNotes)
+            editNotes.value = expense.notes || '';
+        if (editModal)
+            editModal.classList.add('open');
     }
     closeEditModal() {
         this.currentEditingId = null;
-        const modal = document.getElementById('editExpenseModal');
-        modal === null || modal === void 0 ? void 0 : modal.classList.add('hidden');
-    }
-    renderRecurringRulesList() {
-        const listEl = document.getElementById('recurringRulesList');
-        if (!listEl)
-            return;
-        const rules = this.service.getRecurringRules();
-        const settings = this.service.getSettings();
-        if (rules.length === 0) {
-            listEl.innerHTML = '<p class="text-muted text-sm">No recurring rules configured yet.</p>';
-            return;
-        }
-        listEl.innerHTML = rules
-            .map((r) => `
-        <div class="recurring-rule-item">
-          <div>
-            <strong>${this.ui.escapeHTML(r.title)}</strong> 
-            <span class="type-badge ${r.type === 'income' ? 'income-badge' : 'expense-badge'}">${r.type}</span>
-            <div class="text-sm text-muted">
-              ${ExpenseCalculations.formatCurrency(r.amount, settings.currency)} • ${r.frequency} • Next: ${r.nextDueDate}
-            </div>
-          </div>
-          <button class="action-btn delete-rec-btn" data-rule-id="${r.id}" title="Remove Rule">🗑️</button>
-        </div>
-      `)
-            .join('');
-        listEl.querySelectorAll('.delete-rec-btn').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
-                const ruleId = e.currentTarget.getAttribute('data-rule-id');
-                if (ruleId) {
-                    this.service.deleteRecurringRule(ruleId);
-                    this.renderRecurringRulesList();
-                    this.ui.showToast('Recurring rule removed.');
-                }
-            });
-        });
+        const editModal = document.getElementById('editModal');
+        if (editModal)
+            editModal.classList.remove('open');
     }
     bindEvents() {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q, _r, _s, _t, _u;
-        // Currency Selector
+        var _a, _b, _c, _d, _e, _f;
+        // Add Transaction Form
+        const expenseForm = document.getElementById('expenseForm');
+        expenseForm === null || expenseForm === void 0 ? void 0 : expenseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const titleInput = document.getElementById('expenseTitle');
+            const amountInput = document.getElementById('expenseAmount');
+            const typeInput = document.getElementById('expenseType');
+            const categoryInput = document.getElementById('expenseCategory');
+            const dateInput = document.getElementById('expenseDate');
+            const notesInput = document.getElementById('expenseNotes');
+            const recurringInput = document.getElementById('isRecurringCheckbox');
+            const formData = {
+                title: (titleInput === null || titleInput === void 0 ? void 0 : titleInput.value) || '',
+                amount: (amountInput === null || amountInput === void 0 ? void 0 : amountInput.value) || '',
+                type: (typeInput === null || typeInput === void 0 ? void 0 : typeInput.value) || 'expense',
+                category: (categoryInput === null || categoryInput === void 0 ? void 0 : categoryInput.value) || '',
+                date: (dateInput === null || dateInput === void 0 ? void 0 : dateInput.value) || '',
+                notes: (notesInput === null || notesInput === void 0 ? void 0 : notesInput.value) || '',
+                isRecurring: (recurringInput === null || recurringInput === void 0 ? void 0 : recurringInput.checked) || false
+            };
+            const validation = ExpenseValidator.validateExpense(formData);
+            if (!validation.isValid) {
+                const firstError = Object.values(validation.errors)[0];
+                this.ui.showToast(firstError || 'Validation failed.', true);
+                return;
+            }
+            try {
+                this.service.addExpense({
+                    title: formData.title,
+                    amount: parseFloat(formData.amount),
+                    type: formData.type,
+                    category: formData.category,
+                    date: formData.date,
+                    notes: formData.notes,
+                    isRecurring: formData.isRecurring
+                });
+                expenseForm.reset();
+                // Reset default date to today
+                if (dateInput) {
+                    dateInput.value = new Date().toISOString().slice(0, 10);
+                }
+                this.ui.showToast('Transaction added successfully.');
+                this.refresh();
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    this.ui.showToast(error.message, true);
+                }
+            }
+        });
+        // Save Edited Transaction
+        const saveEditBtn = document.getElementById('saveEditBtn');
+        saveEditBtn === null || saveEditBtn === void 0 ? void 0 : saveEditBtn.addEventListener('click', () => {
+            if (!this.currentEditingId)
+                return;
+            const editTitle = document.getElementById('editTitle');
+            const editAmount = document.getElementById('editAmount');
+            const editType = document.getElementById('editType');
+            const editCategory = document.getElementById('editCategory');
+            const editDate = document.getElementById('editDate');
+            const editNotes = document.getElementById('editNotes');
+            const formData = {
+                title: (editTitle === null || editTitle === void 0 ? void 0 : editTitle.value) || '',
+                amount: (editAmount === null || editAmount === void 0 ? void 0 : editAmount.value) || '',
+                type: (editType === null || editType === void 0 ? void 0 : editType.value) || 'expense',
+                category: (editCategory === null || editCategory === void 0 ? void 0 : editCategory.value) || '',
+                date: (editDate === null || editDate === void 0 ? void 0 : editDate.value) || '',
+                notes: (editNotes === null || editNotes === void 0 ? void 0 : editNotes.value) || ''
+            };
+            const validation = ExpenseValidator.validateExpense(formData);
+            if (!validation.isValid) {
+                const firstError = Object.values(validation.errors)[0];
+                this.ui.showToast(firstError || 'Validation failed.', true);
+                return;
+            }
+            try {
+                this.service.updateExpense(this.currentEditingId, {
+                    title: formData.title,
+                    amount: parseFloat(formData.amount),
+                    type: formData.type,
+                    category: formData.category,
+                    date: formData.date,
+                    notes: formData.notes
+                });
+                this.closeEditModal();
+                this.ui.showToast('Transaction updated.');
+                this.refresh();
+            }
+            catch (error) {
+                if (error instanceof Error) {
+                    this.ui.showToast(error.message, true);
+                }
+            }
+        });
+        // Cancel Edit Modal
+        (_a = document.getElementById('cancelEditBtn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
+            this.closeEditModal();
+        });
+        (_b = document.getElementById('closeEditModalBtn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
+            this.closeEditModal();
+        });
+        // Currency Switcher
         const currencySelect = document.getElementById('currencySelect');
         currencySelect === null || currencySelect === void 0 ? void 0 : currencySelect.addEventListener('change', () => {
             this.service.setCurrency(currencySelect.value);
-            this.ui.showToast(`Active currency updated to ${currencySelect.value}.`);
+            this.ui.showToast(`Currency changed to ${currencySelect.value}`);
             this.refresh();
         });
-        // Add Expense Form
-        const expenseForm = document.getElementById('expenseForm');
-        const titleInput = document.getElementById('expenseTitle');
-        const amountInput = document.getElementById('expenseAmount');
-        const categorySelect = document.getElementById('expenseCategory');
-        const dateInput = document.getElementById('expenseDate');
-        const notesInput = document.getElementById('expenseNotes');
-        if (dateInput && !dateInput.value) {
-            dateInput.value = new Date().toISOString().split('T')[0];
-        }
-        expenseForm === null || expenseForm === void 0 ? void 0 : expenseForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const typeRadio = document.querySelector('input[name="transactionType"]:checked');
-            const type = (typeRadio === null || typeRadio === void 0 ? void 0 : typeRadio.value) === 'income' ? 'income' : 'expense';
-            const validation = ExpenseValidator.validateExpense({
-                title: titleInput.value,
-                amount: amountInput.value,
-                category: categorySelect.value,
-                date: dateInput.value,
-                type,
-                notes: notesInput === null || notesInput === void 0 ? void 0 : notesInput.value
-            });
-            // Clear previous error styles
-            const titleErr = document.getElementById('titleError');
-            const amountErr = document.getElementById('amountError');
-            const dateErr = document.getElementById('dateError');
-            if (titleErr)
-                titleErr.textContent = validation.errors.title || '';
-            if (amountErr)
-                amountErr.textContent = validation.errors.amount || '';
-            if (dateErr)
-                dateErr.textContent = validation.errors.date || '';
-            if (!validation.isValid)
-                return;
-            try {
-                this.service.addExpense({
-                    title: titleInput.value,
-                    amount: parseFloat(amountInput.value),
-                    category: categorySelect.value,
-                    date: dateInput.value,
-                    type,
-                    notes: notesInput === null || notesInput === void 0 ? void 0 : notesInput.value
-                });
-                expenseForm.reset();
-                dateInput.value = new Date().toISOString().split('T')[0];
-                // Reset radio back to expense
-                const defaultRadio = document.querySelector('input[name="transactionType"][value="expense"]');
-                if (defaultRadio)
-                    defaultRadio.checked = true;
-                this.ui.showToast(`${type === 'income' ? 'Income' : 'Expense'} added successfully!`);
-                this.refresh();
-            }
-            catch (err) {
-                if (err instanceof Error) {
-                    this.ui.showToast(err.message, true);
-                }
-            }
-        });
-        // Reset Form button
-        (_a = document.getElementById('resetFormBtn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
-            expenseForm.reset();
-            dateInput.value = new Date().toISOString().split('T')[0];
-            const titleErr = document.getElementById('titleError');
-            const amountErr = document.getElementById('amountError');
-            const dateErr = document.getElementById('dateError');
-            if (titleErr)
-                titleErr.textContent = '';
-            if (amountErr)
-                amountErr.textContent = '';
-            if (dateErr)
-                dateErr.textContent = '';
-        });
-        // Edit modal form submission
-        (_b = document.getElementById('editExpenseForm')) === null || _b === void 0 ? void 0 : _b.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (!this.currentEditingId)
-                return;
-            const editTitleInput = document.getElementById('editTitleInput');
-            const editAmountInput = document.getElementById('editAmountInput');
-            const editCategoryInput = document.getElementById('editCategorySelect');
-            const editDateInput = document.getElementById('editDateInput');
-            const editNotesInput = document.getElementById('editNotesInput');
-            const editTypeRadio = document.querySelector('input[name="editTransactionType"]:checked');
-            const type = (editTypeRadio === null || editTypeRadio === void 0 ? void 0 : editTypeRadio.value) === 'income' ? 'income' : 'expense';
-            const validation = ExpenseValidator.validateExpense({
-                title: editTitleInput.value,
-                amount: editAmountInput.value,
-                category: editCategoryInput.value,
-                date: editDateInput.value,
-                type
-            });
-            const editErrorEl = document.getElementById('editErrorMsg');
-            if (!validation.isValid) {
-                if (editErrorEl)
-                    editErrorEl.textContent = Object.values(validation.errors)[0];
-                return;
-            }
-            if (editErrorEl)
-                editErrorEl.textContent = '';
-            try {
-                this.service.updateExpense(this.currentEditingId, {
-                    title: editTitleInput.value,
-                    amount: parseFloat(editAmountInput.value),
-                    category: editCategoryInput.value,
-                    date: editDateInput.value,
-                    type,
-                    notes: editNotesInput.value || undefined
-                });
-                this.closeEditModal();
-                this.ui.showToast('Transaction updated successfully!');
-                this.refresh();
-            }
-            catch (err) {
-                if (err instanceof Error && editErrorEl) {
-                    editErrorEl.textContent = err.message;
-                }
-            }
-        });
-        (_c = document
-            .getElementById('cancelEditBtn')) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => this.closeEditModal());
-        (_d = document
-            .getElementById('closeEditModalBtn')) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => this.closeEditModal());
-        // Budget Modal controls
-        const budgetModal = document.getElementById('budgetModal');
-        const monthlyBudgetInput = document.getElementById('monthlyBudgetInput');
-        const budgetError = document.getElementById('budgetError');
-        (_e = document.getElementById('editBudgetBtn')) === null || _e === void 0 ? void 0 : _e.addEventListener('click', () => {
-            monthlyBudgetInput.value = this.service.getBudget().toString();
-            if (budgetError)
-                budgetError.textContent = '';
-            budgetModal === null || budgetModal === void 0 ? void 0 : budgetModal.classList.remove('hidden');
-        });
-        const closeBudgetModal = () => budgetModal === null || budgetModal === void 0 ? void 0 : budgetModal.classList.add('hidden');
-        (_f = document.getElementById('closeModalBtn')) === null || _f === void 0 ? void 0 : _f.addEventListener('click', closeBudgetModal);
-        (_g = document.getElementById('cancelBudgetBtn')) === null || _g === void 0 ? void 0 : _g.addEventListener('click', closeBudgetModal);
-        (_h = document.getElementById('saveBudgetBtn')) === null || _h === void 0 ? void 0 : _h.addEventListener('click', () => {
-            const val = parseFloat(monthlyBudgetInput.value);
+        // Update Overall Budget
+        const updateBudgetBtn = document.getElementById('updateBudgetBtn');
+        updateBudgetBtn === null || updateBudgetBtn === void 0 ? void 0 : updateBudgetBtn.addEventListener('click', () => {
+            const budgetInput = document.getElementById('monthlyBudgetInput');
+            const val = parseFloat((budgetInput === null || budgetInput === void 0 ? void 0 : budgetInput.value) || '');
             if (isNaN(val) || val < 0) {
-                if (budgetError)
-                    budgetError.textContent = 'Please enter a valid non-negative budget.';
+                this.ui.showToast('Please enter a valid non-negative budget.', true);
                 return;
             }
             this.service.setBudget(val);
-            closeBudgetModal();
-            this.ui.showToast('Monthly budget updated successfully!');
+            this.ui.showToast('Monthly budget updated.');
             this.refresh();
         });
-        // Category Budget button in modal
-        (_j = document.getElementById('setCategoryBudgetBtn')) === null || _j === void 0 ? void 0 : _j.addEventListener('click', () => {
+        // Category Budget Form
+        const saveCatBudgetBtn = document.getElementById('saveCatBudgetBtn');
+        saveCatBudgetBtn === null || saveCatBudgetBtn === void 0 ? void 0 : saveCatBudgetBtn.addEventListener('click', () => {
             const catSelect = document.getElementById('budgetCategorySelect');
-            const limitInput = document.getElementById('categoryBudgetLimitInput');
-            const limit = parseFloat(limitInput.value);
-            if (isNaN(limit) || limit <= 0) {
-                this.ui.showToast('Please enter a valid limit greater than 0', true);
+            const amtInput = document.getElementById('categoryBudgetAmount');
+            const category = catSelect === null || catSelect === void 0 ? void 0 : catSelect.value;
+            const amount = parseFloat((amtInput === null || amtInput === void 0 ? void 0 : amtInput.value) || '');
+            if (!category || isNaN(amount) || amount < 0) {
+                this.ui.showToast('Please provide a valid category and budget amount.', true);
                 return;
             }
-            this.service.setCategoryBudget(catSelect.value, limit);
-            limitInput.value = '';
-            this.ui.showToast(`Budget for ${catSelect.value} updated.`);
+            this.service.setCategoryBudget(category, amount);
+            amtInput.value = '';
+            this.ui.showToast(`Budget for "${category}" updated.`);
             this.refresh();
         });
-        // Recurring Modal controls
-        const recurringModal = document.getElementById('recurringModal');
-        (_k = document.getElementById('recurringRulesBtn')) === null || _k === void 0 ? void 0 : _k.addEventListener('click', () => {
-            this.renderRecurringRulesList();
-            const recDate = document.getElementById('recStartDateInput');
-            if (recDate && !recDate.value) {
-                recDate.value = new Date().toISOString().split('T')[0];
-            }
-            recurringModal === null || recurringModal === void 0 ? void 0 : recurringModal.classList.remove('hidden');
-        });
-        const closeRecModal = () => recurringModal === null || recurringModal === void 0 ? void 0 : recurringModal.classList.add('hidden');
-        (_l = document.getElementById('closeRecurringModalBtn')) === null || _l === void 0 ? void 0 : _l.addEventListener('click', closeRecModal);
-        (_m = document.getElementById('closeRecurringBtn')) === null || _m === void 0 ? void 0 : _m.addEventListener('click', closeRecModal);
-        // Add Recurring Rule Form
-        (_o = document.getElementById('recurringRuleForm')) === null || _o === void 0 ? void 0 : _o.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const recTitle = document.getElementById('recTitleInput').value;
-            const recAmount = parseFloat(document.getElementById('recAmountInput').value);
-            const recType = document.getElementById('recTypeSelect')
-                .value;
-            const recCategory = document.getElementById('recCategorySelect')
-                .value;
-            const recFrequency = document.getElementById('recFrequencySelect')
-                .value;
-            const recDate = document.getElementById('recStartDateInput').value;
-            try {
-                this.service.addRecurringRule({
-                    title: recTitle,
-                    amount: recAmount,
-                    type: recType,
-                    category: recCategory,
-                    frequency: recFrequency,
-                    startDate: recDate,
-                    nextDueDate: recDate
-                });
-                document.getElementById('recurringRuleForm').reset();
-                this.renderRecurringRulesList();
-                this.ui.showToast('Recurring rule saved!');
-                this.refresh();
-            }
-            catch (err) {
-                if (err instanceof Error) {
-                    this.ui.showToast(err.message, true);
-                }
-            }
-        });
-        // Clear all
-        (_p = document.getElementById('clearAllBtn')) === null || _p === void 0 ? void 0 : _p.addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear ALL recorded transactions? This cannot be undone.')) {
-                this.service.clearAllExpenses();
-                this.ui.showToast('All transactions cleared.');
-                this.refresh();
-            }
-        });
-        // Search and Filters
+        // Filter Controls
         const filterElements = [
             'typeFilter',
             'categoryFilter',
@@ -382,105 +264,128 @@ class ExpenseApp {
             'sortOrderSelect'
         ];
         filterElements.forEach((id) => {
-            var _a, _b;
-            (_a = document.getElementById(id)) === null || _a === void 0 ? void 0 : _a.addEventListener('input', () => this.refresh());
-            (_b = document.getElementById(id)) === null || _b === void 0 ? void 0 : _b.addEventListener('change', () => this.refresh());
+            const el = document.getElementById(id);
+            el === null || el === void 0 ? void 0 : el.addEventListener('input', () => this.refresh());
+            el === null || el === void 0 ? void 0 : el.addEventListener('change', () => this.refresh());
         });
-        // Reset Filters button
-        (_q = document.getElementById('resetFiltersBtn')) === null || _q === void 0 ? void 0 : _q.addEventListener('click', () => {
-            document.getElementById('typeFilter').value = 'ALL';
-            document.getElementById('categoryFilter').value = 'ALL';
-            document.getElementById('searchDescriptionInput').value = '';
-            document.getElementById('startDateFilter').value = '';
-            document.getElementById('endDateFilter').value = '';
-            document.getElementById('sortBySelect').value = 'date';
-            document.getElementById('sortOrderSelect').value = 'desc';
+        // Reset Filters
+        (_c = document.getElementById('resetFiltersBtn')) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => {
+            const typeFilter = document.getElementById('typeFilter');
+            const categoryFilter = document.getElementById('categoryFilter');
+            const searchInput = document.getElementById('searchDescriptionInput');
+            const startDate = document.getElementById('startDateFilter');
+            const endDate = document.getElementById('endDateFilter');
+            const sortBy = document.getElementById('sortBySelect');
+            const sortOrder = document.getElementById('sortOrderSelect');
+            if (typeFilter)
+                typeFilter.value = 'ALL';
+            if (categoryFilter)
+                categoryFilter.value = 'ALL';
+            if (searchInput)
+                searchInput.value = '';
+            if (startDate)
+                startDate.value = '';
+            if (endDate)
+                endDate.value = '';
+            if (sortBy)
+                sortBy.value = 'date';
+            if (sortOrder)
+                sortOrder.value = 'desc';
             this.refresh();
         });
-        // JSON Export
-        (_r = document.getElementById('exportJsonBtn')) === null || _r === void 0 ? void 0 : _r.addEventListener('click', () => {
-            const expenses = this.service.getExpenses();
-            if (expenses.length === 0) {
-                this.ui.showToast('No transactions available to export.', true);
+        // Recurring Rule Form
+        const recurringForm = document.getElementById('recurringRuleForm');
+        recurringForm === null || recurringForm === void 0 ? void 0 : recurringForm.addEventListener('submit', (e) => {
+            var _a, _b, _c, _d, _e, _f;
+            e.preventDefault();
+            const title = (_a = document.getElementById('recurringTitle')) === null || _a === void 0 ? void 0 : _a.value;
+            const amount = parseFloat(((_b = document.getElementById('recurringAmount')) === null || _b === void 0 ? void 0 : _b.value) || '');
+            const type = (_c = document.getElementById('recurringType')) === null || _c === void 0 ? void 0 : _c.value;
+            const category = (_d = document.getElementById('recurringCategory')) === null || _d === void 0 ? void 0 : _d.value;
+            const frequency = (_e = document.getElementById('recurringFrequency')) === null || _e === void 0 ? void 0 : _e.value;
+            const startDate = (_f = document.getElementById('recurringStartDate')) === null || _f === void 0 ? void 0 : _f.value;
+            if (!title || isNaN(amount) || amount <= 0 || !startDate) {
+                this.ui.showToast('Please fill all recurring rule fields properly.', true);
                 return;
             }
-            try {
-                ExpenseImportExport.exportToJSON(expenses);
-                this.ui.showToast('Exported JSON backup successfully.');
-            }
-            catch (err) {
-                if (err instanceof Error) {
-                    this.ui.showToast(err.message, true);
-                }
-            }
+            this.service.addRecurringRule({
+                title,
+                amount,
+                type,
+                category,
+                frequency,
+                startDate,
+                active: true
+            });
+            recurringForm.reset();
+            this.ui.showToast('Recurring rule saved.');
         });
-        // CSV Export
-        (_s = document.getElementById('exportCsvBtn')) === null || _s === void 0 ? void 0 : _s.addEventListener('click', () => {
-            const expenses = this.service.getExpenses();
-            if (expenses.length === 0) {
-                this.ui.showToast('No transactions available to export.', true);
-                return;
-            }
-            try {
-                ExpenseImportExport.exportToCSV(expenses);
-                this.ui.showToast('Exported CSV spreadsheet successfully.');
-            }
-            catch (err) {
-                if (err instanceof Error) {
-                    this.ui.showToast(err.message, true);
-                }
-            }
+        // Export JSON
+        (_d = document.getElementById('exportJSONBtn')) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => {
+            ExpenseImportExport.exportToJSON(this.service.getExpenses());
+            this.ui.showToast('JSON export downloaded.');
         });
-        // JSON Import
-        const jsonFileInput = document.getElementById('jsonFileInput');
-        (_t = document.getElementById('importJsonBtn')) === null || _t === void 0 ? void 0 : _t.addEventListener('click', () => {
-            jsonFileInput === null || jsonFileInput === void 0 ? void 0 : jsonFileInput.click();
+        // Export CSV
+        (_e = document.getElementById('exportCSVBtn')) === null || _e === void 0 ? void 0 : _e.addEventListener('click', () => {
+            ExpenseImportExport.exportToCSV(this.service.getExpenses());
+            this.ui.showToast('CSV export downloaded.');
         });
-        jsonFileInput === null || jsonFileInput === void 0 ? void 0 : jsonFileInput.addEventListener('change', () => __awaiter(this, void 0, void 0, function* () {
+        // Import File
+        const importFileInput = document.getElementById('importFileInput');
+        importFileInput === null || importFileInput === void 0 ? void 0 : importFileInput.addEventListener('change', () => __awaiter(this, void 0, void 0, function* () {
             var _a;
-            const file = (_a = jsonFileInput.files) === null || _a === void 0 ? void 0 : _a[0];
+            const file = (_a = importFileInput.files) === null || _a === void 0 ? void 0 : _a[0];
             if (!file)
                 return;
             try {
-                const { validItems, importResult } = yield ExpenseImportExport.parseAndValidateImport(file);
-                const { added, skipped } = this.service.bulkImport(validItems);
-                this.ui.showToast(`Imported ${added} records (${skipped + importResult.skippedCount} skipped/duplicates).`);
-                this.refresh();
+                if (file.name.endsWith('.json')) {
+                    const { validExpenses, result } = yield ExpenseImportExport.parseAndValidateImport(file);
+                    if (validExpenses.length > 0) {
+                        validExpenses.forEach((exp) => this.service.addExpense(exp));
+                        this.refresh();
+                        this.ui.showToast(`Imported ${validExpenses.length} transactions from JSON.`);
+                    }
+                    else {
+                        this.ui.showToast(`No valid records found. ${result.errors.join(' ')}`, true);
+                    }
+                }
+                else if (file.name.endsWith('.csv')) {
+                    const text = yield ExpenseImportExport.readTextFile(file);
+                    const { validExpenses, result } = ExpenseImportExport.parseCSVContent(text);
+                    if (validExpenses.length > 0) {
+                        validExpenses.forEach((exp) => this.service.addExpense(exp));
+                        this.refresh();
+                        this.ui.showToast(`Imported ${validExpenses.length} transactions from CSV.`);
+                    }
+                    else {
+                        this.ui.showToast(`No valid CSV records: ${result.errors.join(' ')}`, true);
+                    }
+                }
+                else {
+                    this.ui.showToast('Unsupported file type. Use .json or .csv.', true);
+                }
             }
-            catch (err) {
-                const msg = err instanceof Error ? err.message : 'Failed to import JSON file.';
-                this.ui.showToast(msg, true);
+            catch (error) {
+                if (error instanceof Error) {
+                    this.ui.showToast(error.message, true);
+                }
             }
             finally {
-                jsonFileInput.value = '';
+                importFileInput.value = '';
             }
         }));
-        // CSV Import
-        const csvFileInput = document.getElementById('csvFileInput');
-        (_u = document.getElementById('importCsvBtn')) === null || _u === void 0 ? void 0 : _u.addEventListener('click', () => {
-            csvFileInput === null || csvFileInput === void 0 ? void 0 : csvFileInput.click();
+        // Clear All Data
+        (_f = document.getElementById('clearAllDataBtn')) === null || _f === void 0 ? void 0 : _f.addEventListener('click', () => {
+            if (confirm('Are you sure you want to permanently clear all transactions?')) {
+                this.service.clearAllExpenses();
+                this.ui.showToast('All transaction data cleared.');
+                this.refresh();
+            }
         });
-        csvFileInput === null || csvFileInput === void 0 ? void 0 : csvFileInput.addEventListener('change', () => __awaiter(this, void 0, void 0, function* () {
-            var _a;
-            const file = (_a = csvFileInput.files) === null || _a === void 0 ? void 0 : _a[0];
-            if (!file)
-                return;
-            try {
-                const { validItems, importResult } = yield ExpenseImportExport.parseAndValidateCSV(file);
-                const { added, skipped } = this.service.bulkImport(validItems);
-                this.ui.showToast(`Imported ${added} records from CSV (${skipped + importResult.skippedCount} skipped/duplicates).`);
-                this.refresh();
-            }
-            catch (err) {
-                const msg = err instanceof Error ? err.message : 'Failed to import CSV file.';
-                this.ui.showToast(msg, true);
-            }
-            finally {
-                csvFileInput.value = '';
-            }
-        }));
     }
 }
-window.addEventListener('DOMContentLoaded', () => {
-    new ExpenseApp();
-});
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        new ExpenseApp();
+    });
+}

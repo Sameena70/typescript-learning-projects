@@ -7,6 +7,7 @@ export class GameConfigManager {
     constructor() {
         this.customConfig = {
             name: 'Custom',
+            difficulty: 'custom',
             min: 1,
             max: 200,
             maxAttempts: 8
@@ -19,6 +20,9 @@ export class GameConfigManager {
         return DEFAULT_DIFFICULTIES[difficulty];
     }
     setCustomConfig(min, max, maxAttempts) {
+        if (typeof min !== 'number' || typeof max !== 'number' || typeof maxAttempts !== 'number') {
+            throw new Error('All configuration parameters must be numbers.');
+        }
         if (min >= max) {
             throw new Error('Minimum value must be less than maximum value.');
         }
@@ -33,9 +37,10 @@ export class GameConfigManager {
         }
         this.customConfig = {
             name: 'Custom',
-            min,
-            max,
-            maxAttempts
+            difficulty: 'custom',
+            min: Math.floor(min),
+            max: Math.floor(max),
+            maxAttempts: Math.floor(maxAttempts)
         };
     }
     getCustomConfig() {

@@ -2,7 +2,7 @@
 
 A CRM-style address book and directory application built with **TypeScript, HTML5, and CSS3**.
 
-This project demonstrates comprehensive TypeScript interfaces, multi-field form validation, duplicate contact prevention, aggregate statistics calculation using functional array methods (`filter`, `reduce`), seed data initialization, activity logging, reminder tracking, and asynchronous RFC 4180 CSV & JSON import/export operations.
+This project demonstrates comprehensive TypeScript interfaces, intersection types, generic multi-field search and sorting utilities, custom runtime type guards, activity logging with discriminated unions, multi-field form validation, duplicate contact prevention, aggregate statistics calculation, seed data initialization, and asynchronous RFC 4180 CSV & JSON import/export operations.
 
 ---
 
@@ -21,7 +21,110 @@ This project demonstrates comprehensive TypeScript interfaces, multi-field form 
 
 ---
 
-## 🏛️ Project Architecture
+## 🏛️ Advanced TypeScript Architecture & Concepts Applied
+
+### 1. Intersection Types for Contact Domain Modeling
+Instead of a monolithic interface, the `Contact` model is composed using modular, reusable interfaces via **Intersection Types (`&`)**:
+```typescript
+export interface BaseContact {
+  id: string;
+  fullName: string;
+  phoneNumber: string;
+}
+
+export interface OptionalContactDetails {
+  email?: string;
+  age?: number;
+  company?: string;
+  jobTitle?: string;
+  address?: string;
+  notes?: string;
+  tags?: string[];
+  birthday?: string;
+  reminderDate?: string;
+}
+
+export interface ContactPreferences {
+  category: ContactCategory;
+  status: ContactStatus;
+  isFavourite: boolean;
+}
+
+export interface ContactAuditInfo {
+  createdAt: string;
+  updatedAt?: string;
+  activities?: ContactActivity[];
+}
+
+export type Contact = BaseContact &
+  OptionalContactDetails &
+  ContactPreferences &
+  ContactAuditInfo;
+```
+
+### 2. Generic Multi-Field Search Engine (`<T>`)
+A reusable generic search engine filters collections across any specified keys using `keyof T` constraints without loss of type information:
+```typescript
+export function searchByFields<T>(
+  items: T[],
+  query: string,
+  searchableKeys: (keyof T)[]
+): T[] {
+  const normalisedQuery = query.trim().toLowerCase();
+  if (!normalisedQuery) return [...items];
+
+  return items.filter((item) =>
+    searchableKeys.some((key) => {
+      const val = item[key];
+      if (val === undefined || val === null) return false;
+      if (Array.isArray(val)) {
+        return val.some((entry) => String(entry).toLowerCase().includes(normalisedQuery));
+      }
+      return String(val).toLowerCase().includes(normalisedQuery);
+    })
+  );
+}
+```
+
+### 3. Type-Safe Sorting with `keyof` (`<T, K extends keyof T>`)
+Sorting operates on typed properties with directional control and numerical/string branching:
+```typescript
+export function sortByKey<T, K extends keyof T>(
+  items: T[],
+  key: K,
+  order: 'asc' | 'desc' = 'asc'
+): T[]
+```
+
+### 4. Custom Type Guards (`val is T`) & `in` Operator Narrowing
+Untrusted JSON loaded from `localStorage` or imported files is safely validated at runtime using custom type guards rather than unsafe type casts (`as Record<string, unknown>`):
+```typescript
+export function isContact(value: unknown): value is Contact {
+  if (typeof value !== 'object' || value === null) return false;
+  return (
+    'id' in value &&
+    'fullName' in value &&
+    'phoneNumber' in value &&
+    'category' in value &&
+    'status' in value &&
+    typeof value.fullName === 'string'
+  );
+}
+```
+
+### 5. Discriminated Unions for Activity Logs
+Contact activity logs are modeled as a discriminated union over `type`:
+```typescript
+export type ContactActivity =
+  | { id: string; contactId: string; type: 'call'; date: string; notes: string; durationMinutes?: number }
+  | { id: string; contactId: string; type: 'email'; date: string; notes: string; subject?: string }
+  | { id: string; contactId: string; type: 'meeting'; date: string; notes: string; location?: string }
+  | { id: string; contactId: string; type: 'note'; date: string; notes: string };
+```
+
+---
+
+## 📂 Project Structure
 
 ```text
 04-contact-manager/
@@ -31,16 +134,17 @@ This project demonstrates comprehensive TypeScript interfaces, multi-field form 
 ├── tsconfig.json            # Strict TypeScript configuration
 ├── eslint.config.mjs        # Flat ESLint configuration
 ├── src/
-│   ├── types.ts             # Contact interfaces, form types, activity contracts, and statistics
+│   ├── types.ts             # Contact intersection types, form types, and activity unions
+│   ├── generic-utils.ts     # Generic search, filter, and sort utilities
 │   ├── validation.ts        # Phone/email validators, form checks, and duplicate detection
 │   ├── statistics.ts        # Functional statistics calculations (filter, reduce)
-│   ├── storage.ts           # Resilient localStorage persistence, migrations, and seed contacts
-│   ├── contact-service.ts   # In-memory store, CRUD, activity log, filtering, sorting, and CSV parsing
+│   ├── storage.ts           # Resilient persistence, custom type guards, and seed contacts
+│   ├── contact-service.ts   # In-memory store, CRUD, activity log, filtering, and sorting
 │   ├── import-export.ts     # Asynchronous JSON/CSV file readers, validators, and exporters
 │   ├── contact-manager.ts   # UI controller managing DOM elements, modals, and tables
 │   └── main.ts              # Application initialization and bootstrap
 ├── tests/
-│   └── validation.test.ts   # Vitest unit test suite (19 tests covering validation, CRUD, duplicate detection, and I/O)
+│   └── validation.test.ts   # Vitest unit test suite (14 comprehensive tests)
 └── dist/                    # Compiled ES6 JavaScript modules
 ```
 

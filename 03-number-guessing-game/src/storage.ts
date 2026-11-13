@@ -1,10 +1,11 @@
+import { StorageValidator } from './types.js';
+
 /**
  * Storage utility for game statistics and history
- * with runtime validation and schema protection.
+ * with runtime validation and schema protection using generics `<T>`.
  */
-
 export class GameStorage {
-  public static getItem<T>(key: string, fallback: T, validator?: (val: unknown) => val is T): T {
+  public static getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T {
     try {
       const data = localStorage.getItem(key);
       if (data === null) return fallback;
@@ -39,6 +40,16 @@ export class GameStorage {
     } catch (error: unknown) {
       if (error instanceof Error) {
         console.error(`[GameStorage] Failed to remove "${key}":`, error.message);
+      }
+    }
+  }
+
+  public static clear(): void {
+    try {
+      localStorage.clear();
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        console.error('[GameStorage] Failed to clear storage:', error.message);
       }
     }
   }

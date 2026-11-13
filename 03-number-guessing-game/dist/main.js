@@ -73,95 +73,82 @@ class NumberGuessingGameApp {
         // Custom Difficulty Form
         const customForm = document.getElementById('customDiffForm');
         customForm === null || customForm === void 0 ? void 0 : customForm.addEventListener('submit', (e) => {
-            var _a, _b, _c, _d, _e;
             e.preventDefault();
             const minInput = document.getElementById('customMinInput');
             const maxInput = document.getElementById('customMaxInput');
             const attemptsInput = document.getElementById('customAttemptsInput');
-            const errEl = document.getElementById('customDiffError');
-            const rawMin = (_a = minInput === null || minInput === void 0 ? void 0 : minInput.value.trim()) !== null && _a !== void 0 ? _a : '';
-            const rawMax = (_b = maxInput === null || maxInput === void 0 ? void 0 : maxInput.value.trim()) !== null && _b !== void 0 ? _b : '';
-            const rawAttempts = (_c = attemptsInput === null || attemptsInput === void 0 ? void 0 : attemptsInput.value.trim()) !== null && _c !== void 0 ? _c : '';
-            const min = parseInt(rawMin, 10);
-            const max = parseInt(rawMax, 10);
-            const attempts = parseInt(rawAttempts, 10);
-            if (isNaN(min) || isNaN(max) || isNaN(attempts)) {
-                if (errEl)
-                    errEl.textContent = 'Please enter valid whole numbers for all fields.';
-                return;
-            }
+            const min = parseInt((minInput === null || minInput === void 0 ? void 0 : minInput.value) || '', 10);
+            const max = parseInt((maxInput === null || maxInput === void 0 ? void 0 : maxInput.value) || '', 10);
+            const attempts = parseInt((attemptsInput === null || attemptsInput === void 0 ? void 0 : attemptsInput.value) || '', 10);
             try {
                 this.configManager.setCustomConfig(min, max, attempts);
-                (_d = document.getElementById('customDiffModal')) === null || _d === void 0 ? void 0 : _d.classList.add('hidden');
-                if (errEl)
-                    errEl.textContent = '';
-                diffButtons.forEach((b) => b.classList.remove('active'));
-                (_e = document.querySelector('.diff-btn[data-difficulty="custom"]')) === null || _e === void 0 ? void 0 : _e.classList.add('active');
                 this.stateModel.setDifficulty('custom');
+                // Close modal
+                const modal = document.getElementById('customDiffModal');
+                modal === null || modal === void 0 ? void 0 : modal.classList.add('hidden');
+                // Update button highlight
+                diffButtons.forEach((b) => b.classList.remove('active'));
+                const customBtn = document.querySelector('.diff-btn[data-difficulty="custom"]');
+                customBtn === null || customBtn === void 0 ? void 0 : customBtn.classList.add('active');
                 this.restart();
             }
             catch (err) {
-                if (err instanceof Error && errEl) {
-                    errEl.textContent = err.message;
+                const errSpan = document.getElementById('customFormError');
+                if (errSpan && err instanceof Error) {
+                    errSpan.textContent = err.message;
                 }
             }
         });
-        (_a = document.getElementById('closeCustomModalBtn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
+        // Cancel Custom Modal
+        (_a = document.getElementById('cancelCustomBtn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
             var _a;
             (_a = document.getElementById('customDiffModal')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
         });
-        (_b = document.getElementById('cancelCustomBtn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
-            var _a;
-            (_a = document.getElementById('customDiffModal')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
-        });
-        // Guess Form Submission
+        // Guess Form Submit
         const guessForm = document.getElementById('guessForm');
-        const guessInput = document.getElementById('guessInput');
         guessForm === null || guessForm === void 0 ? void 0 : guessForm.addEventListener('submit', (e) => {
-            var _a;
             e.preventDefault();
-            const rawVal = (_a = guessInput === null || guessInput === void 0 ? void 0 : guessInput.value.trim()) !== null && _a !== void 0 ? _a : '';
-            if (rawVal === '') {
-                this.ui.showValidationError('Please enter a number to submit a guess.');
+            const input = document.getElementById('guessInput');
+            if (!input || input.value.trim() === '')
+                return;
+            const guessNum = Number(input.value.trim());
+            if (isNaN(guessNum)) {
+                this.ui.showValidationError('Please enter a valid numeric value.');
                 return;
             }
-            if (!/^-?\d+$/.test(rawVal)) {
-                this.ui.showValidationError('Decimal values are not allowed. Please enter a whole integer.');
-                return;
-            }
-            const val = parseInt(rawVal, 10);
-            this.handleGuess(val);
-            if (guessInput) {
-                guessInput.value = '';
-            }
+            this.handleGuess(guessNum);
+            input.value = '';
         });
-        // Restart button
-        (_c = document.getElementById('restartGameBtn')) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => {
+        // Play Again / Restart Button
+        (_b = document.getElementById('restartGameBtn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
             this.restart();
         });
-        // History controls
-        (_d = document.getElementById('openGameHistoryBtn')) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => {
+        // Toggle Game History Drawer
+        (_c = document.getElementById('toggleHistoryBtn')) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => {
             this.ui.toggleHistoryDrawer();
         });
-        (_e = document.getElementById('closeGameHistoryBtn')) === null || _e === void 0 ? void 0 : _e.addEventListener('click', () => {
-            this.ui.closeHistoryDrawer();
+        (_d = document.getElementById('closeHistoryBtn')) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => {
+            this.ui.toggleHistoryDrawer();
         });
-        (_f = document.getElementById('clearGameHistoryBtn')) === null || _f === void 0 ? void 0 : _f.addEventListener('click', () => {
-            if (confirm('Clear all saved game records?')) {
+        // Clear History Button
+        (_e = document.getElementById('clearHistoryBtn')) === null || _e === void 0 ? void 0 : _e.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear your game history?')) {
                 this.statsManager.clearHistory();
-                this.ui.renderGameHistory([]);
+                this.syncUI();
             }
         });
-        // Close drawers on Escape key
-        window.addEventListener('keydown', (e) => {
-            var _a;
-            if (e.key === 'Escape') {
-                this.ui.closeHistoryDrawer();
-                (_a = document.getElementById('customDiffModal')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
+        // Reset All Statistics
+        (_f = document.getElementById('resetStatsBtn')) === null || _f === void 0 ? void 0 : _f.addEventListener('click', () => {
+            if (confirm('Permanently reset all games played, wins, losses, and best scores?')) {
+                this.statsManager.resetStatistics();
+                this.syncUI();
             }
         });
     }
 }
-window.addEventListener('DOMContentLoaded', () => {
-    new NumberGuessingGameApp();
-});
+// Bootstrap application on DOM ready
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        new NumberGuessingGameApp();
+    });
+}

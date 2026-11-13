@@ -28,18 +28,53 @@ export class GameStateModel {
         this.hasWon = false;
         this.secret = GameLogic.generateSecret(config.min, config.max);
     }
+    /**
+     * Retrieves the current game play state as a discriminated union.
+     */
+    getPlayState() {
+        if (this.hasWon) {
+            return {
+                phase: 'won',
+                secret: this.secret,
+                attemptsUsed: this.maxAttempts - this.remainingAttempts,
+                guesses: [...this.guesses]
+            };
+        }
+        if (this.isGameOver) {
+            return {
+                phase: 'lost',
+                secret: this.secret,
+                guesses: [...this.guesses]
+            };
+        }
+        if (this.guesses.length === 0) {
+            return {
+                phase: 'ready',
+                min: this.minRange,
+                max: this.maxRange,
+                maxAttempts: this.maxAttempts
+            };
+        }
+        return {
+            phase: 'playing',
+            secret: this.secret,
+            remainingAttempts: this.remainingAttempts,
+            maxAttempts: this.maxAttempts,
+            guesses: [...this.guesses]
+        };
+    }
     submitGuess(guess) {
         if (this.isGameOver) {
             throw new Error('Game has already ended. Please start a new game.');
         }
-        if (!Number.isInteger(guess)) {
+        if (typeof guess !== 'number' || !Number.isInteger(guess)) {
             throw new Error('Please enter a valid whole integer.');
         }
         if (guess < this.minRange || guess > this.maxRange) {
             throw new Error(`Guess must be between ${this.minRange} and ${this.maxRange}.`);
         }
-        const result = GameLogic.evaluateGuess(guess, this.secret, this.remainingAttempts, this.guesses);
-        if (result.type !== 'DUPLICATE') {
+        const result = GameLogic.evaluateGuess(guess, this.secret, this.remainingAttempts, this.guesses, this.maxAttempts);
+        if (result.status !== 'duplicate') {
             this.guesses.push(guess);
             this.remainingAttempts = result.attemptsLeft;
             this.isGameOver = result.isGameOver;

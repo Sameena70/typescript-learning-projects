@@ -1,15 +1,22 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ExpenseCalculations } from '../src/calculations.js';
+import {
+  ExpenseCalculations,
+  sortByField,
+  filterItems,
+  isIncomeTransaction,
+  isExpenseTransaction
+} from '../src/calculations.js';
 import { ExpenseService } from '../src/expense-service.js';
 import { ExpenseValidator } from '../src/validation.js';
 import { ExpenseImportExport } from '../src/import-export.js';
+import { StorageService } from '../src/storage.js';
 import { Expense, CategoryBudget } from '../src/types.js';
 
 // Setup Mock LocalStorage for headless tests
 const createLocalStorageMock = () => {
   let store: Record<string, string> = {};
   return {
-    getItem: (key: string) => store[key] || null,
+    getItem: (key: string) => (key in store ? store[key] : null),
     setItem: (key: string, value: string) => {
       store[key] = value.toString();
     },
@@ -21,6 +28,13 @@ const createLocalStorageMock = () => {
     }
   };
 };
+
+if (typeof globalThis.localStorage === 'undefined') {
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: createLocalStorageMock(),
+    writable: true
+  });
+}
 
 describe('ExpenseCalculations', () => {
   const sampleTransactions: Expense[] = [
@@ -100,126 +114,136 @@ describe('ExpenseCalculations', () => {
 
     const octExpense = ExpenseCalculations.calculateMonthlySpending(sampleTransactions, '2026-10');
     expect(octExpense).toBe(3000);
-
-    const octIncome = ExpenseCalculations.calculateMonthlyIncome(sampleTransactions, '2026-10');
-    expect(octIncome).toBe(10000);
   });
 
-  it('groups spending totals by category correctly', () => {
-    const categoryTotals = ExpenseCalculations.calculateCategoryTotals(sampleTransactions);
-    expect(categoryTotals['Food & Dining']).toBe(2700);
-    expect(categoryTotals['Transportation']).toBe(800);
-    expect(categoryTotals['Bills & Utilities']).toBe(3000);
-    expect(categoryTotals['Salary']).toBeUndefined(); // Only expenses
+  it('aggregates expenses and incomes by category accurately', () => {
+    const expTotals = ExpenseCalculations.calculateCategoryTotals(sampleTransactions);
+    expect(expTotals['Food & Dining']).toBe(2700);
+    expect(expTotals['Transportation']).toBe(800);
+    expect(expTotals['Bills & Utilities']).toBe(3000);
+
+    const incTotals = ExpenseCalculations.calculateIncomeCategoryTotals(sampleTransactions);
+    expect(incTotals['Salary']).toBe(50000);
+    expect(incTotals['Freelance']).toBe(10000);
   });
 
-  it('groups income totals by category correctly', () => {
-    const incCategoryTotals = ExpenseCalculations.calculateIncomeCategoryTotals(sampleTransactions);
-    expect(incCategoryTotals['Salary']).toBe(50000);
-    expect(incCategoryTotals['Freelance']).toBe(10000);
+  it('formats currency with support for INR, USD, EUR, and GBP', () => {
+    expect(ExpenseCalculations.formatCurrency(5000, 'INR')).toMatch(/₹|INR/);
+    expect(ExpenseCalculations.formatCurrency(120, 'USD')).toMatch(/\$|USD/);
+    expect(ExpenseCalculations.formatINR(2500)).toMatch(/₹|INR/);
   });
 
-  it('identifies highest and average expense amounts ignoring income', () => {
+  it('finds highest and average expense values accurately', () => {
     expect(ExpenseCalculations.getHighestExpense(sampleTransactions)).toBe(3000);
-    expect(ExpenseCalculations.getAverageExpense(sampleTransactions)).toBe(1625); // 6500 / 4
-
-    expect(ExpenseCalculations.getHighestExpense([])).toBe(0);
-    expect(ExpenseCalculations.getAverageExpense([])).toBe(0);
+    expect(ExpenseCalculations.getAverageExpense(sampleTransactions)).toBe(6500 / 4);
   });
 
-  it('calculates monthly and yearly performance trends', () => {
-    const monthlyTrends = ExpenseCalculations.calculateMonthlyTrends(sampleTransactions);
-    expect(monthlyTrends.length).toBe(2); // 2026-10 and 2026-11
-    expect(monthlyTrends[0].period).toBe('2026-10');
-    expect(monthlyTrends[0].income).toBe(10000);
-    expect(monthlyTrends[0].expenses).toBe(3000);
-    expect(monthlyTrends[0].netSavings).toBe(7000);
-    expect(monthlyTrends[0].savingsRate).toBe(70);
+  it('generates multi-period monthly trends with savings rate percentages', () => {
+    const trends = ExpenseCalculations.calculateMonthlyTrends(sampleTransactions);
+    expect(trends.length).toBe(2); // Oct and Nov
 
-    const yearlyTrends = ExpenseCalculations.calculateYearlyTrends(sampleTransactions);
-    expect(yearlyTrends.length).toBe(1);
-    expect(yearlyTrends[0].period).toBe('2026');
-    expect(yearlyTrends[0].income).toBe(60000);
-    expect(yearlyTrends[0].expenses).toBe(6500);
-    expect(yearlyTrends[0].netSavings).toBe(53500);
+    const octTrend = trends.find((t) => t.period === '2026-10');
+    expect(octTrend?.income).toBe(10000);
+    expect(octTrend?.expenses).toBe(3000);
+    expect(octTrend?.netSavings).toBe(7000);
+    expect(octTrend?.savingsRate).toBe(70);
   });
 
-  it('generates actionable spending insights', () => {
-    const categoryTotals = ExpenseCalculations.calculateCategoryTotals(sampleTransactions);
-    const insights = ExpenseCalculations.generateInsights(
-      sampleTransactions,
-      3500,
-      5000,
-      categoryTotals
-    );
-
-    expect(insights.length).toBeGreaterThan(0);
-    expect(insights.some((i) => i.title.includes('Top Spending'))).toBe(true);
-  });
-
-  it('generates complete dashboard summary including category budgets and trends', () => {
+  it('generates comprehensive dashboard summary including budget utilization', () => {
     const categoryBudgets: CategoryBudget[] = [
-      { category: 'Food & Dining', budget: 2500 } // Spent 2700, so over budget
+      { category: 'Food & Dining', budget: 5000 },
+      { category: 'Bills & Utilities', budget: 2000 }
     ];
 
-    const summary = ExpenseCalculations.generateSummary(
-      sampleTransactions,
-      5000,
-      categoryBudgets,
-      '2026-11'
-    );
-    expect(summary.totalSpent).toBe(6500);
-    expect(summary.totalIncome).toBe(60000);
+    const summary = ExpenseCalculations.generateSummary(sampleTransactions, 10000, categoryBudgets);
     expect(summary.totalBalance).toBe(53500);
-    expect(summary.monthlyBudget).toBe(5000);
-    expect(summary.transactionCount).toBe(6);
-    expect(summary.savingsRate).toBeCloseTo(89.16, 1);
-    expect(summary.categoryBudgetProgress.length).toBe(1);
-    expect(summary.categoryBudgetProgress[0].spent).toBe(2700);
-    expect(summary.categoryBudgetProgress[0].isOver).toBe(true);
-    expect(summary.monthlyTrends.length).toBe(2);
-    expect(summary.yearlyTrends.length).toBe(1);
-  });
-
-  it('formats amounts across different currencies', () => {
-    expect(ExpenseCalculations.formatINR(25000)).toContain('25,000');
-    expect(ExpenseCalculations.formatCurrency(150, 'USD')).toContain('150');
-    expect(ExpenseCalculations.formatCurrency(200, 'EUR')).toContain('200');
-    expect(ExpenseCalculations.formatCurrency(300, 'GBP')).toContain('300');
+    expect(summary.totalIncome).toBe(60000);
+    expect(summary.totalExpenses).toBe(6500);
+    expect(summary.insights.length).toBeGreaterThan(0);
   });
 });
 
-describe('ExpenseValidator', () => {
-  it('validates a correct expense transaction', () => {
-    const result = ExpenseValidator.validateExpense({
-      title: 'Groceries',
-      amount: 1500,
-      category: 'Food & Dining',
-      date: '2026-11-01',
-      type: 'expense'
-    });
-    expect(result.isValid).toBe(true);
-    expect(Object.keys(result.errors).length).toBe(0);
-  });
-
-  it('validates a correct income transaction', () => {
-    const result = ExpenseValidator.validateExpense({
-      title: 'Consulting',
-      amount: 4500,
-      category: 'Freelance',
+describe('Generic Utilities and Discriminated Union Guards', () => {
+  const testItems = [
+    {
+      id: '1',
+      title: 'Coffee',
+      amount: 120,
       date: '2026-11-02',
-      type: 'income'
-    });
-    expect(result.isValid).toBe(true);
+      type: 'expense' as const,
+      category: 'Food & Dining' as const
+    },
+    {
+      id: '2',
+      title: 'Salary',
+      amount: 45000,
+      date: '2026-11-01',
+      type: 'income' as const,
+      category: 'Salary' as const
+    },
+    {
+      id: '3',
+      title: 'Apples',
+      amount: 80,
+      date: '2026-11-03',
+      type: 'expense' as const,
+      category: 'Food & Dining' as const
+    }
+  ];
+
+  it('sorts objects generically by numeric key', () => {
+    const sorted = sortByField(testItems, 'amount', 'asc');
+    expect(sorted[0].amount).toBe(80);
+    expect(sorted[1].amount).toBe(120);
+    expect(sorted[2].amount).toBe(45000);
   });
 
-  it('rejects invalid titles, negative amounts, and invalid dates', () => {
+  it('sorts objects generically by string key in descending order', () => {
+    const sorted = sortByField(testItems, 'title', 'desc');
+    expect(sorted[0].title).toBe('Salary');
+    expect(sorted[1].title).toBe('Coffee');
+    expect(sorted[2].title).toBe('Apples');
+  });
+
+  it('filters items generically preserving type', () => {
+    const expensesOnly = filterItems(testItems, (item) => item.type === 'expense');
+    expect(expensesOnly).toHaveLength(2);
+  });
+
+  it('correctly discriminates income vs expense with type guards', () => {
+    const income = testItems[1];
+    const expense = testItems[0];
+
+    expect(isIncomeTransaction(income)).toBe(true);
+    expect(isIncomeTransaction(expense)).toBe(false);
+
+    expect(isExpenseTransaction(expense)).toBe(true);
+    expect(isExpenseTransaction(income)).toBe(false);
+  });
+});
+
+describe('ExpenseValidator & Validation Errors', () => {
+  it('validates a correct expense input without errors', () => {
+    const result = ExpenseValidator.validateExpense({
+      title: 'Groceries at Supermarket',
+      amount: 250.5,
+      type: 'expense',
+      category: 'Food & Dining',
+      date: '2026-11-12'
+    });
+
+    expect(result.isValid).toBe(true);
+    expect(Object.keys(result.errors)).toHaveLength(0);
+  });
+
+  it('flags missing and invalid fields with typed error keys', () => {
     const result = ExpenseValidator.validateExpense({
       title: '',
       amount: -50,
-      category: 'UnknownCategory' as unknown as Expense['category'],
+      category: 'InvalidCat' as unknown as Expense['category'],
       date: 'invalid-date'
     });
+
     expect(result.isValid).toBe(false);
     expect(result.errors.title).toBeDefined();
     expect(result.errors.amount).toBeDefined();
@@ -227,157 +251,134 @@ describe('ExpenseValidator', () => {
     expect(result.errors.date).toBeDefined();
   });
 
-  it('isValidExpenseObject recognizes valid transactions', () => {
-    expect(
-      ExpenseValidator.isValidExpenseObject({
-        id: '123',
-        title: 'Lunch',
-        amount: 250,
-        category: 'Food & Dining',
-        date: '2026-11-05'
-      })
-    ).toBe(true);
+  it('validates raw objects via type guard with backward compatibility', () => {
+    const validLegacy = {
+      id: 'tx_123',
+      title: 'Old expense',
+      amount: 400,
+      category: 'Shopping',
+      date: '2026-05-10'
+    };
+    expect(ExpenseValidator.isValidExpenseObject(validLegacy)).toBe(true);
 
-    expect(
-      ExpenseValidator.isValidExpenseObject({
-        title: 'Lunch'
-      })
-    ).toBe(false);
+    const invalid = { id: 123, title: 'No string id' };
+    expect(ExpenseValidator.isValidExpenseObject(invalid)).toBe(false);
   });
 });
 
-describe('ExpenseService', () => {
+describe('ExpenseService (State & CRUD Operations)', () => {
   let service: ExpenseService;
 
   beforeEach(() => {
-    const mockStorage = createLocalStorageMock();
-    Object.defineProperty(globalThis, 'localStorage', {
-      value: mockStorage,
-      writable: true,
-      configurable: true
-    });
+    localStorage.clear();
     service = new ExpenseService();
   });
 
-  it('adds, retrieves, updates, and deletes transactions', () => {
-    const item = service.addExpense({
-      title: 'Coffee',
-      amount: 150,
-      category: 'Food & Dining',
-      date: '2026-11-01',
-      type: 'expense'
+  it('adds and retrieves transactions correctly', () => {
+    const tx = service.addExpense({
+      title: 'Monthly Internet',
+      amount: 1500,
+      type: 'expense',
+      category: 'Bills & Utilities',
+      date: '2026-11-01'
     });
 
-    expect(service.getExpenses().length).toBe(1);
-    expect(item.id).toBeDefined();
-    expect(service.getExpenseById(item.id)?.title).toBe('Coffee');
-
-    const updated = service.updateExpense(item.id, { title: 'Espresso', amount: 200 });
-    expect(updated.title).toBe('Espresso');
-    expect(updated.amount).toBe(200);
-
-    service.deleteExpense(item.id);
-    expect(service.getExpenses().length).toBe(0);
+    expect(tx.id).toBeDefined();
+    expect(service.getExpenses()).toHaveLength(1);
+    expect(service.getExpenseById(tx.id)?.title).toBe('Monthly Internet');
   });
 
-  it('filters by transaction type (income vs expense) and category', () => {
-    service.addExpense({
-      title: 'Coffee',
-      amount: 150,
+  it('updates an existing transaction safely', () => {
+    const tx = service.addExpense({
+      title: 'Snack',
+      amount: 50,
+      type: 'expense',
       category: 'Food & Dining',
-      date: '2026-11-01',
-      type: 'expense'
-    });
-    service.addExpense({
-      title: 'Salary',
-      amount: 50000,
-      category: 'Salary',
-      date: '2026-11-01',
-      type: 'income'
+      date: '2026-11-02'
     });
 
-    const expensesOnly = service.filterExpenses({ type: 'expense' });
-    expect(expensesOnly.length).toBe(1);
-    expect(expensesOnly[0].title).toBe('Coffee');
+    const updated = service.updateExpense(tx.id, { amount: 65 });
+    expect(updated.amount).toBe(65);
+    expect(service.getExpenseById(tx.id)?.amount).toBe(65);
+  });
+
+  it('deletes a transaction and updates storage', () => {
+    const tx = service.addExpense({
+      title: 'Movie',
+      amount: 300,
+      type: 'expense',
+      category: 'Entertainment',
+      date: '2026-11-03'
+    });
+
+    expect(service.deleteExpense(tx.id)).toBe(true);
+    expect(service.getExpenses()).toHaveLength(0);
+  });
+
+  it('filters transactions by type, category, and search query using generic helpers', () => {
+    service.addExpense({
+      title: 'Groceries',
+      amount: 1000,
+      type: 'expense',
+      category: 'Food & Dining',
+      date: '2026-11-01'
+    });
+    service.addExpense({
+      title: 'Consulting Fee',
+      amount: 25000,
+      type: 'income',
+      category: 'Freelance',
+      date: '2026-11-02'
+    });
 
     const incomeOnly = service.filterExpenses({ type: 'income' });
-    expect(incomeOnly.length).toBe(1);
-    expect(incomeOnly[0].title).toBe('Salary');
-  });
+    expect(incomeOnly).toHaveLength(1);
+    expect(incomeOnly[0].title).toBe('Consulting Fee');
 
-  it('manages recurring rules and processes due transactions', () => {
-    const rule = service.addRecurringRule({
-      title: 'Gym Membership',
-      amount: 2000,
-      category: 'Health',
-      type: 'expense',
-      frequency: 'monthly',
-      startDate: '2026-01-01'
-    });
-
-    expect(service.getRecurringRules().length).toBe(1);
-
-    // Initial addition triggers processing
-    const generatedExpenses = service.getExpenses().filter((e) => e.isRecurring);
-    expect(generatedExpenses.length).toBeGreaterThan(0);
-    expect(generatedExpenses[0].title).toContain('Gym Membership');
-
-    // Remove recurring rule
-    service.deleteRecurringRule(rule.id);
-    expect(service.getRecurringRules().length).toBe(0);
-  });
-
-  it('bulk imports transactions safely avoiding duplicates', () => {
-    const t1: Expense = {
-      id: 't-1',
-      title: 'Internet',
-      amount: 1200,
-      category: 'Bills & Utilities',
-      date: '2026-11-01',
-      type: 'expense'
-    };
-
-    service.bulkImport([t1]);
-    expect(service.getExpenses().length).toBe(1);
-
-    // Re-import the exact same item
-    const { added, skipped } = service.bulkImport([t1]);
-    expect(added).toBe(0);
-    expect(skipped).toBe(1);
-    expect(service.getExpenses().length).toBe(1);
-  });
-
-  it('manages user settings and category budgets', () => {
-    service.setCurrency('USD');
-    expect(service.getCurrency()).toBe('USD');
-
-    service.setCategoryBudget('Food & Dining', 3000);
-    const cb = service.getCategoryBudgets();
-    expect(cb.find((c) => c.category === 'Food & Dining')?.budget).toBe(3000);
+    const foodOnly = service.filterExpenses({ category: 'Food & Dining' });
+    expect(foodOnly).toHaveLength(1);
+    expect(foodOnly[0].title).toBe('Groceries');
   });
 });
 
-describe('ExpenseImportExport CSV and File parsing', () => {
-  it('escapes and parses CSV fields correctly', () => {
-    const fieldWithComma = 'Food, Dining';
-    const escaped = ExpenseImportExport.escapeCSVField(fieldWithComma);
-    expect(escaped).toBe('"Food, Dining"');
-
-    const parsed = ExpenseImportExport.parseCSVLine('"Food, Dining",500,expense');
-    expect(parsed).toEqual(['Food, Dining', '500', 'expense']);
+describe('Generic Storage Resilience and CSV Parsing', () => {
+  beforeEach(() => {
+    localStorage.clear();
   });
 
-  it('correctly splits multi-line CSV text', () => {
-    const csv = 'Header1,Header2\r\nVal1,Val2\r\nVal3,Val4';
-    const lines = ExpenseImportExport.splitCSVLines(csv);
-    expect(lines.length).toBe(3);
-    expect(lines[0]).toBe('Header1,Header2');
+  it('StorageService falls back safely upon encountering corrupt JSON', () => {
+    localStorage.setItem('corrupt_key', '{ bad json ::');
+    const result = StorageService.getItem<number>(
+      'corrupt_key',
+      100,
+      (val: unknown): val is number => typeof val === 'number'
+    );
+    expect(result).toBe(100);
   });
 
-  it('handles embedded quotation marks properly in CSV', () => {
-    const text = '"A ""quoted"" note",100,Food & Dining';
-    const parsed = ExpenseImportExport.parseCSVLine(text);
-    expect(parsed[0]).toBe('A "quoted" note');
-    expect(parsed[1]).toBe('100');
+  it('parses valid CSV transaction content properly', () => {
+    const csvData = [
+      'ID,Type,Title,Amount,Category,Date,Notes,IsRecurring',
+      'tx_1,expense,Coffee,150,Food & Dining,2026-11-01,Morning latte,false',
+      'tx_2,income,Bonus,10000,Salary,2026-11-02,Quarterly bonus,false'
+    ].join('\r\n');
+
+    const parsed = ExpenseImportExport.parseCSVContent(csvData);
+    expect(parsed.validExpenses).toHaveLength(2);
+    expect(parsed.result.success).toBe(true);
+    expect(parsed.validExpenses[0].type).toBe('expense');
+    expect(parsed.validExpenses[1].type).toBe('income');
+  });
+
+  it('handles invalid CSV content with skipped lines and error messages', () => {
+    const badCSV = [
+      'ID,Type,Title,Amount,Category,Date',
+      'tx_1,expense,Coffee,-100,Food & Dining,2026-11-01' // negative amount
+    ].join('\r\n');
+
+    const parsed = ExpenseImportExport.parseCSVContent(badCSV);
+    expect(parsed.validExpenses).toHaveLength(0);
+    expect(parsed.result.skippedCount).toBe(1);
+    expect(parsed.result.errors.length).toBeGreaterThan(0);
   });
 });

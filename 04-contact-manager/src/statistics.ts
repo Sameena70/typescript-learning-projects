@@ -1,14 +1,8 @@
-/**
- * statistics.ts
- *
- * Functions to compute aggregate statistics from the contacts list
- * using TypeScript array methods: filter, reduce, and length.
- */
-
-import { Contact, ContactStatistics } from './types.js';
+import { Contact, ContactStatistics, ContactCategory } from './types.js';
+import { VALID_CATEGORIES } from './generic-utils.js';
 
 /**
- * Calculates dashboard statistics from the list of contacts.
+ * Calculates dashboard statistics from the list of contacts using array aggregations.
  */
 export function calculateContactStatistics(contacts: Contact[]): ContactStatistics {
   const total = contacts.length;
@@ -29,8 +23,8 @@ export function calculateContactStatistics(contacts: Contact[]): ContactStatisti
     return !isNaN(createdTimestamp) && createdTimestamp >= sevenDaysAgo;
   }).length;
 
-  // Category counts using reduce()
-  const initialCategoryCounts = {
+  // Category counts initialized safely for all ContactCategory keys
+  const initialCategoryCounts: Record<ContactCategory, number> = {
     Family: 0,
     Friends: 0,
     Work: 0,
@@ -39,14 +33,17 @@ export function calculateContactStatistics(contacts: Contact[]): ContactStatisti
     Other: 0
   };
 
-  const categoryCounts = contacts.reduce((acc, contact: Contact) => {
-    if (contact.category in acc) {
-      acc[contact.category] = (acc[contact.category] || 0) + 1;
-    } else {
-      acc.Other = (acc.Other || 0) + 1;
-    }
-    return acc;
-  }, initialCategoryCounts);
+  const categoryCounts = contacts.reduce<Record<ContactCategory, number>>(
+    (acc, contact: Contact) => {
+      if (VALID_CATEGORIES.indexOf(contact.category) !== -1) {
+        acc[contact.category] = (acc[contact.category] || 0) + 1;
+      } else {
+        acc.Other = (acc.Other || 0) + 1;
+      }
+      return acc;
+    },
+    initialCategoryCounts
+  );
 
   return {
     total,

@@ -101,9 +101,9 @@ export class ContactImportExport {
         });
     }
     /**
-     * Exports contacts into an RFC 4180 compliant CSV string.
+     * Exports contacts to a RFC-compliant CSV string.
      */
-    static exportToCSV(contacts, filename = 'contacts-backup.csv') {
+    static exportToCSV(contacts, filename = 'contacts-export.csv') {
         const headers = [
             'ID',
             'Full Name',
@@ -116,214 +116,158 @@ export class ContactImportExport {
             'Category',
             'Status',
             'Is Favourite',
+            'Notes',
             'Tags',
             'Birthday',
             'Reminder Date',
-            'Notes',
             'Created At'
         ];
-        const escapeCSV = (value) => {
-            if (value === undefined || value === null) {
-                return '""';
-            }
-            const str = String(value).replace(/"/g, '""');
-            return `"${str}"`;
-        };
         const rows = contacts.map((c) => [
-            escapeCSV(c.id),
-            escapeCSV(c.fullName),
-            escapeCSV(c.phoneNumber),
-            escapeCSV(c.email),
-            escapeCSV(c.age),
-            escapeCSV(c.company),
-            escapeCSV(c.jobTitle),
-            escapeCSV(c.address),
-            escapeCSV(c.category),
-            escapeCSV(c.status),
-            escapeCSV(c.isFavourite),
-            escapeCSV(c.tags ? c.tags.join(', ') : ''),
-            escapeCSV(c.birthday),
-            escapeCSV(c.reminderDate),
-            escapeCSV(c.notes),
-            escapeCSV(c.createdAt)
+            this.escapeCSVField(c.id),
+            this.escapeCSVField(c.fullName),
+            this.escapeCSVField(c.phoneNumber),
+            this.escapeCSVField(c.email || ''),
+            this.escapeCSVField(c.age !== undefined ? c.age.toString() : ''),
+            this.escapeCSVField(c.company || ''),
+            this.escapeCSVField(c.jobTitle || ''),
+            this.escapeCSVField(c.address || ''),
+            this.escapeCSVField(c.category),
+            this.escapeCSVField(c.status),
+            this.escapeCSVField(c.isFavourite ? 'true' : 'false'),
+            this.escapeCSVField(c.notes || ''),
+            this.escapeCSVField(c.tags ? c.tags.join('; ') : ''),
+            this.escapeCSVField(c.birthday || ''),
+            this.escapeCSVField(c.reminderDate || ''),
+            this.escapeCSVField(c.createdAt)
         ]);
         const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
         this.downloadFile(csvContent, filename, 'text/csv;charset=utf-8;');
     }
     /**
-     * Parses an RFC 4180 CSV line into tokens.
+     * Parses CSV string into contact items.
      */
+    static parseCSVContent(csvText, existingContacts) {
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        const validContacts = [];
+        const errors = [];
+        let skippedCount = 0;
+        if (lines.length < 2) {
+            return {
+                validContacts: [],
+                summary: {
+                    success: false,
+                    importedCount: 0,
+                    skippedCount: 0,
+                    errors: ['CSV file is empty or missing data rows.']
+                }
+            };
+        }
+        // Skip header line (index 0)
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            const cols = this.parseCSVLine(line);
+            const fullName = (cols[1] || cols[0] || '').trim();
+            const phoneNumber = (cols[2] || cols[1] || '').trim();
+            const email = (cols[3] || '').trim();
+            if (fullName.length < 2 || !isValidPhoneNumber(phoneNumber)) {
+                errors.push(`Row ${i + 1}: Name or Phone Number invalid.`);
+                skippedCount++;
+                continue;
+            }
+            if (email.length > 0 && !isValidEmail(email)) {
+                errors.push(`Row ${i + 1}: Invalid email address "${email}".`);
+                skippedCount++;
+                continue;
+            }
+            const duplicate = findDuplicateContact(phoneNumber, email || undefined, [
+                ...existingContacts,
+                ...validContacts
+            ]);
+            if (duplicate) {
+                errors.push(`Row ${i + 1}: Duplicate record (already exists as "${duplicate.fullName}").`);
+                skippedCount++;
+                continue;
+            }
+            const rawCategory = (cols[8] || 'Other').trim();
+            const category = VALID_CATEGORIES.indexOf(rawCategory) !== -1
+                ? rawCategory
+                : 'Other';
+            const rawStatus = (cols[9] || 'active').trim().toLowerCase();
+            const status = rawStatus === 'inactive' ? 'inactive' : 'active';
+            const ageNum = parseInt(cols[4] || '', 10);
+            const age = !isNaN(ageNum) && ageNum > 0 && ageNum < 120 ? ageNum : undefined;
+            const rawTags = (cols[12] || '').trim();
+            const tags = rawTags.length > 0
+                ? rawTags
+                    .split(';')
+                    .map((t) => t.trim())
+                    .filter((t) => t.length > 0)
+                : undefined;
+            const contact = {
+                id: ((_a = cols[0]) === null || _a === void 0 ? void 0 : _a.trim()) || `ct_${Date.now()}_${i}_${Math.random().toString(36).substring(2, 6)}`,
+                fullName,
+                phoneNumber,
+                email: email.length > 0 ? email : undefined,
+                age,
+                company: ((_b = cols[5]) === null || _b === void 0 ? void 0 : _b.trim()) || undefined,
+                jobTitle: ((_c = cols[6]) === null || _c === void 0 ? void 0 : _c.trim()) || undefined,
+                address: ((_d = cols[7]) === null || _d === void 0 ? void 0 : _d.trim()) || undefined,
+                category,
+                status,
+                isFavourite: ((_e = cols[10]) === null || _e === void 0 ? void 0 : _e.trim().toLowerCase()) === 'true',
+                notes: ((_f = cols[11]) === null || _f === void 0 ? void 0 : _f.trim()) || undefined,
+                tags,
+                birthday: ((_g = cols[13]) === null || _g === void 0 ? void 0 : _g.trim()) || undefined,
+                reminderDate: ((_h = cols[14]) === null || _h === void 0 ? void 0 : _h.trim()) || undefined,
+                createdAt: ((_j = cols[15]) === null || _j === void 0 ? void 0 : _j.trim()) || new Date().toISOString()
+            };
+            validContacts.push(contact);
+        }
+        return {
+            validContacts,
+            summary: {
+                success: validContacts.length > 0,
+                importedCount: validContacts.length,
+                skippedCount,
+                errors
+            }
+        };
+    }
     static parseCSVLine(line) {
         const result = [];
         let current = '';
-        let insideQuotes = false;
+        let inQuotes = false;
         for (let i = 0; i < line.length; i++) {
             const char = line[i];
             if (char === '"') {
-                if (insideQuotes && line[i + 1] === '"') {
+                if (inQuotes && line[i + 1] === '"') {
                     current += '"';
-                    i++; // Skip escaped quote
+                    i++; // skip escaped quote
                 }
                 else {
-                    insideQuotes = !insideQuotes;
+                    inQuotes = !inQuotes;
                 }
             }
-            else if (char === ',' && !insideQuotes) {
-                result.push(current.trim());
+            else if (char === ',' && !inQuotes) {
+                result.push(current);
                 current = '';
             }
             else {
                 current += char;
             }
         }
-        result.push(current.trim());
+        result.push(current);
         return result;
     }
-    /**
-     * Splits multi-line CSV respecting quotes.
-     */
-    static splitCSVLines(text) {
-        const lines = [];
-        let currentLine = '';
-        let inQuotes = false;
-        for (let i = 0; i < text.length; i++) {
-            const char = text[i];
-            if (char === '"') {
-                if (inQuotes && text[i + 1] === '"') {
-                    currentLine += '""';
-                    i++;
-                }
-                else {
-                    inQuotes = !inQuotes;
-                    currentLine += '"';
-                }
-            }
-            else if ((char === '\n' || char === '\r') && !inQuotes) {
-                if (char === '\r' && text[i + 1] === '\n') {
-                    i++; // skip CRLF
-                }
-                lines.push(currentLine);
-                currentLine = '';
-            }
-            else {
-                currentLine += char;
-            }
+    static escapeCSVField(val) {
+        if (val.indexOf(',') !== -1 || val.indexOf('"') !== -1 || val.indexOf('\n') !== -1) {
+            return `"${val.replace(/"/g, '""')}"`;
         }
-        if (currentLine.length > 0) {
-            lines.push(currentLine);
-        }
-        return lines;
+        return val;
     }
-    /**
-     * Imports contacts from a CSV file with validation and duplicate prevention.
-     */
-    static parseAndValidateCSV(file, existingContacts) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const text = yield this.readTextFile(file);
-            const lines = this.splitCSVLines(text).filter((l) => l.trim().length > 0);
-            if (lines.length < 2) {
-                throw new Error('CSV file is empty or missing headers.');
-            }
-            const headers = this.parseCSVLine(lines[0]).map((h) => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
-            const validContacts = [];
-            const errors = [];
-            let skippedCount = 0;
-            for (let rowIndex = 1; rowIndex < lines.length; rowIndex++) {
-                const rowValues = this.parseCSVLine(lines[rowIndex]);
-                if (rowValues.length < 2)
-                    continue;
-                const rowMap = {};
-                headers.forEach((h, i) => {
-                    rowMap[h] = rowValues[i] !== undefined ? rowValues[i] : '';
-                });
-                const fullName = rowMap['fullname'] || rowMap['name'] || rowValues[1] || '';
-                const phoneNumber = rowMap['phonenumber'] || rowMap['phone'] || rowValues[2] || '';
-                const email = rowMap['email'] || rowMap['emailaddress'] || rowValues[3] || '';
-                const ageStr = rowMap['age'] || rowValues[4] || '';
-                const company = rowMap['company'] || rowValues[5] || '';
-                const jobTitle = rowMap['jobtitle'] || rowValues[6] || '';
-                const address = rowMap['address'] || rowValues[7] || '';
-                const categoryRaw = rowMap['category'] || rowValues[8] || 'Other';
-                const statusRaw = rowMap['status'] || rowValues[9] || 'active';
-                const favRaw = rowMap['isfavourite'] || rowMap['favourite'] || rowValues[10] || 'false';
-                const tagsRaw = rowMap['tags'] || rowValues[11] || '';
-                const birthday = rowMap['birthday'] || rowValues[12] || '';
-                const reminderDate = rowMap['reminderdate'] || rowValues[13] || '';
-                const notes = rowMap['notes'] || rowValues[14] || '';
-                if (fullName.trim().length < 2) {
-                    errors.push(`Row ${rowIndex + 1}: Missing or invalid Full Name.`);
-                    skippedCount++;
-                    continue;
-                }
-                if (!isValidPhoneNumber(phoneNumber)) {
-                    errors.push(`Row ${rowIndex + 1} (${fullName}): Invalid phone number.`);
-                    skippedCount++;
-                    continue;
-                }
-                const validEmail = email.trim().length > 0 && isValidEmail(email) ? email.trim() : undefined;
-                const cleanPhone = phoneNumber.trim();
-                // Check duplicates against existing list and current batch
-                const duplicate = findDuplicateContact(cleanPhone, validEmail, [
-                    ...existingContacts,
-                    ...validContacts
-                ]);
-                if (duplicate) {
-                    errors.push(`Row ${rowIndex + 1} (${fullName}): Duplicate of existing contact "${duplicate.fullName}".`);
-                    skippedCount++;
-                    continue;
-                }
-                const category = VALID_CATEGORIES.includes(categoryRaw)
-                    ? categoryRaw
-                    : 'Other';
-                const status = statusRaw.toLowerCase() === 'inactive' ? 'inactive' : 'active';
-                const isFavourite = favRaw.toLowerCase() === 'true';
-                let age = undefined;
-                if (ageStr.trim().length > 0) {
-                    const parsedAge = Number(ageStr);
-                    if (!isNaN(parsedAge) && parsedAge > 0 && parsedAge < 130) {
-                        age = parsedAge;
-                    }
-                }
-                const tags = tagsRaw
-                    .split(',')
-                    .map((t) => t.trim())
-                    .filter((t) => t.length > 0);
-                const contact = {
-                    id: `ct_${Date.now()}_${rowIndex}_${Math.random().toString(36).substring(2, 6)}`,
-                    fullName: fullName.trim(),
-                    phoneNumber: cleanPhone,
-                    email: validEmail,
-                    age,
-                    company: company.trim().length > 0 ? company.trim() : undefined,
-                    jobTitle: jobTitle.trim().length > 0 ? jobTitle.trim() : undefined,
-                    address: address.trim().length > 0 ? address.trim() : undefined,
-                    category,
-                    status,
-                    isFavourite,
-                    tags: tags.length > 0 ? tags : undefined,
-                    birthday: birthday.trim().length > 0 ? birthday.trim() : undefined,
-                    reminderDate: reminderDate.trim().length > 0 ? reminderDate.trim() : undefined,
-                    notes: notes.trim().length > 0 ? notes.trim() : undefined,
-                    createdAt: new Date().toISOString()
-                };
-                validContacts.push(contact);
-            }
-            return {
-                validContacts,
-                summary: {
-                    success: validContacts.length > 0,
-                    importedCount: validContacts.length,
-                    skippedCount,
-                    errors
-                }
-            };
-        });
-    }
-    /**
-     * Helper to trigger browser file download.
-     */
     static downloadFile(content, filename, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
+        const blob = new Blob([content], { type: `${mimeType};charset=utf-8;` });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;

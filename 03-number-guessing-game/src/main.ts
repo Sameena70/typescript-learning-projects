@@ -100,100 +100,92 @@ class NumberGuessingGameApp {
       const attemptsInput = document.getElementById(
         'customAttemptsInput'
       ) as HTMLInputElement | null;
-      const errEl = document.getElementById('customDiffError');
 
-      const rawMin = minInput?.value.trim() ?? '';
-      const rawMax = maxInput?.value.trim() ?? '';
-      const rawAttempts = attemptsInput?.value.trim() ?? '';
-
-      const min = parseInt(rawMin, 10);
-      const max = parseInt(rawMax, 10);
-      const attempts = parseInt(rawAttempts, 10);
-
-      if (isNaN(min) || isNaN(max) || isNaN(attempts)) {
-        if (errEl) errEl.textContent = 'Please enter valid whole numbers for all fields.';
-        return;
-      }
+      const min = parseInt(minInput?.value || '', 10);
+      const max = parseInt(maxInput?.value || '', 10);
+      const attempts = parseInt(attemptsInput?.value || '', 10);
 
       try {
         this.configManager.setCustomConfig(min, max, attempts);
-        document.getElementById('customDiffModal')?.classList.add('hidden');
-        if (errEl) errEl.textContent = '';
-
-        diffButtons.forEach((b) => b.classList.remove('active'));
-        document.querySelector('.diff-btn[data-difficulty="custom"]')?.classList.add('active');
-
         this.stateModel.setDifficulty('custom');
+
+        // Close modal
+        const modal = document.getElementById('customDiffModal');
+        modal?.classList.add('hidden');
+
+        // Update button highlight
+        diffButtons.forEach((b) => b.classList.remove('active'));
+        const customBtn = document.querySelector<HTMLButtonElement>(
+          '.diff-btn[data-difficulty="custom"]'
+        );
+        customBtn?.classList.add('active');
+
         this.restart();
       } catch (err: unknown) {
-        if (err instanceof Error && errEl) {
-          errEl.textContent = err.message;
+        const errSpan = document.getElementById('customFormError');
+        if (errSpan && err instanceof Error) {
+          errSpan.textContent = err.message;
         }
       }
     });
 
-    document.getElementById('closeCustomModalBtn')?.addEventListener('click', () => {
-      document.getElementById('customDiffModal')?.classList.add('hidden');
-    });
+    // Cancel Custom Modal
     document.getElementById('cancelCustomBtn')?.addEventListener('click', () => {
       document.getElementById('customDiffModal')?.classList.add('hidden');
     });
 
-    // Guess Form Submission
+    // Guess Form Submit
     const guessForm = document.getElementById('guessForm') as HTMLFormElement | null;
-    const guessInput = document.getElementById('guessInput') as HTMLInputElement | null;
-
     guessForm?.addEventListener('submit', (e) => {
       e.preventDefault();
-      const rawVal = guessInput?.value.trim() ?? '';
-      if (rawVal === '') {
-        this.ui.showValidationError('Please enter a number to submit a guess.');
+      const input = document.getElementById('guessInput') as HTMLInputElement | null;
+      if (!input || input.value.trim() === '') return;
+
+      const guessNum = Number(input.value.trim());
+      if (isNaN(guessNum)) {
+        this.ui.showValidationError('Please enter a valid numeric value.');
         return;
       }
 
-      if (!/^-?\d+$/.test(rawVal)) {
-        this.ui.showValidationError(
-          'Decimal values are not allowed. Please enter a whole integer.'
-        );
-        return;
-      }
-
-      const val = parseInt(rawVal, 10);
-      this.handleGuess(val);
-      if (guessInput) {
-        guessInput.value = '';
-      }
+      this.handleGuess(guessNum);
+      input.value = '';
     });
 
-    // Restart button
+    // Play Again / Restart Button
     document.getElementById('restartGameBtn')?.addEventListener('click', () => {
       this.restart();
     });
 
-    // History controls
-    document.getElementById('openGameHistoryBtn')?.addEventListener('click', () => {
+    // Toggle Game History Drawer
+    document.getElementById('toggleHistoryBtn')?.addEventListener('click', () => {
       this.ui.toggleHistoryDrawer();
     });
-    document.getElementById('closeGameHistoryBtn')?.addEventListener('click', () => {
-      this.ui.closeHistoryDrawer();
+
+    document.getElementById('closeHistoryBtn')?.addEventListener('click', () => {
+      this.ui.toggleHistoryDrawer();
     });
-    document.getElementById('clearGameHistoryBtn')?.addEventListener('click', () => {
-      if (confirm('Clear all saved game records?')) {
+
+    // Clear History Button
+    document.getElementById('clearHistoryBtn')?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to clear your game history?')) {
         this.statsManager.clearHistory();
-        this.ui.renderGameHistory([]);
+        this.syncUI();
       }
     });
 
-    // Close drawers on Escape key
-    window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        this.ui.closeHistoryDrawer();
-        document.getElementById('customDiffModal')?.classList.add('hidden');
+    // Reset All Statistics
+    document.getElementById('resetStatsBtn')?.addEventListener('click', () => {
+      if (confirm('Permanently reset all games played, wins, losses, and best scores?')) {
+        this.statsManager.resetStatistics();
+        this.syncUI();
       }
     });
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  new NumberGuessingGameApp();
-});
+// Bootstrap application on DOM ready
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new NumberGuessingGameApp();
+  });
+}

@@ -10,20 +10,43 @@ const DEFAULT_STATS = {
     totalAttemptsUsed: 0
 };
 /**
- * Validates a single GameRecord loaded from storage.
+ * Generic filtering helper preserving type information with property constraint.
  */
-function isValidRecord(item) {
-    if (!item || typeof item !== 'object')
+export function filterRecordsByField(items, key, value) {
+    return items.filter((item) => item[key] === value);
+}
+/**
+ * Generic aggregation helper for calculating numeric sums across collections.
+ */
+export function aggregateNumericField(items, extractor) {
+    return items.reduce((sum, item) => sum + extractor(item), 0);
+}
+/**
+ * Type guard for GameRecord objects loaded from storage.
+ * Uses `in` operator and `typeof` checks to validate schema without blind casting.
+ */
+export function isValidGameRecord(item) {
+    if (typeof item !== 'object' || item === null)
         return false;
-    const rec = item;
-    return (typeof rec.id === 'string' &&
-        typeof rec.difficulty === 'string' &&
-        typeof rec.targetNumber === 'number' &&
-        typeof rec.attemptsUsed === 'number' &&
-        typeof rec.maxAttempts === 'number' &&
-        typeof rec.won === 'boolean' &&
-        typeof rec.timestamp === 'number' &&
-        Array.isArray(rec.guesses));
+    if ('id' in item &&
+        'difficulty' in item &&
+        'targetNumber' in item &&
+        'attemptsUsed' in item &&
+        'maxAttempts' in item &&
+        'won' in item &&
+        'timestamp' in item &&
+        'guesses' in item) {
+        const rec = item;
+        return (typeof rec.id === 'string' &&
+            typeof rec.difficulty === 'string' &&
+            typeof rec.targetNumber === 'number' &&
+            typeof rec.attemptsUsed === 'number' &&
+            typeof rec.maxAttempts === 'number' &&
+            typeof rec.won === 'boolean' &&
+            typeof rec.timestamp === 'number' &&
+            Array.isArray(rec.guesses));
+    }
+    return false;
 }
 export class StatisticsManager {
     constructor() {
@@ -31,11 +54,11 @@ export class StatisticsManager {
         this.history = this.loadHistory();
     }
     /**
-     * Safely loads and sanitizes lifetime statistics to prevent NaN or undefined properties.
+     * Safely loads and sanitizes lifetime statistics with schema validation.
      */
     loadStatistics() {
         const raw = GameStorage.getItem(STATS_KEY, DEFAULT_STATS);
-        if (!raw || typeof raw !== 'object') {
+        if (typeof raw !== 'object' || raw === null) {
             return Object.assign({}, DEFAULT_STATS);
         }
         const obj = raw;
@@ -57,7 +80,7 @@ export class StatisticsManager {
     loadHistory() {
         const saved = GameStorage.getItem(HISTORY_KEY, [], (val) => Array.isArray(val));
         if (Array.isArray(saved)) {
-            return saved.filter(isValidRecord);
+            return saved.filter(isValidGameRecord);
         }
         return [];
     }
@@ -77,36 +100,44 @@ export class StatisticsManager {
     getHistory() {
         return [...this.history];
     }
+    /**
+     * Returns history records filtered by difficulty using generic filter helper.
+     */
+    getHistoryByDifficulty(diff) {
+        return filterRecordsByField(this.history, 'difficulty', diff);
+    }
+    /**
+     * Appends completed game result, updating aggregate stats and history.
+     */
     recordGame(record) {
-        // Update lifetime stats
-        this.stats.totalGames++;
+        this.history.unshift(record);
+        if (this.history.length > MAX_HISTORY) {
+            this.history = this.history.slice(0, MAX_HISTORY);
+        }
+        this.stats.totalGames += 1;
         this.stats.totalAttemptsUsed += record.attemptsUsed;
         if (record.won) {
-            this.stats.gamesWon++;
+            this.stats.gamesWon += 1;
             if (this.stats.bestScore === null || record.attemptsUsed < this.stats.bestScore) {
                 this.stats.bestScore = record.attemptsUsed;
             }
         }
         else {
-            this.stats.gamesLost++;
+            this.stats.gamesLost += 1;
         }
-        // Persist stats
-        GameStorage.setItem(STATS_KEY, this.stats);
-        // Persist history capped to MAX_HISTORY
-        this.history.unshift(record);
-        if (this.history.length > MAX_HISTORY) {
-            this.history = this.history.slice(0, MAX_HISTORY);
-        }
-        GameStorage.setItem(HISTORY_KEY, this.history);
+        this.save();
     }
     clearHistory() {
         this.history = [];
         GameStorage.removeItem(HISTORY_KEY);
     }
-    resetAll() {
+    resetStatistics() {
         this.stats = Object.assign({}, DEFAULT_STATS);
-        this.history = [];
+        this.clearHistory();
         GameStorage.removeItem(STATS_KEY);
-        GameStorage.removeItem(HISTORY_KEY);
+    }
+    save() {
+        GameStorage.setItem(STATS_KEY, this.stats);
+        GameStorage.setItem(HISTORY_KEY, this.history);
     }
 }

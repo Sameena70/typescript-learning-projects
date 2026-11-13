@@ -1,11 +1,6 @@
+import { VALID_CATEGORIES } from './generic-utils.js';
 /**
- * statistics.ts
- *
- * Functions to compute aggregate statistics from the contacts list
- * using TypeScript array methods: filter, reduce, and length.
- */
-/**
- * Calculates dashboard statistics from the list of contacts.
+ * Calculates dashboard statistics from the list of contacts using array aggregations.
  */
 export function calculateContactStatistics(contacts) {
     const total = contacts.length;
@@ -20,7 +15,7 @@ export function calculateContactStatistics(contacts) {
         const createdTimestamp = new Date(c.createdAt).getTime();
         return !isNaN(createdTimestamp) && createdTimestamp >= sevenDaysAgo;
     }).length;
-    // Category counts using reduce()
+    // Category counts initialized safely for all ContactCategory keys
     const initialCategoryCounts = {
         Family: 0,
         Friends: 0,
@@ -30,7 +25,7 @@ export function calculateContactStatistics(contacts) {
         Other: 0
     };
     const categoryCounts = contacts.reduce((acc, contact) => {
-        if (contact.category in acc) {
+        if (VALID_CATEGORIES.indexOf(contact.category) !== -1) {
             acc[contact.category] = (acc[contact.category] || 0) + 1;
         }
         else {

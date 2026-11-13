@@ -102,26 +102,34 @@ export class ExpenseImportExport {
     static parseAndValidateImport(file) {
         return __awaiter(this, void 0, void 0, function* () {
             const rawData = yield this.readJSONFile(file);
-            if (!Array.isArray(rawData)) {
-                throw new Error('Imported JSON root must be an array of expense objects.');
-            }
-            const validItems = [];
+            const validExpenses = [];
             const errors = [];
             let skippedCount = 0;
+            if (!Array.isArray(rawData)) {
+                return {
+                    validExpenses: [],
+                    result: {
+                        success: false,
+                        importedCount: 0,
+                        skippedCount: 1,
+                        errors: ['JSON file content is not an array of transactions.']
+                    }
+                };
+            }
             rawData.forEach((item, index) => {
                 if (ExpenseValidator.isValidExpenseObject(item)) {
-                    validItems.push(Object.assign(Object.assign({}, item), { type: item.type === 'income' ? 'income' : 'expense' }));
+                    validExpenses.push(Object.assign(Object.assign({}, item), { type: item.type || 'expense' }));
                 }
                 else {
                     skippedCount++;
-                    errors.push(`Record #${index + 1} is invalid or missing required fields.`);
+                    errors.push(`Row/Record #${index + 1} does not meet schema validation requirements.`);
                 }
             });
             return {
-                validItems,
-                importResult: {
-                    success: validItems.length > 0,
-                    importedCount: validItems.length,
+                validExpenses,
+                result: {
+                    success: validExpenses.length > 0,
+                    importedCount: validExpenses.length,
                     skippedCount,
                     errors
                 }
@@ -129,90 +137,90 @@ export class ExpenseImportExport {
         });
     }
     /**
-     * Parses, validates, and imports transactions from a CSV file.
+     * Parses, validates, and imports transactions from a CSV string.
      */
-    static parseAndValidateCSV(file) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const text = yield this.readTextFile(file);
-            const lines = this.splitCSVLines(text);
-            if (lines.length < 2) {
-                throw new Error('CSV file must have a header row and at least one data row.');
-            }
-            const headers = this.parseCSVLine(lines[0]).map((h) => h.trim().toLowerCase());
-            const validItems = [];
-            const errors = [];
-            let skippedCount = 0;
-            for (let i = 1; i < lines.length; i++) {
-                const line = lines[i].trim();
-                if (!line)
-                    continue;
-                const columns = this.parseCSVLine(line);
-                const rowObj = {};
-                headers.forEach((header, index) => {
-                    rowObj[header] = columns[index] !== undefined ? columns[index].trim() : '';
-                });
-                const title = rowObj['title'] || rowObj['description'] || '';
-                const amount = parseFloat(rowObj['amount'] || '0');
-                const category = (rowObj['category'] || 'Other');
-                const date = rowObj['date'] || '';
-                const notes = rowObj['notes'] || '';
-                const rawType = (rowObj['type'] || 'expense').toLowerCase();
-                const type = rawType === 'income' ? 'income' : 'expense';
-                const isRecurring = rowObj['isrecurring'] === 'true';
+    static parseCSVContent(csvText) {
+        var _a;
+        const lines = csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        const validExpenses = [];
+        const errors = [];
+        let skippedCount = 0;
+        if (lines.length < 2) {
+            return {
+                validExpenses: [],
+                result: {
+                    success: false,
+                    importedCount: 0,
+                    skippedCount: 0,
+                    errors: ['CSV file is empty or missing headers.']
+                }
+            };
+        }
+        const header = lines[0].toLowerCase();
+        const hasTypeCol = header.indexOf('type') !== -1;
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i];
+            const cols = this.parseCSVLine(line);
+            try {
+                let typeVal = 'expense';
+                let titleIdx = 1;
+                let amountIdx = 2;
+                let catIdx = 3;
+                let dateIdx = 4;
+                let notesIdx = 5;
+                if (hasTypeCol) {
+                    typeVal = ((_a = cols[1]) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'income' ? 'income' : 'expense';
+                    titleIdx = 2;
+                    amountIdx = 3;
+                    catIdx = 4;
+                    dateIdx = 5;
+                    notesIdx = 6;
+                }
+                const rawTitle = cols[titleIdx];
+                const rawAmount = parseFloat(cols[amountIdx]);
+                const rawCategory = cols[catIdx];
+                const rawDate = cols[dateIdx];
+                const rawNotes = cols[notesIdx] || '';
                 const validation = ExpenseValidator.validateExpense({
-                    title,
-                    amount,
-                    category,
-                    date,
-                    type,
-                    notes
+                    title: rawTitle,
+                    amount: rawAmount,
+                    type: typeVal,
+                    category: rawCategory,
+                    date: rawDate,
+                    notes: rawNotes
                 });
                 if (validation.isValid) {
-                    validItems.push({
-                        id: rowObj['id'] || `csv_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
-                        title: title.trim(),
-                        amount,
-                        category,
-                        date,
-                        type,
-                        notes: notes ? notes.trim() : undefined,
-                        isRecurring
+                    validExpenses.push({
+                        id: cols[0] || `tx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+                        title: rawTitle.trim(),
+                        amount: rawAmount,
+                        type: typeVal,
+                        category: rawCategory,
+                        date: rawDate,
+                        notes: rawNotes.trim() ? rawNotes.trim() : undefined,
+                        isRecurring: false
                     });
                 }
                 else {
                     skippedCount++;
-                    errors.push(`Row ${i + 1}: ${Object.values(validation.errors).join(', ')}`);
+                    errors.push(`Line ${i + 1}: ${Object.values(validation.errors).join(', ')}`);
                 }
             }
-            return {
-                validItems,
-                importResult: {
-                    success: validItems.length > 0,
-                    importedCount: validItems.length,
-                    skippedCount,
-                    errors
-                }
-            };
-        });
-    }
-    static triggerDownload(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-    }
-    static escapeCSVField(field) {
-        if (field.includes(',') ||
-            field.includes('"') ||
-            field.includes('\n') ||
-            field.includes('\r')) {
-            return `"${field.replace(/"/g, '""')}"`;
+            catch (err) {
+                skippedCount++;
+                const msg = err instanceof Error ? err.message : 'Unknown parse error';
+                errors.push(`Line ${i + 1}: ${msg}`);
+            }
         }
-        return field;
+        return {
+            validExpenses,
+            result: {
+                success: validExpenses.length > 0,
+                importedCount: validExpenses.length,
+                skippedCount,
+                errors
+            }
+        };
     }
     static parseCSVLine(line) {
         const result = [];
@@ -230,46 +238,30 @@ export class ExpenseImportExport {
                 }
             }
             else if (char === ',' && !inQuotes) {
-                result.push(current);
+                result.push(current.trim());
                 current = '';
             }
             else {
                 current += char;
             }
         }
-        result.push(current);
+        result.push(current.trim());
         return result;
     }
-    static splitCSVLines(text) {
-        const lines = [];
-        let currentLine = '';
-        let inQuotes = false;
-        for (let i = 0; i < text.length; i++) {
-            const char = text[i];
-            if (char === '"') {
-                if (inQuotes && text[i + 1] === '"') {
-                    currentLine += '""';
-                    i++;
-                }
-                else {
-                    inQuotes = !inQuotes;
-                    currentLine += '"';
-                }
-            }
-            else if ((char === '\n' || char === '\r') && !inQuotes) {
-                if (char === '\r' && text[i + 1] === '\n') {
-                    i++; // handle CRLF
-                }
-                lines.push(currentLine);
-                currentLine = '';
-            }
-            else {
-                currentLine += char;
-            }
+    static escapeCSVField(field) {
+        if (field.indexOf(',') !== -1 || field.indexOf('"') !== -1 || field.indexOf('\n') !== -1) {
+            return `"${field.replace(/"/g, '""')}"`;
         }
-        if (currentLine.length > 0) {
-            lines.push(currentLine);
-        }
-        return lines;
+        return field;
+    }
+    static triggerDownload(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
 }

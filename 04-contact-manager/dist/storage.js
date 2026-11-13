@@ -2,18 +2,41 @@
  * storage.ts
  *
  * Safe persistence, schema migration, and retrieval of contacts in browser localStorage.
- * Handles corrupted, incomplete, and legacy stored data without destroying user records.
+ * Handles corrupted, incomplete, and legacy stored data using type narrowing and generics.
  */
+import { VALID_CATEGORIES, isContactCategory } from './generic-utils.js';
+export { VALID_CATEGORIES };
 const STORAGE_KEY = 'ts_contact_manager_contacts_v1';
 const LEGACY_STORAGE_KEY = 'ts_contact_manager_contacts';
-export const VALID_CATEGORIES = [
-    'Family',
-    'Friends',
-    'Work',
-    'Clients',
-    'Business',
-    'Other'
-];
+/**
+ * Type guard verifying if an arbitrary unknown value satisfies the Contact structure.
+ * Uses `in` operator and `typeof` checks to avoid blind type casts.
+ */
+export function isContact(value) {
+    if (typeof value !== 'object' || value === null) {
+        return false;
+    }
+    if ('id' in value &&
+        'fullName' in value &&
+        'phoneNumber' in value &&
+        'category' in value &&
+        'status' in value &&
+        'isFavourite' in value &&
+        'createdAt' in value) {
+        const candidate = value;
+        return (typeof candidate.id === 'string' &&
+            candidate.id.length > 0 &&
+            typeof candidate.fullName === 'string' &&
+            candidate.fullName.trim().length >= 2 &&
+            typeof candidate.phoneNumber === 'string' &&
+            candidate.phoneNumber.trim().length >= 5 &&
+            isContactCategory(candidate.category) &&
+            (candidate.status === 'active' || candidate.status === 'inactive') &&
+            typeof candidate.isFavourite === 'boolean' &&
+            typeof candidate.createdAt === 'string');
+    }
+    return false;
+}
 /**
  * Seed contacts loaded when the user has no existing saved contacts.
  */
@@ -104,78 +127,88 @@ const SEED_CONTACTS = [
  * Sanitizes and migrates a raw or legacy contact record to ensure complete schema compliance.
  */
 export function sanitizeContactRecord(raw, index = 0) {
-    if (!raw || typeof raw !== 'object') {
+    if (typeof raw !== 'object' || raw === null) {
         return null;
     }
     const obj = raw;
     // FullName is mandatory and must be a string of at least 2 characters
-    const rawName = typeof obj.fullName === 'string'
+    const rawName = 'fullName' in obj && typeof obj.fullName === 'string'
         ? obj.fullName.trim()
-        : typeof obj.name === 'string'
+        : 'name' in obj && typeof obj.name === 'string'
             ? obj.name.trim()
             : '';
     if (rawName.length < 2) {
         return null;
     }
     // PhoneNumber is mandatory
-    const rawPhone = typeof obj.phoneNumber === 'string'
+    const rawPhone = 'phoneNumber' in obj && typeof obj.phoneNumber === 'string'
         ? obj.phoneNumber.trim()
-        : typeof obj.phone === 'string'
+        : 'phone' in obj && typeof obj.phone === 'string'
             ? obj.phone.trim()
             : '';
     if (rawPhone.length < 5) {
         return null;
     }
     // ID sanitization (guarantee unique non-empty ID)
-    const id = typeof obj.id === 'string' && obj.id.trim().length > 0
+    const id = 'id' in obj && typeof obj.id === 'string' && obj.id.trim().length > 0
         ? obj.id.trim()
         : `ct_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
     // Category fallback
-    const category = VALID_CATEGORIES.includes(obj.category)
-        ? obj.category
-        : 'Other';
+    const category = 'category' in obj && isContactCategory(obj.category) ? obj.category : 'Other';
     // Status fallback
-    const status = obj.status === 'inactive' ? 'inactive' : 'active';
+    const status = 'status' in obj && obj.status === 'inactive' ? 'inactive' : 'active';
     // Tags sanitization
     let tags = undefined;
-    if (Array.isArray(obj.tags)) {
-        tags = obj.tags
-            .filter((t) => typeof t === 'string' && t.trim().length > 0)
-            .map((t) => t.trim());
-    }
-    else if (typeof obj.tags === 'string' && obj.tags.trim().length > 0) {
-        tags = obj.tags
-            .split(',')
-            .map((t) => t.trim())
-            .filter((t) => t.length > 0);
+    if ('tags' in obj) {
+        if (Array.isArray(obj.tags)) {
+            tags = obj.tags
+                .filter((t) => typeof t === 'string' && t.trim().length > 0)
+                .map((t) => t.trim());
+        }
+        else if (typeof obj.tags === 'string' && obj.tags.trim().length > 0) {
+            tags = obj.tags
+                .split(',')
+                .map((t) => t.trim())
+                .filter((t) => t.length > 0);
+        }
     }
     return {
         id,
         fullName: rawName,
         phoneNumber: rawPhone,
-        email: typeof obj.email === 'string' && obj.email.trim().length > 0 ? obj.email.trim() : undefined,
-        age: typeof obj.age === 'number' && obj.age > 0 && obj.age < 130 ? obj.age : undefined,
-        company: typeof obj.company === 'string' && obj.company.trim().length > 0
+        email: 'email' in obj && typeof obj.email === 'string' && obj.email.trim().length > 0
+            ? obj.email.trim()
+            : undefined,
+        age: 'age' in obj && typeof obj.age === 'number' && obj.age > 0 && obj.age < 130
+            ? obj.age
+            : undefined,
+        company: 'company' in obj && typeof obj.company === 'string' && obj.company.trim().length > 0
             ? obj.company.trim()
             : undefined,
-        jobTitle: typeof obj.jobTitle === 'string' && obj.jobTitle.trim().length > 0
+        jobTitle: 'jobTitle' in obj && typeof obj.jobTitle === 'string' && obj.jobTitle.trim().length > 0
             ? obj.jobTitle.trim()
             : undefined,
-        address: typeof obj.address === 'string' && obj.address.trim().length > 0
+        address: 'address' in obj && typeof obj.address === 'string' && obj.address.trim().length > 0
             ? obj.address.trim()
             : undefined,
         category,
         status,
-        isFavourite: Boolean(obj.isFavourite),
-        notes: typeof obj.notes === 'string' && obj.notes.trim().length > 0 ? obj.notes.trim() : undefined,
+        isFavourite: 'isFavourite' in obj ? Boolean(obj.isFavourite) : false,
+        notes: 'notes' in obj && typeof obj.notes === 'string' && obj.notes.trim().length > 0
+            ? obj.notes.trim()
+            : undefined,
         tags: tags && tags.length > 0 ? tags : undefined,
-        birthday: typeof obj.birthday === 'string' ? obj.birthday.trim() : undefined,
-        reminderDate: typeof obj.reminderDate === 'string' ? obj.reminderDate.trim() : undefined,
-        activities: Array.isArray(obj.activities)
+        birthday: 'birthday' in obj && typeof obj.birthday === 'string' ? obj.birthday.trim() : undefined,
+        reminderDate: 'reminderDate' in obj && typeof obj.reminderDate === 'string'
+            ? obj.reminderDate.trim()
+            : undefined,
+        activities: 'activities' in obj && Array.isArray(obj.activities)
             ? obj.activities
             : undefined,
-        createdAt: typeof obj.createdAt === 'string' && obj.createdAt ? obj.createdAt : new Date().toISOString(),
-        updatedAt: typeof obj.updatedAt === 'string' ? obj.updatedAt : undefined
+        createdAt: 'createdAt' in obj && typeof obj.createdAt === 'string' && obj.createdAt
+            ? obj.createdAt
+            : new Date().toISOString(),
+        updatedAt: 'updatedAt' in obj && typeof obj.updatedAt === 'string' ? obj.updatedAt : undefined
     };
 }
 /**
@@ -206,7 +239,6 @@ export function loadSavedContacts() {
         parsed.forEach((item, index) => {
             const sanitized = sanitizeContactRecord(item, index);
             if (sanitized) {
-                // Prevent duplicate IDs from breaking internal indexing
                 if (seenIds.has(sanitized.id)) {
                     sanitized.id = `ct_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
                 }
@@ -217,7 +249,9 @@ export function loadSavedContacts() {
         return validContacts.length > 0 ? validContacts : [...SEED_CONTACTS];
     }
     catch (error) {
-        console.error('Failed to load contacts from localStorage:', error);
+        if (error instanceof Error) {
+            console.error('Failed to load contacts from localStorage:', error.message);
+        }
         return [...SEED_CONTACTS];
     }
 }
@@ -231,7 +265,9 @@ export function saveContactsToStorage(contacts) {
         return true;
     }
     catch (error) {
-        console.error('Failed to save contacts to localStorage:', error);
+        if (error instanceof Error) {
+            console.error('Failed to save contacts to localStorage:', error.message);
+        }
         return false;
     }
 }
@@ -243,6 +279,8 @@ export function clearStoredContacts() {
         localStorage.removeItem(STORAGE_KEY);
     }
     catch (error) {
-        console.error('Failed to clear contacts from localStorage:', error);
+        if (error instanceof Error) {
+            console.error('Failed to clear contacts from localStorage:', error.message);
+        }
     }
 }

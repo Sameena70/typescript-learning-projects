@@ -1,3 +1,45 @@
+/**
+ * Generic utility functions for collection manipulation.
+ */
+/**
+ * Type-safe sorting helper for arrays of objects using generic constraints.
+ * Supports string, number, and date sorting with direction control.
+ */
+export function sortByField(items, key, order = 'asc') {
+    const multiplier = order === 'asc' ? 1 : -1;
+    return [...items].sort((a, b) => {
+        const valA = a[key];
+        const valB = b[key];
+        if (valA === valB)
+            return 0;
+        if (valA === undefined || valA === null)
+            return 1;
+        if (valB === undefined || valB === null)
+            return -1;
+        if (typeof valA === 'number' && typeof valB === 'number') {
+            return (valA - valB) * multiplier;
+        }
+        return String(valA).localeCompare(String(valB)) * multiplier;
+    });
+}
+/**
+ * Generic predicate filtering utility preserving element types.
+ */
+export function filterItems(items, predicate) {
+    return items.filter(predicate);
+}
+/**
+ * Type guard for narrowing a Transaction to an IncomeTransaction.
+ */
+export function isIncomeTransaction(tx) {
+    return tx.type === 'income';
+}
+/**
+ * Type guard for narrowing a Transaction to an ExpenseTransaction.
+ */
+export function isExpenseTransaction(tx) {
+    return tx.type === 'expense';
+}
 export class ExpenseCalculations {
     /**
      * Currency formatting supporting INR (default), USD, EUR, and GBP.
@@ -23,18 +65,18 @@ export class ExpenseCalculations {
         return this.formatCurrency(amount, 'INR');
     }
     /**
-     * Sums total expenses from transactions list.
+     * Sums total expenses from transactions list using discriminated union narrowing.
      */
     static calculateTotalExpenses(transactions) {
         return transactions
-            .filter((t) => t.type === 'expense' || !t.type)
+            .filter((t) => t.type === 'expense' || !('type' in t) || t.type === undefined)
             .reduce((sum, t) => sum + t.amount, 0);
     }
     /**
-     * Sums total income from transactions list.
+     * Sums total income from transactions list using discriminated union narrowing.
      */
     static calculateTotalIncome(transactions) {
-        return transactions.filter((t) => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
+        return transactions.filter(isIncomeTransaction).reduce((sum, t) => sum + t.amount, 0);
     }
     /**
      * Calculates net balance (Income - Expenses).
@@ -56,7 +98,7 @@ export class ExpenseCalculations {
     static calculateMonthlySpending(transactions, yearMonth) {
         const target = yearMonth || new Date().toISOString().slice(0, 7);
         return transactions
-            .filter((t) => (t.type === 'expense' || !t.type) && t.date.startsWith(target))
+            .filter((t) => (t.type === 'expense' || !t.type) && t.date.indexOf(target) === 0)
             .reduce((sum, t) => sum + t.amount, 0);
     }
     /**
@@ -65,7 +107,7 @@ export class ExpenseCalculations {
     static calculateMonthlyIncome(transactions, yearMonth) {
         const target = yearMonth || new Date().toISOString().slice(0, 7);
         return transactions
-            .filter((t) => t.type === 'income' && t.date.startsWith(target))
+            .filter((t) => isIncomeTransaction(t) && t.date.indexOf(target) === 0)
             .reduce((sum, t) => sum + t.amount, 0);
     }
     /**
@@ -83,9 +125,7 @@ export class ExpenseCalculations {
      * Aggregates income by category.
      */
     static calculateIncomeCategoryTotals(transactions) {
-        return transactions
-            .filter((t) => t.type === 'income')
-            .reduce((acc, inc) => {
+        return transactions.filter(isIncomeTransaction).reduce((acc, inc) => {
             acc[inc.category] = (acc[inc.category] || 0) + inc.amount;
             return acc;
         }, {});
@@ -145,7 +185,7 @@ export class ExpenseCalculations {
         });
         const years = Array.from(yearsSet).sort();
         return years.map((period) => {
-            const yearTx = transactions.filter((t) => t.date && t.date.startsWith(period));
+            const yearTx = transactions.filter((t) => t.date && t.date.indexOf(period) === 0);
             const income = this.calculateTotalIncome(yearTx);
             const expenses = this.calculateTotalExpenses(yearTx);
             const netSavings = income - expenses;
@@ -214,52 +254,48 @@ export class ExpenseCalculations {
     /**
      * Generates a complete financial dashboard overview.
      */
-    static generateSummary(transactions, settingsOrBudget, categoryBudgetsList, targetMonth) {
-        const monthlyBudget = typeof settingsOrBudget === 'number' ? settingsOrBudget : settingsOrBudget.monthlyBudget;
-        let categoryBudgets = {};
-        if (typeof settingsOrBudget === 'object' && settingsOrBudget.categoryBudgets) {
-            categoryBudgets = Object.assign({}, settingsOrBudget.categoryBudgets);
-        }
-        if (Array.isArray(categoryBudgetsList)) {
-            categoryBudgetsList.forEach((cb) => {
-                categoryBudgets[cb.category] = cb.budget;
-            });
-        }
-        else if (categoryBudgetsList && typeof categoryBudgetsList === 'object') {
-            categoryBudgets = Object.assign(Object.assign({}, categoryBudgets), categoryBudgetsList);
-        }
-        const currentMonth = targetMonth || new Date().toISOString().slice(0, 7);
+    static generateSummary(transactions, monthlyBudget, categoryBudgets) {
+        const currentYearMonth = new Date().toISOString().slice(0, 7);
         const totalIncome = this.calculateTotalIncome(transactions);
         const totalExpenses = this.calculateTotalExpenses(transactions);
         const totalBalance = totalIncome - totalExpenses;
         const netSavings = totalBalance;
         const savingsRate = totalIncome > 0 ? Math.max(0, Math.min(100, (netSavings / totalIncome) * 100)) : 0;
-        const monthlyIncome = this.calculateMonthlyIncome(transactions, currentMonth);
-        const monthlyExpenses = this.calculateMonthlySpending(transactions, currentMonth);
+        const monthlyIncome = this.calculateMonthlyIncome(transactions, currentYearMonth);
+        const monthlyExpenses = this.calculateMonthlySpending(transactions, currentYearMonth);
         const remainingBudget = monthlyBudget - monthlyExpenses;
-        const isOverBudget = remainingBudget < 0;
-        const budgetPercentageUsed = monthlyBudget > 0 ? Math.min((monthlyExpenses / monthlyBudget) * 100, 100) : 0;
+        const isOverBudget = monthlyBudget > 0 && monthlyExpenses > monthlyBudget;
+        const budgetPercentageUsed = monthlyBudget > 0 ? (monthlyExpenses / monthlyBudget) * 100 : 0;
         const categoryBreakdown = this.calculateCategoryTotals(transactions);
         const incomeCategoryBreakdown = this.calculateIncomeCategoryTotals(transactions);
-        // Calculate category budget progress
-        const categoryBudgetProgress = Object.entries(categoryBudgets).map(([cat, budget]) => {
-            const spent = categoryBreakdown[cat] || 0;
-            const percentage = budget > 0 ? (spent / budget) * 100 : 0;
+        const monthlySpendingByCat = transactions
+            .filter((t) => (t.type === 'expense' || !t.type) && t.date.indexOf(currentYearMonth) === 0)
+            .reduce((acc, exp) => {
+            acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+            return acc;
+        }, {});
+        const categoryBudgetProgress = categoryBudgets.map((cb) => {
+            const spent = monthlySpendingByCat[cb.category] || 0;
+            const percentage = cb.budget > 0 ? (spent / cb.budget) * 100 : 0;
             return {
-                category: cat,
+                category: cb.category,
                 spent,
-                budget,
+                budget: cb.budget,
                 percentage,
-                isOver: spent > budget
+                isOver: spent > cb.budget
             };
         });
-        const categoryBudgetsCompat = categoryBudgetProgress.map((item) => ({
-            category: item.category,
-            spent: item.spent,
-            budget: item.budget,
-            percentageUsed: item.percentage,
-            isOver: item.isOver
-        }));
+        const categoryBudgetsFormatted = categoryBudgets.map((cb) => {
+            const spent = monthlySpendingByCat[cb.category] || 0;
+            const percentageUsed = cb.budget > 0 ? (spent / cb.budget) * 100 : 0;
+            return {
+                category: cb.category,
+                spent,
+                budget: cb.budget,
+                percentageUsed,
+                isOver: spent > cb.budget
+            };
+        });
         const monthlyTrends = this.calculateMonthlyTrends(transactions);
         const yearlyTrends = this.calculateYearlyTrends(transactions);
         const insights = this.generateInsights(transactions, monthlyExpenses, monthlyBudget, categoryBreakdown);
@@ -283,7 +319,7 @@ export class ExpenseCalculations {
             yearlyTrends,
             insights,
             categoryBudgetProgress,
-            categoryBudgets: categoryBudgetsCompat,
+            categoryBudgets: categoryBudgetsFormatted,
             isOverBudget,
             budgetPercentageUsed
         };

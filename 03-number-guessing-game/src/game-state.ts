@@ -1,18 +1,18 @@
-import { DifficultyLevel, GuessResult, GameRecord } from './types.js';
+import { DifficultyLevel, GuessResult, GameRecord, GamePlayState } from './types.js';
 import { GameConfigManager } from './game-config.js';
 import { GameLogic } from './game-logic.js';
 
 export class GameStateModel {
   private configManager: GameConfigManager;
   private currentDifficulty: DifficultyLevel = 'easy';
-  private secret: number = 0;
-  private remainingAttempts: number = 7;
-  private maxAttempts: number = 7;
-  private minRange: number = 1;
-  private maxRange: number = 100;
+  private secret = 0;
+  private remainingAttempts = 7;
+  private maxAttempts = 7;
+  private minRange = 1;
+  private maxRange = 100;
   private guesses: number[] = [];
-  private isGameOver: boolean = false;
-  private hasWon: boolean = false;
+  private isGameOver = false;
+  private hasWon = false;
 
   constructor(configManager: GameConfigManager) {
     this.configManager = configManager;
@@ -36,12 +36,48 @@ export class GameStateModel {
     this.secret = GameLogic.generateSecret(config.min, config.max);
   }
 
+  /**
+   * Retrieves the current game play state as a discriminated union.
+   */
+  public getPlayState(): GamePlayState {
+    if (this.hasWon) {
+      return {
+        phase: 'won',
+        secret: this.secret,
+        attemptsUsed: this.maxAttempts - this.remainingAttempts,
+        guesses: [...this.guesses]
+      };
+    }
+    if (this.isGameOver) {
+      return {
+        phase: 'lost',
+        secret: this.secret,
+        guesses: [...this.guesses]
+      };
+    }
+    if (this.guesses.length === 0) {
+      return {
+        phase: 'ready',
+        min: this.minRange,
+        max: this.maxRange,
+        maxAttempts: this.maxAttempts
+      };
+    }
+    return {
+      phase: 'playing',
+      secret: this.secret,
+      remainingAttempts: this.remainingAttempts,
+      maxAttempts: this.maxAttempts,
+      guesses: [...this.guesses]
+    };
+  }
+
   public submitGuess(guess: number): GuessResult {
     if (this.isGameOver) {
       throw new Error('Game has already ended. Please start a new game.');
     }
 
-    if (!Number.isInteger(guess)) {
+    if (typeof guess !== 'number' || !Number.isInteger(guess)) {
       throw new Error('Please enter a valid whole integer.');
     }
 
@@ -53,10 +89,11 @@ export class GameStateModel {
       guess,
       this.secret,
       this.remainingAttempts,
-      this.guesses
+      this.guesses,
+      this.maxAttempts
     );
 
-    if (result.type !== 'DUPLICATE') {
+    if (result.status !== 'duplicate') {
       this.guesses.push(guess);
       this.remainingAttempts = result.attemptsLeft;
       this.isGameOver = result.isGameOver;

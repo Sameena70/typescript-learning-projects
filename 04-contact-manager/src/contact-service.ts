@@ -2,7 +2,7 @@
  * contact-service.ts
  *
  * In-memory state and business operations for Contacts:
- * CRUD (Create, Read, Update, Delete), filtering, searching,
+ * CRUD (Create, Read, Update, Delete), generic searching, filtering,
  * sorting, duplicate detection, and tag/activity management.
  */
 
@@ -22,6 +22,7 @@ import {
   VALID_CATEGORIES
 } from './storage.js';
 import { validateContactForm, findDuplicateContact } from './validation.js';
+import { searchByFields, sortByKey, filterByPredicate } from './generic-utils.js';
 
 // In-memory contacts array holding application state
 let contacts: Contact[] = [];
@@ -61,7 +62,7 @@ function generateUniqueId(): string {
 export function addContact(formData: ContactFormData): {
   success: boolean;
   contact?: Contact;
-  validation: ValidationResult;
+  validation: ValidationResult<ContactFormData>;
 } {
   const validation = validateContactForm(formData, contacts);
   if (!validation.isValid) {
@@ -97,7 +98,6 @@ export function addContact(formData: ContactFormData): {
 
   contacts.unshift(newContact);
   saveContactsToStorage(contacts);
-
   return { success: true, contact: newContact, validation };
 }
 
@@ -110,7 +110,7 @@ export function updateContact(
 ): {
   success: boolean;
   contact?: Contact;
-  validation: ValidationResult;
+  validation: ValidationResult<ContactFormData>;
 } {
   const existingContact = getContactById(id);
   if (!existingContact) {
@@ -161,7 +161,7 @@ export function updateContact(
 }
 
 /**
- * Logs an interaction/activity for a contact.
+ * Logs an interaction/activity for a contact using discriminated union.
  */
 export function addContactActivity(
   contactId: string,
@@ -178,7 +178,7 @@ export function addContactActivity(
     ...activity,
     id: `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
     contactId
-  };
+  } as ContactActivity;
 
   contact.activities.unshift(newActivity);
   contact.updatedAt = new Date().toISOString();
@@ -297,122 +297,81 @@ export function getAllTags(): string[] {
 }
 
 /**
- * Filters, searches, and sorts contacts according to filter options.
+ * Filters, searches, and sorts contacts using generic search and filter functions.
  */
 export function getFilteredContacts(options: FilterOptions): Contact[] {
   let result = [...contacts];
 
-  // 1. Text Search across Name, Phone, Email, Company, Notes, and Tags
-  const query = options.searchQuery.trim().toLowerCase();
-  if (query.length > 0) {
-    result = result.filter((c: Contact) => {
-      const matchName = c.fullName.toLowerCase().includes(query);
-      const matchPhone = c.phoneNumber.toLowerCase().includes(query);
-      const matchEmail = c.email ? c.email.toLowerCase().includes(query) : false;
-      const matchCompany = c.company ? c.company.toLowerCase().includes(query) : false;
-      const matchNotes = c.notes ? c.notes.toLowerCase().includes(query) : false;
-      const matchTags = c.tags ? c.tags.some((t) => t.toLowerCase().includes(query)) : false;
-      return matchName || matchPhone || matchEmail || matchCompany || matchNotes || matchTags;
-    });
+  // 1. Reusable Generic Search across Name, Phone, Email, Company, Notes, and Tags
+  if (options.searchQuery.trim().length > 0) {
+    result = searchByFields(result, options.searchQuery, [
+      'fullName',
+      'phoneNumber',
+      'email',
+      'company',
+      'notes',
+      'tags'
+    ]);
   }
 
   // 2. Filter by Category
   if (options.category && options.category !== 'all') {
-    result = result.filter((c: Contact) => c.category === options.category);
+    result = filterByPredicate(result, (c: Contact) => c.category === options.category);
   }
 
   // 3. Filter by Status (active/inactive)
   if (options.status && options.status !== 'all') {
-    result = result.filter((c: Contact) => c.status === options.status);
+    result = filterByPredicate(result, (c: Contact) => c.status === options.status);
   }
 
   // 4. Filter by Favourites
   if (options.favouritesOnly) {
-    result = result.filter((c: Contact) => c.isFavourite);
+    result = filterByPredicate(result, (c: Contact) => c.isFavourite);
   }
 
   // 5. Filter by Tag
   if (options.tag && options.tag !== 'all') {
-    result = result.filter((c: Contact) => Boolean(c.tags && c.tags.includes(options.tag!)));
+    result = filterByPredicate(result, (c: Contact) =>
+      Boolean(c.tags && c.tags.indexOf(options.tag!) !== -1)
+    );
   }
 
-  // 6. Sorting
-  result.sort((a: Contact, b: Contact) => {
-    let comparison = 0;
-
-    if (options.sortField === 'name') {
-      comparison = a.fullName.localeCompare(b.fullName);
-    } else if (options.sortField === 'company') {
-      const compA = a.company ?? '';
-      const compB = b.company ?? '';
-      comparison = compA.localeCompare(compB);
-    } else if (options.sortField === 'createdAt') {
+  // 6. Sorting with type-safe generic helpers
+  if (options.sortField === 'name') {
+    result = sortByKey(result, 'fullName', options.sortOrder);
+  } else if (options.sortField === 'company') {
+    result = sortByKey(result, 'company', options.sortOrder);
+  } else {
+    // createdAt date sorting
+    const multiplier = options.sortOrder === 'asc' ? 1 : -1;
+    result.sort((a, b) => {
       const timeA = new Date(a.createdAt).getTime();
       const timeB = new Date(b.createdAt).getTime();
-      comparison = timeA - timeB;
-    }
-
-    return options.sortOrder === 'asc' ? comparison : -comparison;
-  });
+      return (timeA - timeB) * multiplier;
+    });
+  }
 
   return result;
 }
 
 /**
- * Exports contacts into an RFC 4180 CSV string.
+ * Exports contacts to CSV string format.
  */
 export function exportContactsToCSV(): string {
-  const headers = [
-    'ID',
-    'Full Name',
-    'Phone Number',
-    'Email',
-    'Age',
-    'Company',
-    'Job Title',
-    'Address',
-    'Category',
-    'Status',
-    'Is Favourite',
-    'Tags',
-    'Birthday',
-    'Reminder Date',
-    'Notes',
-    'Created At'
-  ];
-
-  const escapeCSV = (value: string | number | boolean | undefined): string => {
-    if (value === undefined || value === null) {
-      return '""';
-    }
-    const str = String(value).replace(/"/g, '""');
-    return `"${str}"`;
-  };
-
-  const rows = contacts.map((c: Contact) => [
-    escapeCSV(c.id),
-    escapeCSV(c.fullName),
-    escapeCSV(c.phoneNumber),
-    escapeCSV(c.email),
-    escapeCSV(c.age),
-    escapeCSV(c.company),
-    escapeCSV(c.jobTitle),
-    escapeCSV(c.address),
-    escapeCSV(c.category),
-    escapeCSV(c.status),
-    escapeCSV(c.isFavourite),
-    escapeCSV(c.tags ? c.tags.join(', ') : ''),
-    escapeCSV(c.birthday),
-    escapeCSV(c.reminderDate),
-    escapeCSV(c.notes),
-    escapeCSV(c.createdAt)
+  const headers = ['Full Name', 'Phone Number', 'Email', 'Category', 'Status', 'Is Favourite'];
+  const rows = contacts.map((c) => [
+    `"${c.fullName.replace(/"/g, '""')}"`,
+    `"${c.phoneNumber.replace(/"/g, '""')}"`,
+    `"${(c.email || '').replace(/"/g, '""')}"`,
+    `"${c.category}"`,
+    `"${c.status}"`,
+    c.isFavourite ? 'true' : 'false'
   ]);
-
-  return [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+  return [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
 }
 
 /**
- * Validates and imports contacts from CSV text without replacing or corrupting valid existing contacts.
+ * Backwards compatibility helper for CSV imports.
  */
 export function importContactsFromCSV(csvText: string): {
   success: boolean;
@@ -420,142 +379,64 @@ export function importContactsFromCSV(csvText: string): {
   skippedCount: number;
   errors: string[];
 } {
-  const lines = csvText.split(/\r?\n/).filter((line) => line.trim().length > 0);
+  const lines = csvText.split('\n').filter((l) => l.trim().length > 0);
   if (lines.length < 2) {
     return {
       success: false,
       importedCount: 0,
       skippedCount: 0,
-      errors: ['CSV file is empty or missing headers.']
+      errors: ['CSV contains no data rows.']
     };
   }
 
-  const parseCSVLine = (text: string): string[] => {
-    const result: string[] = [];
-    let current = '';
-    let insideQuotes = false;
-
-    for (let i = 0; i < text.length; i++) {
-      const char = text[i];
-      if (char === '"') {
-        if (insideQuotes && text[i + 1] === '"') {
-          current += '"';
-          i++;
-        } else {
-          insideQuotes = !insideQuotes;
-        }
-      } else if (char === ',' && !insideQuotes) {
-        result.push(current.trim());
-        current = '';
-      } else {
-        current += char;
-      }
-    }
-    result.push(current.trim());
-    return result;
-  };
-
-  let importedCount = 0;
-  let skippedCount = 0;
+  const validContacts: Contact[] = [];
   const errors: string[] = [];
-  const newContactsToAdd: Contact[] = [];
+  let skippedCount = 0;
 
-  for (let rowIndex = 1; rowIndex < lines.length; rowIndex++) {
-    const rowValues = parseCSVLine(lines[rowIndex]);
-    if (rowValues.length < 2) continue;
+  for (let i = 1; i < lines.length; i++) {
+    const cols = lines[i].split(',').map((c) => c.trim().replace(/^"|"$/g, ''));
+    const fullName = cols[0] || '';
+    const phoneNumber = cols[1] || '';
+    const email = cols[2] || undefined;
+    const categoryRaw = cols[3] || 'Other';
+    const category: ContactCategory =
+      VALID_CATEGORIES.indexOf(categoryRaw as ContactCategory) !== -1
+        ? (categoryRaw as ContactCategory)
+        : 'Other';
 
-    let offset = 0;
-    if (rowValues[0].startsWith('ct_') || rowValues[0].startsWith('seed-')) {
-      offset = 1;
-    }
-
-    const fullName = rowValues[offset] ?? '';
-    const phoneNumber = rowValues[offset + 1] ?? '';
-    const email = rowValues[offset + 2] ?? '';
-    const ageStr = rowValues[offset + 3] ?? '';
-    const company = rowValues[offset + 4] ?? '';
-    const jobTitle = rowValues[offset + 5] ?? '';
-    const address = rowValues[offset + 6] ?? '';
-    const categoryRaw = rowValues[offset + 7] ?? 'Other';
-    const statusRaw = rowValues[offset + 8] ?? 'active';
-    const favRaw = rowValues[offset + 9] ?? 'false';
-    const tagsRaw = rowValues[offset + 10] ?? '';
-    const birthday = rowValues[offset + 11] ?? '';
-    const reminderDate = rowValues[offset + 12] ?? '';
-    const notes = rowValues[offset + 13] ?? '';
-
-    if (!fullName || fullName.length < 2) {
-      errors.push(`Row ${rowIndex + 1}: Missing or invalid Full Name.`);
+    if (fullName.length < 2 || phoneNumber.length < 5) {
+      errors.push(`Line ${i + 1}: Name or phone number invalid.`);
       skippedCount++;
       continue;
     }
 
-    if (!phoneNumber || phoneNumber.length < 5) {
-      errors.push(`Row ${rowIndex + 1} (${fullName}): Invalid phone number.`);
+    const dup = findDuplicateContact(phoneNumber, email, [...contacts, ...validContacts]);
+    if (dup) {
+      errors.push(`Line ${i + 1}: Duplicate phone/email (${fullName}).`);
       skippedCount++;
       continue;
     }
 
-    const duplicate = findDuplicateContact(phoneNumber, email, [...contacts, ...newContactsToAdd]);
-    if (duplicate) {
-      errors.push(
-        `Row ${rowIndex + 1} (${fullName}): Duplicate contact ("${duplicate.fullName}").`
-      );
-      skippedCount++;
-      continue;
-    }
-
-    const category: ContactCategory = VALID_CATEGORIES.includes(categoryRaw as ContactCategory)
-      ? (categoryRaw as ContactCategory)
-      : 'Other';
-
-    const status: ContactStatus = statusRaw.toLowerCase() === 'inactive' ? 'inactive' : 'active';
-    const isFavourite = favRaw.toLowerCase() === 'true';
-
-    let age: number | undefined = undefined;
-    if (ageStr.length > 0) {
-      const parsedAge = Number(ageStr);
-      if (!isNaN(parsedAge) && parsedAge > 0 && parsedAge < 130) {
-        age = parsedAge;
-      }
-    }
-
-    const tags = tagsRaw
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
-
-    const importedContact: Contact = {
+    validContacts.push({
       id: generateUniqueId(),
-      fullName: fullName.trim(),
-      phoneNumber: phoneNumber.trim(),
-      email: email.trim().length > 0 ? email.trim() : undefined,
-      age,
-      company: company.trim().length > 0 ? company.trim() : undefined,
-      jobTitle: jobTitle.trim().length > 0 ? jobTitle.trim() : undefined,
-      address: address.trim().length > 0 ? address.trim() : undefined,
+      fullName,
+      phoneNumber,
+      email,
       category,
-      status,
-      isFavourite,
-      tags: tags.length > 0 ? tags : undefined,
-      birthday: birthday.trim().length > 0 ? birthday.trim() : undefined,
-      reminderDate: reminderDate.trim().length > 0 ? reminderDate.trim() : undefined,
-      notes: notes.trim().length > 0 ? notes.trim() : undefined,
+      status: 'active',
+      isFavourite: false,
       createdAt: new Date().toISOString()
-    };
-
-    newContactsToAdd.push(importedContact);
-    importedCount++;
+    });
   }
 
-  if (importedCount > 0) {
-    contacts = [...newContactsToAdd, ...contacts];
+  if (validContacts.length > 0) {
+    contacts = [...validContacts, ...contacts];
     saveContactsToStorage(contacts);
   }
 
   return {
-    success: importedCount > 0,
-    importedCount,
+    success: validContacts.length > 0,
+    importedCount: validContacts.length,
     skippedCount,
     errors
   };

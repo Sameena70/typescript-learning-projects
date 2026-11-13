@@ -1,7 +1,7 @@
 /**
  * types.ts
  *
- * Defines all TypeScript types, type aliases, and interfaces used
- * throughout the Contact Manager application.
+ * Defines domain-specific types, intersection types, discriminated unions,
+ * and generic utilities for the Contact Manager application.
  */
 export {};

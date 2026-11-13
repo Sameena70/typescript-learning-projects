@@ -8,7 +8,9 @@ import {
   ExpenseCategory,
   ExpenseFilterOptions,
   RecurringFrequency,
-  TransactionType
+  TransactionType,
+  SortField,
+  SortOrder
 } from './types.js';
 
 class ExpenseApp {
@@ -72,12 +74,12 @@ class ExpenseApp {
 
     return {
       type: (typeEl?.value as 'ALL' | TransactionType) || 'ALL',
-      category: categoryEl?.value || 'ALL',
+      category: (categoryEl?.value as 'ALL' | ExpenseCategory) || 'ALL',
       searchQuery: searchEl?.value || '',
       startDate: startDateEl?.value || undefined,
       endDate: endDateEl?.value || undefined,
-      sortBy: (sortByEl?.value as 'date' | 'amount' | 'category') || 'date',
-      sortOrder: (sortOrderEl?.value as 'asc' | 'desc') || 'desc'
+      sortBy: (sortByEl?.value as SortField) || 'date',
+      sortOrder: (sortOrderEl?.value as SortOrder) || 'desc'
     };
   }
 
@@ -103,326 +105,187 @@ class ExpenseApp {
     if (!expense) return;
 
     this.currentEditingId = id;
-    const modal = document.getElementById('editExpenseModal') as HTMLDivElement;
-    const titleInput = document.getElementById('editTitleInput') as HTMLInputElement;
-    const amountInput = document.getElementById('editAmountInput') as HTMLInputElement;
-    const categoryInput = document.getElementById('editCategorySelect') as HTMLSelectElement;
-    const dateInput = document.getElementById('editDateInput') as HTMLInputElement;
-    const notesInput = document.getElementById('editNotesInput') as HTMLInputElement;
-    const expenseRadio = document.getElementById('editTypeExpense') as HTMLInputElement;
-    const incomeRadio = document.getElementById('editTypeIncome') as HTMLInputElement;
+    const editModal = document.getElementById('editModal');
+    const editTitle = document.getElementById('editTitle') as HTMLInputElement;
+    const editAmount = document.getElementById('editAmount') as HTMLInputElement;
+    const editType = document.getElementById('editType') as HTMLSelectElement;
+    const editCategory = document.getElementById('editCategory') as HTMLSelectElement;
+    const editDate = document.getElementById('editDate') as HTMLInputElement;
+    const editNotes = document.getElementById('editNotes') as HTMLTextAreaElement;
 
-    if (expense.type === 'income') {
-      incomeRadio.checked = true;
-    } else {
-      expenseRadio.checked = true;
-    }
+    if (editTitle) editTitle.value = expense.title;
+    if (editAmount) editAmount.value = expense.amount.toString();
+    if (editType) editType.value = expense.type || 'expense';
+    if (editCategory) editCategory.value = expense.category;
+    if (editDate) editDate.value = expense.date;
+    if (editNotes) editNotes.value = expense.notes || '';
 
-    titleInput.value = expense.title;
-    amountInput.value = expense.amount.toString();
-    categoryInput.value = expense.category;
-    dateInput.value = expense.date;
-    notesInput.value = expense.notes || '';
-
-    modal.classList.remove('hidden');
+    if (editModal) editModal.classList.add('open');
   }
 
   private closeEditModal(): void {
     this.currentEditingId = null;
-    const modal = document.getElementById('editExpenseModal');
-    modal?.classList.add('hidden');
-  }
-
-  private renderRecurringRulesList(): void {
-    const listEl = document.getElementById('recurringRulesList');
-    if (!listEl) return;
-
-    const rules = this.service.getRecurringRules();
-    const settings = this.service.getSettings();
-
-    if (rules.length === 0) {
-      listEl.innerHTML = '<p class="text-muted text-sm">No recurring rules configured yet.</p>';
-      return;
-    }
-
-    listEl.innerHTML = rules
-      .map(
-        (r) => `
-        <div class="recurring-rule-item">
-          <div>
-            <strong>${this.ui.escapeHTML(r.title)}</strong> 
-            <span class="type-badge ${r.type === 'income' ? 'income-badge' : 'expense-badge'}">${r.type}</span>
-            <div class="text-sm text-muted">
-              ${ExpenseCalculations.formatCurrency(r.amount, settings.currency)} • ${r.frequency} • Next: ${r.nextDueDate}
-            </div>
-          </div>
-          <button class="action-btn delete-rec-btn" data-rule-id="${r.id}" title="Remove Rule">🗑️</button>
-        </div>
-      `
-      )
-      .join('');
-
-    listEl.querySelectorAll('.delete-rec-btn').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        const ruleId = (e.currentTarget as HTMLElement).getAttribute('data-rule-id');
-        if (ruleId) {
-          this.service.deleteRecurringRule(ruleId);
-          this.renderRecurringRulesList();
-          this.ui.showToast('Recurring rule removed.');
-        }
-      });
-    });
+    const editModal = document.getElementById('editModal');
+    if (editModal) editModal.classList.remove('open');
   }
 
   private bindEvents(): void {
-    // Currency Selector
-    const currencySelect = document.getElementById('currencySelect') as HTMLSelectElement;
-    currencySelect?.addEventListener('change', () => {
-      this.service.setCurrency(currencySelect.value as CurrencyCode);
-      this.ui.showToast(`Active currency updated to ${currencySelect.value}.`);
-      this.refresh();
-    });
-
-    // Add Expense Form
+    // Add Transaction Form
     const expenseForm = document.getElementById('expenseForm') as HTMLFormElement;
-    const titleInput = document.getElementById('expenseTitle') as HTMLInputElement;
-    const amountInput = document.getElementById('expenseAmount') as HTMLInputElement;
-    const categorySelect = document.getElementById('expenseCategory') as HTMLSelectElement;
-    const dateInput = document.getElementById('expenseDate') as HTMLInputElement;
-    const notesInput = document.getElementById('expenseNotes') as HTMLInputElement;
-
-    if (dateInput && !dateInput.value) {
-      dateInput.value = new Date().toISOString().split('T')[0];
-    }
-
     expenseForm?.addEventListener('submit', (e) => {
       e.preventDefault();
 
-      const typeRadio = document.querySelector(
-        'input[name="transactionType"]:checked'
-      ) as HTMLInputElement;
-      const type: TransactionType = typeRadio?.value === 'income' ? 'income' : 'expense';
+      const titleInput = document.getElementById('expenseTitle') as HTMLInputElement;
+      const amountInput = document.getElementById('expenseAmount') as HTMLInputElement;
+      const typeInput = document.getElementById('expenseType') as HTMLSelectElement;
+      const categoryInput = document.getElementById('expenseCategory') as HTMLSelectElement;
+      const dateInput = document.getElementById('expenseDate') as HTMLInputElement;
+      const notesInput = document.getElementById('expenseNotes') as HTMLTextAreaElement;
+      const recurringInput = document.getElementById('isRecurringCheckbox') as HTMLInputElement;
 
-      const validation = ExpenseValidator.validateExpense({
-        title: titleInput.value,
-        amount: amountInput.value,
-        category: categorySelect.value,
-        date: dateInput.value,
-        type,
-        notes: notesInput?.value
-      });
+      const formData = {
+        title: titleInput?.value || '',
+        amount: amountInput?.value || '',
+        type: (typeInput?.value as TransactionType) || 'expense',
+        category: categoryInput?.value || '',
+        date: dateInput?.value || '',
+        notes: notesInput?.value || '',
+        isRecurring: recurringInput?.checked || false
+      };
 
-      // Clear previous error styles
-      const titleErr = document.getElementById('titleError');
-      const amountErr = document.getElementById('amountError');
-      const dateErr = document.getElementById('dateError');
-      if (titleErr) titleErr.textContent = validation.errors.title || '';
-      if (amountErr) amountErr.textContent = validation.errors.amount || '';
-      if (dateErr) dateErr.textContent = validation.errors.date || '';
-
-      if (!validation.isValid) return;
+      const validation = ExpenseValidator.validateExpense(formData);
+      if (!validation.isValid) {
+        const firstError = Object.values(validation.errors)[0];
+        this.ui.showToast(firstError || 'Validation failed.', true);
+        return;
+      }
 
       try {
         this.service.addExpense({
-          title: titleInput.value,
-          amount: parseFloat(amountInput.value),
-          category: categorySelect.value as ExpenseCategory,
-          date: dateInput.value,
-          type,
-          notes: notesInput?.value
+          title: formData.title,
+          amount: parseFloat(formData.amount),
+          type: formData.type,
+          category: formData.category as ExpenseCategory,
+          date: formData.date,
+          notes: formData.notes,
+          isRecurring: formData.isRecurring
         });
 
         expenseForm.reset();
-        dateInput.value = new Date().toISOString().split('T')[0];
-        // Reset radio back to expense
-        const defaultRadio = document.querySelector(
-          'input[name="transactionType"][value="expense"]'
-        ) as HTMLInputElement;
-        if (defaultRadio) defaultRadio.checked = true;
+        // Reset default date to today
+        if (dateInput) {
+          dateInput.value = new Date().toISOString().slice(0, 10);
+        }
 
-        this.ui.showToast(`${type === 'income' ? 'Income' : 'Expense'} added successfully!`);
+        this.ui.showToast('Transaction added successfully.');
         this.refresh();
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          this.ui.showToast(err.message, true);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          this.ui.showToast(error.message, true);
         }
       }
     });
 
-    // Reset Form button
-    document.getElementById('resetFormBtn')?.addEventListener('click', () => {
-      expenseForm.reset();
-      dateInput.value = new Date().toISOString().split('T')[0];
-      const titleErr = document.getElementById('titleError');
-      const amountErr = document.getElementById('amountError');
-      const dateErr = document.getElementById('dateError');
-      if (titleErr) titleErr.textContent = '';
-      if (amountErr) amountErr.textContent = '';
-      if (dateErr) dateErr.textContent = '';
-    });
-
-    // Edit modal form submission
-    document.getElementById('editExpenseForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
+    // Save Edited Transaction
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    saveEditBtn?.addEventListener('click', () => {
       if (!this.currentEditingId) return;
 
-      const editTitleInput = document.getElementById('editTitleInput') as HTMLInputElement;
-      const editAmountInput = document.getElementById('editAmountInput') as HTMLInputElement;
-      const editCategoryInput = document.getElementById('editCategorySelect') as HTMLSelectElement;
-      const editDateInput = document.getElementById('editDateInput') as HTMLInputElement;
-      const editNotesInput = document.getElementById('editNotesInput') as HTMLInputElement;
-      const editTypeRadio = document.querySelector(
-        'input[name="editTransactionType"]:checked'
-      ) as HTMLInputElement;
-      const type: TransactionType = editTypeRadio?.value === 'income' ? 'income' : 'expense';
+      const editTitle = document.getElementById('editTitle') as HTMLInputElement;
+      const editAmount = document.getElementById('editAmount') as HTMLInputElement;
+      const editType = document.getElementById('editType') as HTMLSelectElement;
+      const editCategory = document.getElementById('editCategory') as HTMLSelectElement;
+      const editDate = document.getElementById('editDate') as HTMLInputElement;
+      const editNotes = document.getElementById('editNotes') as HTMLTextAreaElement;
 
-      const validation = ExpenseValidator.validateExpense({
-        title: editTitleInput.value,
-        amount: editAmountInput.value,
-        category: editCategoryInput.value,
-        date: editDateInput.value,
-        type
-      });
+      const formData = {
+        title: editTitle?.value || '',
+        amount: editAmount?.value || '',
+        type: (editType?.value as TransactionType) || 'expense',
+        category: editCategory?.value || '',
+        date: editDate?.value || '',
+        notes: editNotes?.value || ''
+      };
 
-      const editErrorEl = document.getElementById('editErrorMsg');
+      const validation = ExpenseValidator.validateExpense(formData);
       if (!validation.isValid) {
-        if (editErrorEl) editErrorEl.textContent = Object.values(validation.errors)[0];
+        const firstError = Object.values(validation.errors)[0];
+        this.ui.showToast(firstError || 'Validation failed.', true);
         return;
       }
-      if (editErrorEl) editErrorEl.textContent = '';
 
       try {
         this.service.updateExpense(this.currentEditingId, {
-          title: editTitleInput.value,
-          amount: parseFloat(editAmountInput.value),
-          category: editCategoryInput.value as ExpenseCategory,
-          date: editDateInput.value,
-          type,
-          notes: editNotesInput.value || undefined
+          title: formData.title,
+          amount: parseFloat(formData.amount),
+          type: formData.type,
+          category: formData.category as ExpenseCategory,
+          date: formData.date,
+          notes: formData.notes
         });
 
         this.closeEditModal();
-        this.ui.showToast('Transaction updated successfully!');
+        this.ui.showToast('Transaction updated.');
         this.refresh();
-      } catch (err: unknown) {
-        if (err instanceof Error && editErrorEl) {
-          editErrorEl.textContent = err.message;
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          this.ui.showToast(error.message, true);
         }
       }
     });
 
-    document
-      .getElementById('cancelEditBtn')
-      ?.addEventListener('click', () => this.closeEditModal());
-    document
-      .getElementById('closeEditModalBtn')
-      ?.addEventListener('click', () => this.closeEditModal());
-
-    // Budget Modal controls
-    const budgetModal = document.getElementById('budgetModal');
-    const monthlyBudgetInput = document.getElementById('monthlyBudgetInput') as HTMLInputElement;
-    const budgetError = document.getElementById('budgetError');
-
-    document.getElementById('editBudgetBtn')?.addEventListener('click', () => {
-      monthlyBudgetInput.value = this.service.getBudget().toString();
-      if (budgetError) budgetError.textContent = '';
-      budgetModal?.classList.remove('hidden');
+    // Cancel Edit Modal
+    document.getElementById('cancelEditBtn')?.addEventListener('click', () => {
+      this.closeEditModal();
     });
 
-    const closeBudgetModal = () => budgetModal?.classList.add('hidden');
-    document.getElementById('closeModalBtn')?.addEventListener('click', closeBudgetModal);
-    document.getElementById('cancelBudgetBtn')?.addEventListener('click', closeBudgetModal);
+    document.getElementById('closeEditModalBtn')?.addEventListener('click', () => {
+      this.closeEditModal();
+    });
 
-    document.getElementById('saveBudgetBtn')?.addEventListener('click', () => {
-      const val = parseFloat(monthlyBudgetInput.value);
+    // Currency Switcher
+    const currencySelect = document.getElementById('currencySelect') as HTMLSelectElement;
+    currencySelect?.addEventListener('change', () => {
+      this.service.setCurrency(currencySelect.value as CurrencyCode);
+      this.ui.showToast(`Currency changed to ${currencySelect.value}`);
+      this.refresh();
+    });
+
+    // Update Overall Budget
+    const updateBudgetBtn = document.getElementById('updateBudgetBtn');
+    updateBudgetBtn?.addEventListener('click', () => {
+      const budgetInput = document.getElementById('monthlyBudgetInput') as HTMLInputElement;
+      const val = parseFloat(budgetInput?.value || '');
       if (isNaN(val) || val < 0) {
-        if (budgetError) budgetError.textContent = 'Please enter a valid non-negative budget.';
+        this.ui.showToast('Please enter a valid non-negative budget.', true);
         return;
       }
       this.service.setBudget(val);
-      closeBudgetModal();
-      this.ui.showToast('Monthly budget updated successfully!');
+      this.ui.showToast('Monthly budget updated.');
       this.refresh();
     });
 
-    // Category Budget button in modal
-    document.getElementById('setCategoryBudgetBtn')?.addEventListener('click', () => {
+    // Category Budget Form
+    const saveCatBudgetBtn = document.getElementById('saveCatBudgetBtn');
+    saveCatBudgetBtn?.addEventListener('click', () => {
       const catSelect = document.getElementById('budgetCategorySelect') as HTMLSelectElement;
-      const limitInput = document.getElementById('categoryBudgetLimitInput') as HTMLInputElement;
-      const limit = parseFloat(limitInput.value);
-      if (isNaN(limit) || limit <= 0) {
-        this.ui.showToast('Please enter a valid limit greater than 0', true);
+      const amtInput = document.getElementById('categoryBudgetAmount') as HTMLInputElement;
+
+      const category = catSelect?.value;
+      const amount = parseFloat(amtInput?.value || '');
+
+      if (!category || isNaN(amount) || amount < 0) {
+        this.ui.showToast('Please provide a valid category and budget amount.', true);
         return;
       }
-      this.service.setCategoryBudget(catSelect.value as ExpenseCategory, limit);
-      limitInput.value = '';
-      this.ui.showToast(`Budget for ${catSelect.value} updated.`);
+
+      this.service.setCategoryBudget(category, amount);
+      amtInput.value = '';
+      this.ui.showToast(`Budget for "${category}" updated.`);
       this.refresh();
     });
 
-    // Recurring Modal controls
-    const recurringModal = document.getElementById('recurringModal');
-    document.getElementById('recurringRulesBtn')?.addEventListener('click', () => {
-      this.renderRecurringRulesList();
-      const recDate = document.getElementById('recStartDateInput') as HTMLInputElement;
-      if (recDate && !recDate.value) {
-        recDate.value = new Date().toISOString().split('T')[0];
-      }
-      recurringModal?.classList.remove('hidden');
-    });
-
-    const closeRecModal = () => recurringModal?.classList.add('hidden');
-    document.getElementById('closeRecurringModalBtn')?.addEventListener('click', closeRecModal);
-    document.getElementById('closeRecurringBtn')?.addEventListener('click', closeRecModal);
-
-    // Add Recurring Rule Form
-    document.getElementById('recurringRuleForm')?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const recTitle = (document.getElementById('recTitleInput') as HTMLInputElement).value;
-      const recAmount = parseFloat(
-        (document.getElementById('recAmountInput') as HTMLInputElement).value
-      );
-      const recType = (document.getElementById('recTypeSelect') as HTMLSelectElement)
-        .value as TransactionType;
-      const recCategory = (document.getElementById('recCategorySelect') as HTMLSelectElement)
-        .value as ExpenseCategory;
-      const recFrequency = (document.getElementById('recFrequencySelect') as HTMLSelectElement)
-        .value as RecurringFrequency;
-      const recDate = (document.getElementById('recStartDateInput') as HTMLInputElement).value;
-
-      try {
-        this.service.addRecurringRule({
-          title: recTitle,
-          amount: recAmount,
-          type: recType,
-          category: recCategory,
-          frequency: recFrequency,
-          startDate: recDate,
-          nextDueDate: recDate
-        });
-        (document.getElementById('recurringRuleForm') as HTMLFormElement).reset();
-        this.renderRecurringRulesList();
-        this.ui.showToast('Recurring rule saved!');
-        this.refresh();
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          this.ui.showToast(err.message, true);
-        }
-      }
-    });
-
-    // Clear all
-    document.getElementById('clearAllBtn')?.addEventListener('click', () => {
-      if (
-        confirm('Are you sure you want to clear ALL recorded transactions? This cannot be undone.')
-      ) {
-        this.service.clearAllExpenses();
-        this.ui.showToast('All transactions cleared.');
-        this.refresh();
-      }
-    });
-
-    // Search and Filters
+    // Filter Controls
     const filterElements = [
       'typeFilter',
       'categoryFilter',
@@ -432,109 +295,132 @@ class ExpenseApp {
       'sortBySelect',
       'sortOrderSelect'
     ];
+
     filterElements.forEach((id) => {
-      document.getElementById(id)?.addEventListener('input', () => this.refresh());
-      document.getElementById(id)?.addEventListener('change', () => this.refresh());
+      const el = document.getElementById(id);
+      el?.addEventListener('input', () => this.refresh());
+      el?.addEventListener('change', () => this.refresh());
     });
 
-    // Reset Filters button
+    // Reset Filters
     document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
-      (document.getElementById('typeFilter') as HTMLSelectElement).value = 'ALL';
-      (document.getElementById('categoryFilter') as HTMLSelectElement).value = 'ALL';
-      (document.getElementById('searchDescriptionInput') as HTMLInputElement).value = '';
-      (document.getElementById('startDateFilter') as HTMLInputElement).value = '';
-      (document.getElementById('endDateFilter') as HTMLInputElement).value = '';
-      (document.getElementById('sortBySelect') as HTMLSelectElement).value = 'date';
-      (document.getElementById('sortOrderSelect') as HTMLSelectElement).value = 'desc';
+      const typeFilter = document.getElementById('typeFilter') as HTMLSelectElement;
+      const categoryFilter = document.getElementById('categoryFilter') as HTMLSelectElement;
+      const searchInput = document.getElementById('searchDescriptionInput') as HTMLInputElement;
+      const startDate = document.getElementById('startDateFilter') as HTMLInputElement;
+      const endDate = document.getElementById('endDateFilter') as HTMLInputElement;
+      const sortBy = document.getElementById('sortBySelect') as HTMLSelectElement;
+      const sortOrder = document.getElementById('sortOrderSelect') as HTMLSelectElement;
+
+      if (typeFilter) typeFilter.value = 'ALL';
+      if (categoryFilter) categoryFilter.value = 'ALL';
+      if (searchInput) searchInput.value = '';
+      if (startDate) startDate.value = '';
+      if (endDate) endDate.value = '';
+      if (sortBy) sortBy.value = 'date';
+      if (sortOrder) sortOrder.value = 'desc';
+
       this.refresh();
     });
 
-    // JSON Export
-    document.getElementById('exportJsonBtn')?.addEventListener('click', () => {
-      const expenses = this.service.getExpenses();
-      if (expenses.length === 0) {
-        this.ui.showToast('No transactions available to export.', true);
+    // Recurring Rule Form
+    const recurringForm = document.getElementById('recurringRuleForm') as HTMLFormElement;
+    recurringForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = (document.getElementById('recurringTitle') as HTMLInputElement)?.value;
+      const amount = parseFloat(
+        (document.getElementById('recurringAmount') as HTMLInputElement)?.value || ''
+      );
+      const type = (document.getElementById('recurringType') as HTMLSelectElement)
+        ?.value as TransactionType;
+      const category = (document.getElementById('recurringCategory') as HTMLSelectElement)
+        ?.value as ExpenseCategory;
+      const frequency = (document.getElementById('recurringFrequency') as HTMLSelectElement)
+        ?.value as RecurringFrequency;
+      const startDate = (document.getElementById('recurringStartDate') as HTMLInputElement)?.value;
+
+      if (!title || isNaN(amount) || amount <= 0 || !startDate) {
+        this.ui.showToast('Please fill all recurring rule fields properly.', true);
         return;
       }
-      try {
-        ExpenseImportExport.exportToJSON(expenses);
-        this.ui.showToast('Exported JSON backup successfully.');
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          this.ui.showToast(err.message, true);
-        }
-      }
+
+      this.service.addRecurringRule({
+        title,
+        amount,
+        type,
+        category,
+        frequency,
+        startDate,
+        active: true
+      });
+
+      recurringForm.reset();
+      this.ui.showToast('Recurring rule saved.');
     });
 
-    // CSV Export
-    document.getElementById('exportCsvBtn')?.addEventListener('click', () => {
-      const expenses = this.service.getExpenses();
-      if (expenses.length === 0) {
-        this.ui.showToast('No transactions available to export.', true);
-        return;
-      }
-      try {
-        ExpenseImportExport.exportToCSV(expenses);
-        this.ui.showToast('Exported CSV spreadsheet successfully.');
-      } catch (err: unknown) {
-        if (err instanceof Error) {
-          this.ui.showToast(err.message, true);
-        }
-      }
+    // Export JSON
+    document.getElementById('exportJSONBtn')?.addEventListener('click', () => {
+      ExpenseImportExport.exportToJSON(this.service.getExpenses());
+      this.ui.showToast('JSON export downloaded.');
     });
 
-    // JSON Import
-    const jsonFileInput = document.getElementById('jsonFileInput') as HTMLInputElement;
-    document.getElementById('importJsonBtn')?.addEventListener('click', () => {
-      jsonFileInput?.click();
+    // Export CSV
+    document.getElementById('exportCSVBtn')?.addEventListener('click', () => {
+      ExpenseImportExport.exportToCSV(this.service.getExpenses());
+      this.ui.showToast('CSV export downloaded.');
     });
 
-    jsonFileInput?.addEventListener('change', async () => {
-      const file = jsonFileInput.files?.[0];
+    // Import File
+    const importFileInput = document.getElementById('importFileInput') as HTMLInputElement;
+    importFileInput?.addEventListener('change', async () => {
+      const file = importFileInput.files?.[0];
       if (!file) return;
 
       try {
-        const { validItems, importResult } = await ExpenseImportExport.parseAndValidateImport(file);
-        const { added, skipped } = this.service.bulkImport(validItems);
-        this.ui.showToast(
-          `Imported ${added} records (${skipped + importResult.skippedCount} skipped/duplicates).`
-        );
-        this.refresh();
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to import JSON file.';
-        this.ui.showToast(msg, true);
+        if (file.name.endsWith('.json')) {
+          const { validExpenses, result } = await ExpenseImportExport.parseAndValidateImport(file);
+          if (validExpenses.length > 0) {
+            validExpenses.forEach((exp) => this.service.addExpense(exp));
+            this.refresh();
+            this.ui.showToast(`Imported ${validExpenses.length} transactions from JSON.`);
+          } else {
+            this.ui.showToast(`No valid records found. ${result.errors.join(' ')}`, true);
+          }
+        } else if (file.name.endsWith('.csv')) {
+          const text = await ExpenseImportExport.readTextFile(file);
+          const { validExpenses, result } = ExpenseImportExport.parseCSVContent(text);
+          if (validExpenses.length > 0) {
+            validExpenses.forEach((exp) => this.service.addExpense(exp));
+            this.refresh();
+            this.ui.showToast(`Imported ${validExpenses.length} transactions from CSV.`);
+          } else {
+            this.ui.showToast(`No valid CSV records: ${result.errors.join(' ')}`, true);
+          }
+        } else {
+          this.ui.showToast('Unsupported file type. Use .json or .csv.', true);
+        }
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          this.ui.showToast(error.message, true);
+        }
       } finally {
-        jsonFileInput.value = '';
+        importFileInput.value = '';
       }
     });
 
-    // CSV Import
-    const csvFileInput = document.getElementById('csvFileInput') as HTMLInputElement;
-    document.getElementById('importCsvBtn')?.addEventListener('click', () => {
-      csvFileInput?.click();
-    });
-
-    csvFileInput?.addEventListener('change', async () => {
-      const file = csvFileInput.files?.[0];
-      if (!file) return;
-
-      try {
-        const { validItems, importResult } = await ExpenseImportExport.parseAndValidateCSV(file);
-        const { added, skipped } = this.service.bulkImport(validItems);
-        this.ui.showToast(
-          `Imported ${added} records from CSV (${skipped + importResult.skippedCount} skipped/duplicates).`
-        );
+    // Clear All Data
+    document.getElementById('clearAllDataBtn')?.addEventListener('click', () => {
+      if (confirm('Are you sure you want to permanently clear all transactions?')) {
+        this.service.clearAllExpenses();
+        this.ui.showToast('All transaction data cleared.');
         this.refresh();
-      } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : 'Failed to import CSV file.';
-        this.ui.showToast(msg, true);
-      } finally {
-        csvFileInput.value = '';
       }
     });
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  new ExpenseApp();
-});
+if (typeof document !== 'undefined') {
+  document.addEventListener('DOMContentLoaded', () => {
+    new ExpenseApp();
+  });
+}

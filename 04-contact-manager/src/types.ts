@@ -1,8 +1,8 @@
 /**
  * types.ts
  *
- * Defines all TypeScript types, type aliases, and interfaces used
- * throughout the Contact Manager application.
+ * Defines domain-specific types, intersection types, discriminated unions,
+ * and generic utilities for the Contact Manager application.
  */
 
 export type ContactStatus = 'active' | 'inactive';
@@ -12,37 +12,91 @@ export type ContactCategory = 'Family' | 'Friends' | 'Work' | 'Clients' | 'Busin
 export type SortField = 'name' | 'createdAt' | 'company';
 export type SortOrder = 'asc' | 'desc';
 
-export interface ContactActivity {
-  id: string;
-  contactId: string;
-  type: 'call' | 'email' | 'meeting' | 'note';
-  date: string; // ISO 8601 string or YYYY-MM-DD
-  notes: string;
-}
+export type ActivityType = 'call' | 'email' | 'meeting' | 'note';
 
 /**
- * Main Contact Interface with tags, birthday, reminder, and activities support.
+ * Discriminated Union for Contact Activities.
+ * Allows type-safe variation between communication, meetings, and notes.
  */
-export interface Contact {
+export type ContactActivity =
+  | {
+      id: string;
+      contactId: string;
+      type: 'call';
+      date: string;
+      notes: string;
+      durationMinutes?: number;
+    }
+  | {
+      id: string;
+      contactId: string;
+      type: 'email';
+      date: string;
+      notes: string;
+      subject?: string;
+    }
+  | {
+      id: string;
+      contactId: string;
+      type: 'meeting';
+      date: string;
+      notes: string;
+      location?: string;
+    }
+  | {
+      id: string;
+      contactId: string;
+      type: 'note';
+      date: string;
+      notes: string;
+    };
+
+/**
+ * 1. Base mandatory identity information.
+ */
+export interface BaseContact {
   id: string;
   fullName: string;
   phoneNumber: string;
+}
+
+/**
+ * 2. Optional contact profile information.
+ */
+export interface OptionalContactDetails {
   email?: string;
   age?: number;
   company?: string;
   jobTitle?: string;
   address?: string;
+  notes?: string;
+  tags?: string[];
+  birthday?: string; // YYYY-MM-DD
+  reminderDate?: string; // YYYY-MM-DD
+}
+
+/**
+ * 3. Categorization and status preferences.
+ */
+export interface ContactPreferences {
   category: ContactCategory;
   status: ContactStatus;
   isFavourite: boolean;
-  notes?: string;
-  tags?: string[]; // Contact groups / labels
-  birthday?: string; // Optional birthday (YYYY-MM-DD)
-  reminderDate?: string; // Follow-up reminder date (YYYY-MM-DD)
-  activities?: ContactActivity[]; // Activity log / history
-  createdAt: string; // ISO 8601 string
-  updatedAt?: string; // ISO 8601 string
 }
+
+/**
+ * 4. Audit timestamps and activity tracking.
+ */
+export interface ContactAuditInfo {
+  createdAt: string; // ISO 8601
+  updatedAt?: string; // ISO 8601
+  activities?: ContactActivity[];
+}
+
+/**
+ * Modular Contact entity composed using TypeScript Intersection Types.
+ */
+export type Contact = BaseContact & OptionalContactDetails & ContactPreferences & ContactAuditInfo;
 
 export interface ContactFormData {
   fullName: string;
@@ -61,15 +115,14 @@ export interface ContactFormData {
   reminderDate: string;
 }
 
-export interface ValidationResult {
+/**
+ * Generic Validation Error record constrained to form keys.
+ */
+export type ValidationErrors<T> = Partial<Record<keyof T | 'general', string>>;
+
+export interface ValidationResult<T = ContactFormData> {
   isValid: boolean;
-  errors: {
-    fullName?: string;
-    phoneNumber?: string;
-    email?: string;
-    age?: string;
-    general?: string;
-  };
+  errors: ValidationErrors<T>;
 }
 
 export interface ContactStatistics {
@@ -79,20 +132,16 @@ export interface ContactStatistics {
   favourites: number;
   recentlyAdded: number;
   withReminders: number;
-  categoryCounts: {
-    Family: number;
-    Friends: number;
-    Work: number;
-    Clients: number;
-    Business: number;
-    Other: number;
-  };
+  categoryCounts: Record<ContactCategory, number>;
 }
 
+/**
+ * Strongly typed filter options.
+ */
 export interface FilterOptions {
   searchQuery: string;
-  category: string;
-  status: string;
+  category: 'all' | ContactCategory | string;
+  status: 'all' | ContactStatus | string;
   favouritesOnly: boolean;
   tag?: string;
   sortField: SortField;
@@ -107,3 +156,8 @@ export interface ImportSummary {
   skippedCount: number;
   errors: string[];
 }
+
+/**
+ * Generic Storage Validator predicate function.
+ */
+export type StorageValidator<T> = (val: unknown) => val is T;

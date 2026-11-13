@@ -1,6 +1,6 @@
 /**
  * Storage utility for game statistics and history
- * with runtime validation and schema protection.
+ * with runtime validation and schema protection using generics `<T>`.
  */
 export class GameStorage {
     static getItem(key, fallback, validator) {
@@ -40,6 +40,16 @@ export class GameStorage {
         catch (error) {
             if (error instanceof Error) {
                 console.error(`[GameStorage] Failed to remove "${key}":`, error.message);
+            }
+        }
+    }
+    static clear() {
+        try {
+            localStorage.clear();
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('[GameStorage] Failed to clear storage:', error.message);
             }
         }
     }

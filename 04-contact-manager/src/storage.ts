@@ -2,22 +2,52 @@
  * storage.ts
  *
  * Safe persistence, schema migration, and retrieval of contacts in browser localStorage.
- * Handles corrupted, incomplete, and legacy stored data without destroying user records.
+ * Handles corrupted, incomplete, and legacy stored data using type narrowing and generics.
  */
 
 import { Contact, ContactCategory, ContactStatus } from './types.js';
+import { VALID_CATEGORIES, isContactCategory } from './generic-utils.js';
+
+export { VALID_CATEGORIES };
 
 const STORAGE_KEY = 'ts_contact_manager_contacts_v1';
 const LEGACY_STORAGE_KEY = 'ts_contact_manager_contacts';
 
-export const VALID_CATEGORIES: ContactCategory[] = [
-  'Family',
-  'Friends',
-  'Work',
-  'Clients',
-  'Business',
-  'Other'
-];
+/**
+ * Type guard verifying if an arbitrary unknown value satisfies the Contact structure.
+ * Uses `in` operator and `typeof` checks to avoid blind type casts.
+ */
+export function isContact(value: unknown): value is Contact {
+  if (typeof value !== 'object' || value === null) {
+    return false;
+  }
+
+  if (
+    'id' in value &&
+    'fullName' in value &&
+    'phoneNumber' in value &&
+    'category' in value &&
+    'status' in value &&
+    'isFavourite' in value &&
+    'createdAt' in value
+  ) {
+    const candidate = value as Record<string, unknown>;
+    return (
+      typeof candidate.id === 'string' &&
+      candidate.id.length > 0 &&
+      typeof candidate.fullName === 'string' &&
+      candidate.fullName.trim().length >= 2 &&
+      typeof candidate.phoneNumber === 'string' &&
+      candidate.phoneNumber.trim().length >= 5 &&
+      isContactCategory(candidate.category) &&
+      (candidate.status === 'active' || candidate.status === 'inactive') &&
+      typeof candidate.isFavourite === 'boolean' &&
+      typeof candidate.createdAt === 'string'
+    );
+  }
+
+  return false;
+}
 
 /**
  * Seed contacts loaded when the user has no existing saved contacts.
@@ -110,7 +140,7 @@ const SEED_CONTACTS: Contact[] = [
  * Sanitizes and migrates a raw or legacy contact record to ensure complete schema compliance.
  */
 export function sanitizeContactRecord(raw: unknown, index = 0): Contact | null {
-  if (!raw || typeof raw !== 'object') {
+  if (typeof raw !== 'object' || raw === null) {
     return null;
   }
 
@@ -118,9 +148,9 @@ export function sanitizeContactRecord(raw: unknown, index = 0): Contact | null {
 
   // FullName is mandatory and must be a string of at least 2 characters
   const rawName =
-    typeof obj.fullName === 'string'
+    'fullName' in obj && typeof obj.fullName === 'string'
       ? obj.fullName.trim()
-      : typeof obj.name === 'string'
+      : 'name' in obj && typeof obj.name === 'string'
         ? obj.name.trim()
         : '';
   if (rawName.length < 2) {
@@ -129,9 +159,9 @@ export function sanitizeContactRecord(raw: unknown, index = 0): Contact | null {
 
   // PhoneNumber is mandatory
   const rawPhone =
-    typeof obj.phoneNumber === 'string'
+    'phoneNumber' in obj && typeof obj.phoneNumber === 'string'
       ? obj.phoneNumber.trim()
-      : typeof obj.phone === 'string'
+      : 'phone' in obj && typeof obj.phone === 'string'
         ? obj.phone.trim()
         : '';
   if (rawPhone.length < 5) {
@@ -140,29 +170,31 @@ export function sanitizeContactRecord(raw: unknown, index = 0): Contact | null {
 
   // ID sanitization (guarantee unique non-empty ID)
   const id =
-    typeof obj.id === 'string' && obj.id.trim().length > 0
+    'id' in obj && typeof obj.id === 'string' && obj.id.trim().length > 0
       ? obj.id.trim()
       : `ct_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
 
   // Category fallback
-  const category: ContactCategory = VALID_CATEGORIES.includes(obj.category as ContactCategory)
-    ? (obj.category as ContactCategory)
-    : 'Other';
+  const category: ContactCategory =
+    'category' in obj && isContactCategory(obj.category) ? obj.category : 'Other';
 
   // Status fallback
-  const status: ContactStatus = obj.status === 'inactive' ? 'inactive' : 'active';
+  const status: ContactStatus =
+    'status' in obj && obj.status === 'inactive' ? 'inactive' : 'active';
 
   // Tags sanitization
   let tags: string[] | undefined = undefined;
-  if (Array.isArray(obj.tags)) {
-    tags = obj.tags
-      .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
-      .map((t) => t.trim());
-  } else if (typeof obj.tags === 'string' && obj.tags.trim().length > 0) {
-    tags = obj.tags
-      .split(',')
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0);
+  if ('tags' in obj) {
+    if (Array.isArray(obj.tags)) {
+      tags = obj.tags
+        .filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+        .map((t) => t.trim());
+    } else if (typeof obj.tags === 'string' && obj.tags.trim().length > 0) {
+      tags = obj.tags
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+    }
   }
 
   return {
@@ -170,34 +202,48 @@ export function sanitizeContactRecord(raw: unknown, index = 0): Contact | null {
     fullName: rawName,
     phoneNumber: rawPhone,
     email:
-      typeof obj.email === 'string' && obj.email.trim().length > 0 ? obj.email.trim() : undefined,
-    age: typeof obj.age === 'number' && obj.age > 0 && obj.age < 130 ? obj.age : undefined,
+      'email' in obj && typeof obj.email === 'string' && obj.email.trim().length > 0
+        ? obj.email.trim()
+        : undefined,
+    age:
+      'age' in obj && typeof obj.age === 'number' && obj.age > 0 && obj.age < 130
+        ? obj.age
+        : undefined,
     company:
-      typeof obj.company === 'string' && obj.company.trim().length > 0
+      'company' in obj && typeof obj.company === 'string' && obj.company.trim().length > 0
         ? obj.company.trim()
         : undefined,
     jobTitle:
-      typeof obj.jobTitle === 'string' && obj.jobTitle.trim().length > 0
+      'jobTitle' in obj && typeof obj.jobTitle === 'string' && obj.jobTitle.trim().length > 0
         ? obj.jobTitle.trim()
         : undefined,
     address:
-      typeof obj.address === 'string' && obj.address.trim().length > 0
+      'address' in obj && typeof obj.address === 'string' && obj.address.trim().length > 0
         ? obj.address.trim()
         : undefined,
     category,
     status,
-    isFavourite: Boolean(obj.isFavourite),
+    isFavourite: 'isFavourite' in obj ? Boolean(obj.isFavourite) : false,
     notes:
-      typeof obj.notes === 'string' && obj.notes.trim().length > 0 ? obj.notes.trim() : undefined,
+      'notes' in obj && typeof obj.notes === 'string' && obj.notes.trim().length > 0
+        ? obj.notes.trim()
+        : undefined,
     tags: tags && tags.length > 0 ? tags : undefined,
-    birthday: typeof obj.birthday === 'string' ? obj.birthday.trim() : undefined,
-    reminderDate: typeof obj.reminderDate === 'string' ? obj.reminderDate.trim() : undefined,
-    activities: Array.isArray(obj.activities)
-      ? (obj.activities as Contact['activities'])
-      : undefined,
+    birthday:
+      'birthday' in obj && typeof obj.birthday === 'string' ? obj.birthday.trim() : undefined,
+    reminderDate:
+      'reminderDate' in obj && typeof obj.reminderDate === 'string'
+        ? obj.reminderDate.trim()
+        : undefined,
+    activities:
+      'activities' in obj && Array.isArray(obj.activities)
+        ? (obj.activities as Contact['activities'])
+        : undefined,
     createdAt:
-      typeof obj.createdAt === 'string' && obj.createdAt ? obj.createdAt : new Date().toISOString(),
-    updatedAt: typeof obj.updatedAt === 'string' ? obj.updatedAt : undefined
+      'createdAt' in obj && typeof obj.createdAt === 'string' && obj.createdAt
+        ? obj.createdAt
+        : new Date().toISOString(),
+    updatedAt: 'updatedAt' in obj && typeof obj.updatedAt === 'string' ? obj.updatedAt : undefined
   };
 }
 
@@ -221,7 +267,7 @@ export function loadSavedContacts(): Contact[] {
       return [...SEED_CONTACTS];
     }
 
-    const parsed = JSON.parse(rawData);
+    const parsed: unknown = JSON.parse(rawData);
     if (!Array.isArray(parsed)) {
       console.warn('Storage data is not an array, falling back to seed contacts.');
       return [...SEED_CONTACTS];
@@ -230,10 +276,9 @@ export function loadSavedContacts(): Contact[] {
     const seenIds = new Set<string>();
     const validContacts: Contact[] = [];
 
-    parsed.forEach((item, index) => {
+    parsed.forEach((item: unknown, index: number) => {
       const sanitized = sanitizeContactRecord(item, index);
       if (sanitized) {
-        // Prevent duplicate IDs from breaking internal indexing
         if (seenIds.has(sanitized.id)) {
           sanitized.id = `ct_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
         }
@@ -243,8 +288,10 @@ export function loadSavedContacts(): Contact[] {
     });
 
     return validContacts.length > 0 ? validContacts : [...SEED_CONTACTS];
-  } catch (error) {
-    console.error('Failed to load contacts from localStorage:', error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Failed to load contacts from localStorage:', error.message);
+    }
     return [...SEED_CONTACTS];
   }
 }
@@ -257,8 +304,10 @@ export function saveContactsToStorage(contacts: Contact[]): boolean {
     const serialized = JSON.stringify(contacts);
     localStorage.setItem(STORAGE_KEY, serialized);
     return true;
-  } catch (error) {
-    console.error('Failed to save contacts to localStorage:', error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Failed to save contacts to localStorage:', error.message);
+    }
     return false;
   }
 }
@@ -269,7 +318,9 @@ export function saveContactsToStorage(contacts: Contact[]): boolean {
 export function clearStoredContacts(): void {
   try {
     localStorage.removeItem(STORAGE_KEY);
-  } catch (error) {
-    console.error('Failed to clear contacts from localStorage:', error);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      console.error('Failed to clear contacts from localStorage:', error.message);
+    }
   }
 }

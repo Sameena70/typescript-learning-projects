@@ -1,3 +1,4 @@
+import { assertNever } from './game-logic.js';
 export class GameUI {
     constructor() {
         this.targetRangeDisplay = document.getElementById('targetRangeDisplay');
@@ -87,6 +88,9 @@ export class GameUI {
             (_a = this.historyTagsContainer) === null || _a === void 0 ? void 0 : _a.appendChild(tag);
         });
     }
+    /**
+     * Displays guess feedback with exhaustive checking on discriminated union `status`.
+     */
     showFeedback(result) {
         if (!this.feedbackBanner ||
             !this.feedbackIcon ||
@@ -95,32 +99,36 @@ export class GameUI {
             return;
         }
         this.feedbackBanner.className = 'feedback-box';
-        switch (result.type) {
-            case 'CORRECT':
+        switch (result.status) {
+            case 'won':
                 this.feedbackBanner.classList.add('state-won');
                 this.feedbackIcon.textContent = '👑';
                 this.feedbackTitle.textContent = 'VICTORY!';
                 break;
-            case 'GAME_OVER':
+            case 'lost':
                 this.feedbackBanner.classList.add('state-lost');
                 this.feedbackIcon.textContent = '💥';
                 this.feedbackTitle.textContent = 'SYSTEM OVERLOAD';
                 break;
-            case 'TOO_HIGH':
-                this.feedbackBanner.classList.add('state-high');
-                this.feedbackIcon.textContent = '📉';
-                this.feedbackTitle.textContent = 'TOO HIGH';
+            case 'in-progress':
+                if (result.hint === 'too-high') {
+                    this.feedbackBanner.classList.add('state-high');
+                    this.feedbackIcon.textContent = '📉';
+                    this.feedbackTitle.textContent = 'TOO HIGH';
+                }
+                else {
+                    this.feedbackBanner.classList.add('state-low');
+                    this.feedbackIcon.textContent = '📈';
+                    this.feedbackTitle.textContent = 'TOO LOW';
+                }
                 break;
-            case 'TOO_LOW':
-                this.feedbackBanner.classList.add('state-low');
-                this.feedbackIcon.textContent = '📈';
-                this.feedbackTitle.textContent = 'TOO LOW';
-                break;
-            case 'DUPLICATE':
+            case 'duplicate':
                 this.feedbackBanner.classList.add('state-duplicate');
                 this.feedbackIcon.textContent = '⚠️';
                 this.feedbackTitle.textContent = 'DUPLICATE GUESS';
                 break;
+            default:
+                return assertNever(result, 'Unhandled GuessResult status');
         }
         this.feedbackMessage.textContent = result.message;
     }
@@ -144,9 +152,16 @@ export class GameUI {
             this.submitGuessBtn.disabled = false;
         }
     }
-    showValidationError(msg) {
+    showValidationError(message) {
         if (this.validationErrorMessage) {
-            this.validationErrorMessage.textContent = msg;
+            this.validationErrorMessage.textContent = message;
+        }
+        if (this.guessInput) {
+            this.guessInput.classList.add('input-error');
+            setTimeout(() => {
+                var _a;
+                (_a = this.guessInput) === null || _a === void 0 ? void 0 : _a.classList.remove('input-error');
+            }, 1000);
         }
     }
     clearValidationError() {
@@ -154,7 +169,7 @@ export class GameUI {
             this.validationErrorMessage.textContent = '';
         }
     }
-    updateStatistics(stats, winPct, avgAttempts) {
+    updateStatistics(stats, winRate, avgAttempts) {
         if (this.statsGamesPlayed)
             this.statsGamesPlayed.textContent = stats.totalGames.toString();
         if (this.statsGamesWon)
@@ -162,54 +177,52 @@ export class GameUI {
         if (this.statsGamesLost)
             this.statsGamesLost.textContent = stats.gamesLost.toString();
         if (this.statsWinRate)
-            this.statsWinRate.textContent = `${winPct}%`;
-        if (this.statsBestScore)
-            this.statsBestScore.textContent = stats.bestScore !== null ? `${stats.bestScore} tries` : '-';
+            this.statsWinRate.textContent = `${winRate}%`;
+        if (this.statsBestScore) {
+            this.statsBestScore.textContent = stats.bestScore !== null ? `${stats.bestScore} att.` : '—';
+        }
         if (this.statsAvgAttempts)
-            this.statsAvgAttempts.textContent = avgAttempts > 0 ? avgAttempts.toString() : '-';
+            this.statsAvgAttempts.textContent = avgAttempts.toString();
     }
     renderGameHistory(records) {
         if (!this.gameHistoryList)
             return;
         this.gameHistoryList.innerHTML = '';
         if (records.length === 0) {
-            this.gameHistoryList.innerHTML =
-                '<div class="no-history-msg">No game records saved yet.</div>';
+            this.gameHistoryList.innerHTML = '<div class="history-empty">No games played yet.</div>';
             return;
         }
         records.forEach((rec) => {
             var _a;
             const item = document.createElement('div');
-            item.className = `history-record-card ${rec.won ? 'rec-won' : 'rec-lost'}`;
-            item.tabIndex = 0;
-            const dateStr = new Date(rec.timestamp).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
+            item.className = 'history-card';
+            const statusBadge = rec.won
+                ? '<span class="status-badge badge-win">WON</span>'
+                : '<span class="status-badge badge-loss">LOST</span>';
+            const dateStr = new Date(rec.timestamp).toLocaleTimeString([], {
                 hour: '2-digit',
                 minute: '2-digit'
             });
-            const outcomeClass = rec.won ? 'won-text' : 'lost-text';
-            const outcomeText = rec.won ? 'WON' : 'LOST';
             item.innerHTML = `
-        <div class="rec-header">
-          <span class="rec-diff">${rec.difficulty.toUpperCase()}</span>
-          <span class="rec-outcome ${outcomeClass}">${outcomeText}</span>
+        <div class="history-card-header">
+          ${statusBadge}
+          <span class="diff-tag">${rec.difficulty.toUpperCase()}</span>
+          <span class="time-tag">${dateStr}</span>
         </div>
-        <div class="rec-details">
-          <span>Target: <strong>${rec.targetNumber}</strong></span>
-          <span>Attempts: <strong>${rec.attemptsUsed}/${rec.maxAttempts}</strong></span>
-          <span>Date: <strong>${dateStr}</strong></span>
+        <div class="history-card-body">
+          <div>Target: <strong>${rec.targetNumber}</strong></div>
+          <div>Used: <strong>${rec.attemptsUsed}/${rec.maxAttempts}</strong> attempts</div>
+        </div>
+        <div class="history-card-guesses">
+          Guesses: ${rec.guesses.join(', ')}
         </div>
       `;
             (_a = this.gameHistoryList) === null || _a === void 0 ? void 0 : _a.appendChild(item);
         });
     }
     toggleHistoryDrawer() {
-        var _a;
-        (_a = this.gameHistoryDrawer) === null || _a === void 0 ? void 0 : _a.classList.toggle('open');
-    }
-    closeHistoryDrawer() {
-        var _a;
-        (_a = this.gameHistoryDrawer) === null || _a === void 0 ? void 0 : _a.classList.remove('open');
+        if (this.gameHistoryDrawer) {
+            this.gameHistoryDrawer.classList.toggle('open');
+        }
     }
 }

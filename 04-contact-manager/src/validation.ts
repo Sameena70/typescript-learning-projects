@@ -4,7 +4,7 @@
  * Centralised validation functions for contact forms and imports.
  */
 
-import { Contact, ContactFormData, ValidationResult } from './types.js';
+import { Contact, ContactFormData, ValidationResult, ValidationErrors } from './types.js';
 
 /**
  * Validates phone numbers with international prefix and at least 7 digits.
@@ -59,14 +59,14 @@ export function findDuplicateContact(
 }
 
 /**
- * Validates the full contact form data.
+ * Validates the full contact form data with typed error keys.
  */
 export function validateContactForm(
   formData: ContactFormData,
   existingContacts: Contact[],
   currentContactId?: string
-): ValidationResult {
-  const errors: ValidationResult['errors'] = {};
+): ValidationResult<ContactFormData> {
+  const errors: ValidationErrors<ContactFormData> = {};
   let isValid = true;
 
   // 1. Full Name
@@ -99,32 +99,30 @@ export function validateContactForm(
   // 4. Age
   const trimmedAge = formData.age.trim();
   if (trimmedAge.length > 0) {
-    const parsedAge = Number(trimmedAge);
-    if (isNaN(parsedAge) || parsedAge < 1 || parsedAge > 130 || !Number.isInteger(parsedAge)) {
-      errors.age = 'Age must be a valid whole number between 1 and 130.';
+    const ageNum = Number(trimmedAge);
+    if (isNaN(ageNum) || !Number.isInteger(ageNum) || ageNum < 1 || ageNum > 120) {
+      errors.age = 'Age must be a valid whole number between 1 and 120.';
       isValid = false;
     }
   }
 
-  // 5. Duplicates
-  if (isValid) {
+  // 5. Duplicate Check
+  if (trimmedPhone.length > 0) {
     const duplicate = findDuplicateContact(
       trimmedPhone,
-      trimmedEmail,
+      trimmedEmail.length > 0 ? trimmedEmail : undefined,
       existingContacts,
       currentContactId
     );
+
     if (duplicate) {
-      const cleanPhone = trimmedPhone.replace(/[\s\-()]/g, '').toLowerCase();
-      const duplicatePhone = duplicate.phoneNumber.replace(/[\s\-()]/g, '').toLowerCase();
-      if (duplicatePhone === cleanPhone) {
-        errors.phoneNumber = `Phone number already exists for contact "${duplicate.fullName}".`;
-      } else {
-        errors.email = `Email address already exists for contact "${duplicate.fullName}".`;
-      }
+      errors.general = `A contact with this phone or email already exists ("${duplicate.fullName}").`;
       isValid = false;
     }
   }
 
-  return { isValid, errors };
+  return {
+    isValid,
+    errors
+  };
 }

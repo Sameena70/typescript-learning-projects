@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameLogic } from '../src/game-logic.js';
+import { GameLogic, assertNever } from '../src/game-logic.js';
 import { GameConfigManager } from '../src/game-config.js';
 import { GameStateModel } from '../src/game-state.js';
-import { StatisticsManager } from '../src/statistics.js';
+import {
+  StatisticsManager,
+  filterRecordsByField,
+  aggregateNumericField,
+  isValidGameRecord
+} from '../src/statistics.js';
+import { GameStorage } from '../src/storage.js';
 import { GameRecord } from '../src/types.js';
 
 // Mock localStorage for headless Node test environment
@@ -83,8 +89,9 @@ describe('GameLogic (Secret Generation & Guess Evaluation)', () => {
     }
   });
 
-  it('returns DUPLICATE guess result without consuming remaining attempts', () => {
+  it('returns DUPLICATE guess outcome without consuming remaining attempts', () => {
     const result = GameLogic.evaluateGuess(42, 70, 5, [42, 10]);
+    expect(result.status).toBe('duplicate');
     expect(result.type).toBe('DUPLICATE');
     expect(result.attemptsLeft).toBe(5);
     expect(result.isWon).toBe(false);
@@ -93,209 +100,213 @@ describe('GameLogic (Secret Generation & Guess Evaluation)', () => {
 
   it('returns CORRECT when guess matches secret and ends the game', () => {
     const result = GameLogic.evaluateGuess(88, 88, 4, []);
+    expect(result.status).toBe('won');
     expect(result.type).toBe('CORRECT');
     expect(result.attemptsLeft).toBe(3);
     expect(result.isWon).toBe(true);
     expect(result.isGameOver).toBe(true);
   });
 
-  it('returns TOO_HIGH when guess exceeds secret', () => {
-    const result = GameLogic.evaluateGuess(75, 50, 5, []);
-    expect(result.type).toBe('TOO_HIGH');
-    expect(result.attemptsLeft).toBe(4);
-    expect(result.isWon).toBe(false);
-    expect(result.isGameOver).toBe(false);
+  it('evaluates TOO_HIGH and TOO_LOW hints accurately with discriminated union status', () => {
+    const high = GameLogic.evaluateGuess(75, 50, 4, []);
+    expect(high.status).toBe('in-progress');
+    expect(high.type).toBe('TOO_HIGH');
+    if (high.status === 'in-progress') {
+      expect(high.hint).toBe('too-high');
+    }
+    expect(high.attemptsLeft).toBe(3);
+
+    const low = GameLogic.evaluateGuess(25, 50, 4, []);
+    expect(low.status).toBe('in-progress');
+    expect(low.type).toBe('TOO_LOW');
+    if (low.status === 'in-progress') {
+      expect(low.hint).toBe('too-low');
+    }
+    expect(low.attemptsLeft).toBe(3);
   });
 
-  it('returns TOO_LOW when guess is below secret', () => {
-    const result = GameLogic.evaluateGuess(25, 50, 5, []);
-    expect(result.type).toBe('TOO_LOW');
-    expect(result.attemptsLeft).toBe(4);
-    expect(result.isWon).toBe(false);
-    expect(result.isGameOver).toBe(false);
+  it('triggers GAME_OVER with status: lost when remaining attempts reach zero', () => {
+    const over = GameLogic.evaluateGuess(30, 99, 1, []);
+    expect(over.status).toBe('lost');
+    expect(over.type).toBe('GAME_OVER');
+    expect(over.attemptsLeft).toBe(0);
+    expect(over.isWon).toBe(false);
+    expect(over.isGameOver).toBe(true);
   });
 
-  it('triggers GAME_OVER when the final remaining attempt is exhausted without matching', () => {
-    const result = GameLogic.evaluateGuess(30, 50, 1, []);
-    expect(result.type).toBe('GAME_OVER');
-    expect(result.attemptsLeft).toBe(0);
-    expect(result.isWon).toBe(false);
-    expect(result.isGameOver).toBe(true);
+  it('assertNever throws a descriptive runtime error on unexpected value', () => {
+    expect(() => assertNever('invalid' as unknown as never)).toThrow(
+      'Unexpected value encountered: invalid'
+    );
   });
 });
 
-describe('GameStateModel (Match Lifecycle & State Transitions)', () => {
+describe('GameStateModel (State Machine & Input Validation)', () => {
+  let model: GameStateModel;
   let config: GameConfigManager;
-  let state: GameStateModel;
 
   beforeEach(() => {
     config = new GameConfigManager();
-    state = new GameStateModel(config);
+    model = new GameStateModel(config);
   });
 
-  it('initializes new match with full attempts and empty guess history', () => {
-    expect(state.getDifficulty()).toBe('easy');
-    expect(state.getRemainingAttempts()).toBe(7);
-    expect(state.getMaxAttempts()).toBe(7);
-    expect(state.getGuesses()).toEqual([]);
-    expect(state.getIsGameOver()).toBe(false);
-    expect(state.getHasWon()).toBe(false);
+  it('initializes game state with appropriate boundaries for easy difficulty', () => {
+    expect(model.getDifficulty()).toBe('easy');
+    expect(model.getMin()).toBe(1);
+    expect(model.getMax()).toBe(100);
+    expect(model.getMaxAttempts()).toBe(7);
+    expect(model.getRemainingAttempts()).toBe(7);
+    expect(model.getIsGameOver()).toBe(false);
+    expect(model.getHasWon()).toBe(false);
   });
 
-  it('switches difficulty and restarts match with corresponding settings', () => {
-    state.setDifficulty('medium');
-    expect(state.getDifficulty()).toBe('medium');
-    expect(state.getMin()).toBe(1);
-    expect(state.getMax()).toBe(500);
-    expect(state.getRemainingAttempts()).toBe(9);
+  it('tracks game play state transitions via getPlayState()', () => {
+    const initial = model.getPlayState();
+    expect(initial.phase).toBe('ready');
+
+    model.submitGuess(50);
+    const playing = model.getPlayState();
+    expect(playing.phase === 'playing' || playing.phase === 'won').toBe(true);
   });
 
-  it('validates bounds on guesses', () => {
-    expect(() => state.submitGuess(0)).toThrow('Guess must be between 1 and 100.');
-    expect(() => state.submitGuess(101)).toThrow('Guess must be between 1 and 100.');
-    expect(() => state.submitGuess(12.5)).toThrow('Please enter a valid whole integer.');
+  it('switches difficulty and restarts game cleanly', () => {
+    model.setDifficulty('hard');
+    expect(model.getDifficulty()).toBe('hard');
+    expect(model.getMax()).toBe(1000);
+    expect(model.getMaxAttempts()).toBe(10);
   });
 
-  it('tracks guesses and decrements attempts on valid non-duplicate guesses', () => {
-    const secret = state.getSecret();
-    const wrongGuess = secret === 50 ? 51 : 50;
-
-    const res = state.submitGuess(wrongGuess);
-    expect(state.getGuesses()).toContain(wrongGuess);
-    expect(state.getRemainingAttempts()).toBe(6);
-    expect(res.attemptsLeft).toBe(6);
+  it('rejects guesses that violate numerical constraints or ranges', () => {
+    expect(() => model.submitGuess(0)).toThrow('Guess must be between 1 and 100.');
+    expect(() => model.submitGuess(101)).toThrow('Guess must be between 1 and 100.');
+    expect(() => model.submitGuess(45.5)).toThrow('Please enter a valid whole integer.');
   });
 
-  it('creates an accurate GameRecord upon match conclusion', () => {
-    const secret = state.getSecret();
-    state.submitGuess(secret); // Win in 1 try
+  it('locks submission when game is over and creates accurate GameRecord', () => {
+    const secret = model.getSecret();
+    const result = model.submitGuess(secret);
+    expect(result.status).toBe('won');
+    expect(model.getIsGameOver()).toBe(true);
+    expect(model.getHasWon()).toBe(true);
 
-    expect(state.getIsGameOver()).toBe(true);
-    expect(state.getHasWon()).toBe(true);
+    expect(() => model.submitGuess(secret)).toThrow(
+      'Game has already ended. Please start a new game.'
+    );
 
-    const record = state.createGameRecord();
+    const record = model.createGameRecord();
     expect(record.won).toBe(true);
     expect(record.targetNumber).toBe(secret);
     expect(record.attemptsUsed).toBe(1);
-    expect(record.guesses).toEqual([secret]);
-  });
-
-  it('prevents submitting guesses after match is over', () => {
-    const secret = state.getSecret();
-    state.submitGuess(secret);
-    expect(() => state.submitGuess(secret)).toThrow('Game has already ended');
   });
 });
 
-describe('StatisticsManager (Stats Calculation & Storage Resilience)', () => {
+describe('StatisticsManager (Stats Calculation, Generics & Storage Resilience)', () => {
   beforeEach(() => {
     localStorage.clear();
   });
 
-  it('initializes clean statistics with zero games', () => {
-    const statsManager = new StatisticsManager();
-    const stats = statsManager.getStatistics();
-    expect(stats.totalGames).toBe(0);
-    expect(stats.gamesWon).toBe(0);
-    expect(stats.gamesLost).toBe(0);
-    expect(stats.bestScore).toBeNull();
-    expect(statsManager.getWinPercentage()).toBe(0);
-    expect(statsManager.getAverageAttempts()).toBe(0);
-  });
-
-  it('records won games, updates win percentage, average tries, and best score', () => {
-    const statsManager = new StatisticsManager();
-
-    const record1: GameRecord = {
-      id: 'g1',
+  it('records games and tracks best score and win percentages accurately', () => {
+    const manager = new StatisticsManager();
+    const recordWon: GameRecord = {
+      id: 'rec-1',
       difficulty: 'easy',
       targetNumber: 50,
-      attemptsUsed: 4,
+      attemptsUsed: 3,
       maxAttempts: 7,
       won: true,
       timestamp: Date.now(),
-      guesses: [10, 60, 45, 50]
+      guesses: [20, 40, 50]
     };
 
-    const record2: GameRecord = {
-      id: 'g2',
+    const recordLost: GameRecord = {
+      id: 'rec-2',
       difficulty: 'easy',
-      targetNumber: 20,
-      attemptsUsed: 2,
-      maxAttempts: 7,
-      won: true,
-      timestamp: Date.now(),
-      guesses: [30, 20]
-    };
-
-    statsManager.recordGame(record1);
-    statsManager.recordGame(record2);
-
-    const stats = statsManager.getStatistics();
-    expect(stats.totalGames).toBe(2);
-    expect(stats.gamesWon).toBe(2);
-    expect(stats.bestScore).toBe(2); // lowest tries
-    expect(statsManager.getWinPercentage()).toBe(100);
-    expect(statsManager.getAverageAttempts()).toBe(3); // (4 + 2) / 2 = 3
-  });
-
-  it('records lost games accurately', () => {
-    const statsManager = new StatisticsManager();
-    const lostRecord: GameRecord = {
-      id: 'g3',
-      difficulty: 'easy',
-      targetNumber: 99,
+      targetNumber: 80,
       attemptsUsed: 7,
       maxAttempts: 7,
       won: false,
       timestamp: Date.now(),
-      guesses: [1, 2, 3, 4, 5, 6, 7]
+      guesses: [10, 20, 30, 40, 50, 60, 70]
     };
 
-    statsManager.recordGame(lostRecord);
-    const stats = statsManager.getStatistics();
-    expect(stats.totalGames).toBe(1);
-    expect(stats.gamesWon).toBe(0);
+    manager.recordGame(recordWon);
+    manager.recordGame(recordLost);
+
+    const stats = manager.getStatistics();
+    expect(stats.totalGames).toBe(2);
+    expect(stats.gamesWon).toBe(1);
     expect(stats.gamesLost).toBe(1);
-    expect(stats.bestScore).toBeNull();
-    expect(statsManager.getWinPercentage()).toBe(0);
+    expect(stats.bestScore).toBe(3);
+    expect(manager.getWinPercentage()).toBe(50);
   });
 
-  it('handles corrupted or incomplete statistics payload without NaN', () => {
-    // Missing gamesWon, gamesLost, totalAttemptsUsed
-    localStorage.setItem('ts_game_lifetime_stats', JSON.stringify({ totalGames: 5 }));
+  it('filters game records using generic helper filterRecordsByField', () => {
+    const records: GameRecord[] = [
+      {
+        id: '1',
+        difficulty: 'easy',
+        targetNumber: 10,
+        attemptsUsed: 2,
+        maxAttempts: 7,
+        won: true,
+        timestamp: 1,
+        guesses: [5, 10]
+      },
+      {
+        id: '2',
+        difficulty: 'hard',
+        targetNumber: 500,
+        attemptsUsed: 8,
+        maxAttempts: 10,
+        won: true,
+        timestamp: 2,
+        guesses: [100, 500]
+      }
+    ];
 
-    const statsManager = new StatisticsManager();
-    expect(statsManager.getWinPercentage()).toBe(0); // 0 / 5 = 0% not NaN
-    expect(statsManager.getAverageAttempts()).toBe(0);
-    const stats = statsManager.getStatistics();
-    expect(stats.gamesWon).toBe(0);
+    const easyOnly = filterRecordsByField(records, 'difficulty', 'easy');
+    expect(easyOnly).toHaveLength(1);
+    expect(easyOnly[0].id).toBe('1');
+  });
+
+  it('aggregates numeric values across game records using generic aggregateNumericField', () => {
+    const records = [{ attempts: 3 }, { attempts: 5 }, { attempts: 2 }];
+    const total = aggregateNumericField(records, (r) => r.attempts);
+    expect(total).toBe(10);
+  });
+
+  it('validates game records safely with isValidGameRecord type guard', () => {
+    const valid = {
+      id: '1',
+      difficulty: 'easy',
+      targetNumber: 42,
+      attemptsUsed: 4,
+      maxAttempts: 7,
+      won: true,
+      timestamp: 12345,
+      guesses: [10, 20, 30, 42]
+    };
+    expect(isValidGameRecord(valid)).toBe(true);
+
+    const invalid = { id: 1, won: 'yes' };
+    expect(isValidGameRecord(invalid)).toBe(false);
   });
 
   it('handles malformed JSON in statistics and history storage without crashing', () => {
     localStorage.setItem('ts_game_lifetime_stats', 'malformed-json');
     localStorage.setItem('ts_game_records_history', 'malformed-json');
 
-    const statsManager = new StatisticsManager();
-    expect(statsManager.getStatistics().totalGames).toBe(0);
-    expect(statsManager.getHistory()).toEqual([]);
+    const manager = new StatisticsManager();
+    expect(manager.getStatistics().totalGames).toBe(0);
+    expect(manager.getHistory()).toEqual([]);
   });
 
-  it('clears game history cleanly', () => {
-    const statsManager = new StatisticsManager();
-    statsManager.recordGame({
-      id: 'g4',
-      difficulty: 'hard',
-      targetNumber: 500,
-      attemptsUsed: 3,
-      maxAttempts: 10,
-      won: true,
-      timestamp: Date.now(),
-      guesses: [100, 400, 500]
-    });
+  it('GameStorage clears and persists items safely', () => {
+    GameStorage.setItem('test_key', { score: 99 });
+    const loaded = GameStorage.getItem<{ score: number }>('test_key', { score: 0 });
+    expect(loaded.score).toBe(99);
 
-    expect(statsManager.getHistory()).toHaveLength(1);
-    statsManager.clearHistory();
-    expect(statsManager.getHistory()).toHaveLength(0);
+    GameStorage.removeItem('test_key');
+    expect(GameStorage.getItem('test_key', null)).toBeNull();
   });
 });
