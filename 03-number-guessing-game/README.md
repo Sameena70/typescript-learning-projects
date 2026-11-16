@@ -2,7 +2,7 @@
 
 An interactive, cyberpunk-themed number guessing game built with **TypeScript, HTML5, and CSS3**.
 
-This project demonstrates modular application architecture, pure game logic, dynamic range validation, immutable state modeling, resilient error handling, discriminated union outcomes, compile-time exhaustiveness checking, and lifetime match statistics persisted in `localStorage`.
+This project demonstrates modular application architecture, pure game logic, dynamic range validation, immutable state modeling, resilient error handling, discriminated union outcomes, compile-time exhaustiveness checking, constructor dependency injection, and lifetime match statistics persisted in `localStorage`.
 
 ---
 
@@ -30,66 +30,82 @@ This project demonstrates modular application architecture, pure game logic, dyn
 
 ---
 
-## 🏛️ Advanced TypeScript Architecture & Concepts Applied
+## 🏛️ Application Architecture & Data Flow
 
-### 1. Discriminated Unions for Guess Outcomes
-Instead of a flat bag of boolean flags (`isWon`, `isGameOver`, `type`), `GuessOutcome` is a strict **discriminated union** keyed on `status`:
+The game decouples pure rule evaluation, state tracking, statistics aggregation, persistence, and UI presentation:
+
+```text
+[ User Guess Input / Mode Select / Drawer Toggle ]
+                        │
+                        ▼
+           [ NumberGuessingGameApp ] (main.ts - Orchestrator & DI Controller)
+            ├── [ GameStateManager ] (game-state.ts - Active Game State Machine)
+            │     └── [ Pure Game Evaluation ] (game-logic.ts - evaluateGuess & generateSecret)
+            ├── [ StatisticsManager ] (statistics.ts - Match Stats & History)
+            │     └── [ IGameStorageDriver / GameStorage ] (storage.ts)
+            └── [ GameUI ] (ui.ts - Neon HUD, Modals & History Drawer)
+```
+
+1. **User Action:** Received via DOM event handlers bound in `NumberGuessingGameApp`.
+2. **Pure Evaluation:** `evaluateGuess()` and `generateSecret()` in `src/game-logic.ts` evaluate numeric guesses against target values without mutating state.
+3. **State Management:** `GameStateManager` tracks current game lifecycle, past guesses, attempts left, and outcome transitions.
+4. **Statistics & Persistence:** `StatisticsManager` records match outcomes, calculates lifetime win rates, and persists records using `IGameStorageDriver` (implemented by `GameStorage`).
+5. **View Presentation:** `GameUI` displays neon feedback, updates attempt meters, animates directional hints, and populates the history drawer.
+
+---
+
+## 💡 Important TypeScript Concepts & Design Patterns
+
+### 1. Pure Game Evaluation & Facade
+Game evaluation methods are pure exported functions:
+```typescript
+export function evaluateGuess(
+  guess: number,
+  secret: number,
+  remainingAttempts: number,
+  previousGuesses: number[],
+  maxAttempts?: number
+): GuessOutcome;
+
+export function generateSecret(min: number, max: number): number;
+```
+A backward-compatible `GameLogic` static facade delegates calls to these functions.
+
+### 2. Discriminated Unions for Guess Outcomes
+`GuessOutcome` is modeled as a strict discriminated union keyed on `status`:
 ```typescript
 export type GuessOutcome =
-  | { status: 'won'; target: number; attemptsUsed: number; attemptsLeft: number; isWon: true; isGameOver: true }
-  | { status: 'lost'; target: number; attemptsLeft: 0; isWon: false; isGameOver: true }
-  | { status: 'in-progress'; hint: 'too-high' | 'too-low'; attemptsLeft: number; isWon: false; isGameOver: false }
-  | { status: 'duplicate'; guess: number; attemptsLeft: number; isWon: false; isGameOver: false };
+  | { status: 'won'; type: 'CORRECT'; message: string; guess: number; target: number; attemptsUsed: number; attemptsLeft: number; isWon: true; isGameOver: true }
+  | { status: 'lost'; type: 'GAME_OVER'; message: string; guess: number; target: number; attemptsLeft: 0; isWon: false; isGameOver: true }
+  | { status: 'in-progress'; type: 'TOO_HIGH' | 'TOO_LOW'; message: string; guess: number; hint: 'too-high' | 'too-low'; attemptsLeft: number; isWon: false; isGameOver: false }
+  | { status: 'duplicate'; type: 'DUPLICATE'; message: string; guess: number; attemptsLeft: number; isWon: false; isGameOver: false };
 ```
-This guarantees that winning outcomes contain `target` and `attemptsUsed`, in-progress outcomes have `hint`, and duplicate guesses never alter match counts.
 
-### 2. Compile-Time Exhaustiveness Checking with `never`
-In `GameUI.showFeedback()`, the `default` switch branch calls `assertNever(result, 'Unhandled GuessResult status')`:
+### 3. Compile-Time Exhaustiveness Checking with `never`
+The UI switch statement verifies all possible outcome states using `assertNever`:
 ```typescript
 export function assertNever(x: never, message = 'Unexpected value encountered'): never {
   throw new Error(`${message}: ${String(x)}`);
 }
 ```
-If a new guess state is added to `GuessOutcome` without updating UI handling, the TypeScript compiler refuses to build.
 
-### 3. Intersection Types for Game Configuration
-Configuration separates shared boundaries from custom overrides using an intersection type:
+### 4. Dependency Inversion via `IGameStorageDriver`
+Persistence is abstracted through `IGameStorageDriver`, implemented by `GameStorage`:
 ```typescript
-export interface BaseGameConfig {
-  min: number;
-  max: number;
-  maxAttempts: number;
-}
-
-export type CustomDifficultyConfig = BaseGameConfig & {
-  name: 'Custom';
-  difficulty: 'custom';
-};
-```
-
-### 4. Generic Filtering and Statistical Aggregations
-Reusable generic helpers operate cleanly across game records without using `any`:
-```typescript
-export function filterRecordsByField<T, K extends keyof T>(
-  items: T[],
-  key: K,
-  value: T[K]
-): T[] {
-  return items.filter((item) => item[key] === value);
-}
-
-export function aggregateNumericField<T>(
-  items: T[],
-  extractor: (item: T) => number
-): number {
-  return items.reduce((sum, item) => sum + extractor(item), 0);
+export interface IGameStorageDriver {
+  getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T;
+  setItem<T>(key: string, value: T): boolean;
+  removeItem(key: string): void;
+  clear(): void;
 }
 ```
 
-### 5. Type Narrowing & Storage Schema Validation
-- **`in` operator**: `isValidGameRecord(item: unknown)` safely checks for required properties on unknown storage objects before accessing them.
-- **`typeof`**: Used throughout `game-state.ts` and `game-config.ts` to validate numeric inputs.
-- **Generic `GameStorage`**: Generic `<T>` methods guarded with validator predicates `(val: unknown) => val is T`.
+### 5. Generic Utility Helpers (`src/utils.ts`)
+Reusable array filtering and calculation functions operate across game records without using `any`:
+```typescript
+export function filterRecordsByField<T, K extends keyof T>(items: T[], key: K, value: T[K]): T[];
+export function aggregateNumericField<T>(items: T[], field: keyof T): number;
+```
 
 ---
 
@@ -97,54 +113,66 @@ export function aggregateNumericField<T>(
 
 ```text
 03-number-guessing-game/
-├── index.html               # Main game console, status badges, and drawer markup
-├── style.css                # Cyberpunk dark theme and glowing visual cues
-├── package.json             # Build, test, lint, and formatting scripts
-├── tsconfig.json            # Strict TypeScript configuration
-├── eslint.config.mjs        # Flat ESLint configuration
+├── index.html                     # Main gaming interface and history drawer
+├── style.css                      # Cyberpunk neon theme, animations, and responsive styles
+├── package.json                   # Build, test, lint, and formatting scripts
+├── tsconfig.json                  # Strict TypeScript configuration
+├── eslint.config.mjs              # ESLint configuration
 ├── src/
-│   ├── types.ts             # Domain contracts, discriminated unions, and intersection types
-│   ├── game-config.ts       # Boundaries manager for preset and custom difficulties
-│   ├── game-logic.ts        # Pure secret generator, guess evaluation, and assertNever
-│   ├── game-state.ts        # Active game state machine and match lifecycle
-│   ├── statistics.ts        # Generic statistical aggregations and schema guards
-│   ├── storage.ts           # Generic localStorage wrapper with runtime validator support
-│   ├── ui.ts                # Null-safe visual feedback, guess tags, and modal/drawer renderer
-│   └── main.ts              # Game lifecycle controller, decimal validator, and event binder
+│   ├── types.ts                   # Domain types, discriminated unions, and IGameStorageDriver
+│   ├── game-config.ts             # Difficulty tier settings and pure config validators
+│   ├── game-logic.ts              # Pure evaluation functions (evaluateGuess, generateSecret) & GameLogic facade
+│   ├── game-state.ts              # GameStateManager state machine
+│   ├── statistics.ts              # StatisticsManager with constructor DI
+│   ├── storage.ts                 # GameStorage implementing IGameStorageDriver
+│   ├── utils.ts                   # Generic filterRecordsByField & aggregateNumericField helpers
+│   ├── ui.ts                      # GameUI rendering controller and HUD updates
+│   └── main.ts                    # NumberGuessingGameApp orchestrator with DOM-ready check
 ├── tests/
-│   └── game-logic.test.ts   # Vitest unit test suite (20 comprehensive tests)
-└── dist/                    # Compiled ES6 JavaScript modules
+│   └── game-logic.test.ts         # Vitest unit test suite (22 comprehensive tests)
+└── dist/                          # Compiled ES6 JavaScript modules
 ```
 
 ---
 
-## 🛠️ Installation & Setup
+## 💾 Storage & Data Persistence
 
-Navigate into the project directory and install the local developer dependencies:
-
-```bash
-cd 03-number-guessing-game
-npm install
-```
+- **Primary LocalStorage Keys:**
+  - `ts_game_lifetime_stats`: Lifetime statistics record `{ totalGames, gamesWon, gamesLost, bestScore, totalAttemptsUsed }`.
+  - `ts_game_records_history`: Array of past match outcome summaries.
+- **Corrupt Storage Fallback:** `GameStorage` catches malformed JSON defensively and returns safe initial statistics.
 
 ---
 
-## 💻 Available Scripts
+## 🚀 Installation & Setup
 
-- **`npm run build`**: Compiles TypeScript files from `src/` to `dist/` using `tsc`.
-- **`npm run watch`**: Starts the TypeScript compiler in watch mode for live recompilation.
-- **`npm run test`**: Executes unit test suites with **Vitest**.
-- **`npm run lint`**: Analyzes TypeScript code for potential issues with **ESLint**.
-- **`npm run format:check`**: Verifies code formatting against **Prettier** rules.
+1. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
----
+2. **Build TypeScript:**
+   ```bash
+   npm run build
+   ```
 
-## 🌐 Running Locally
+3. **Run Unit Tests:**
+   ```bash
+   npm run test
+   ```
 
-Because this project uses native browser ES Modules, serve it using an HTTP server:
+4. **Lint Code:**
+   ```bash
+   npm run lint
+   ```
 
-```bash
-npx serve .
-```
+5. **Check Formatting:**
+   ```bash
+   npm run format:check
+   ```
 
-Open `http://localhost:3000/index.html` in your browser.
+6. **Run Locally:**
+   Open `index.html` directly in any modern browser, or serve it with a local HTTP server:
+   ```bash
+   npx serve .
+   ```

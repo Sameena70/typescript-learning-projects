@@ -1,31 +1,21 @@
-import { GameRecord, LifetimeStatistics } from './types.js';
-import { GameStorage } from './storage.js';
+import { GameRecord, LifetimeStatistics, IGameStorageDriver } from './types.js';
+import { defaultGameStorageDriver } from './storage.js';
+import { filterRecordsByField, aggregateNumericField } from './utils.js';
+
+// Re-export utility functions for backward compatibility with existing tests/consumers
+export { filterRecordsByField, aggregateNumericField };
 
 const STATS_KEY = 'ts_game_lifetime_stats';
 const HISTORY_KEY = 'ts_game_records_history';
 const MAX_HISTORY = 40;
 
-const DEFAULT_STATS: LifetimeStatistics = {
+export const DEFAULT_STATS: LifetimeStatistics = {
   totalGames: 0,
   gamesWon: 0,
   gamesLost: 0,
   bestScore: null,
   totalAttemptsUsed: 0
 };
-
-/**
- * Generic filtering helper preserving type information with property constraint.
- */
-export function filterRecordsByField<T, K extends keyof T>(items: T[], key: K, value: T[K]): T[] {
-  return items.filter((item) => item[key] === value);
-}
-
-/**
- * Generic aggregation helper for calculating numeric sums across collections.
- */
-export function aggregateNumericField<T>(items: T[], extractor: (item: T) => number): number {
-  return items.reduce((sum, item) => sum + extractor(item), 0);
-}
 
 /**
  * Type guard for GameRecord objects loaded from storage.
@@ -60,11 +50,17 @@ export function isValidGameRecord(item: unknown): item is GameRecord {
   return false;
 }
 
+/**
+ * Manages persistent lifetime game statistics and history records.
+ * Supports Dependency Injection of IGameStorageDriver (defaults to defaultGameStorageDriver).
+ */
 export class StatisticsManager {
   private stats: LifetimeStatistics;
   private history: GameRecord[];
+  private storage: IGameStorageDriver;
 
-  constructor() {
+  constructor(storage: IGameStorageDriver = defaultGameStorageDriver) {
+    this.storage = storage;
     this.stats = this.loadStatistics();
     this.history = this.loadHistory();
   }
@@ -73,7 +69,7 @@ export class StatisticsManager {
    * Safely loads and sanitizes lifetime statistics with schema validation.
    */
   private loadStatistics(): LifetimeStatistics {
-    const raw = GameStorage.getItem<unknown>(STATS_KEY, DEFAULT_STATS);
+    const raw = this.storage.getItem<unknown>(STATS_KEY, DEFAULT_STATS);
     if (typeof raw !== 'object' || raw === null) {
       return { ...DEFAULT_STATS };
     }
@@ -100,7 +96,7 @@ export class StatisticsManager {
   }
 
   private loadHistory(): GameRecord[] {
-    const saved = GameStorage.getItem<unknown>(HISTORY_KEY, [], (val: unknown): val is unknown[] =>
+    const saved = this.storage.getItem<unknown>(HISTORY_KEY, [], (val: unknown): val is unknown[] =>
       Array.isArray(val)
     );
 
@@ -161,17 +157,17 @@ export class StatisticsManager {
 
   public clearHistory(): void {
     this.history = [];
-    GameStorage.removeItem(HISTORY_KEY);
+    this.storage.removeItem(HISTORY_KEY);
   }
 
   public resetStatistics(): void {
     this.stats = { ...DEFAULT_STATS };
     this.clearHistory();
-    GameStorage.removeItem(STATS_KEY);
+    this.storage.removeItem(STATS_KEY);
   }
 
   private save(): void {
-    GameStorage.setItem(STATS_KEY, this.stats);
-    GameStorage.setItem(HISTORY_KEY, this.history);
+    this.storage.setItem(STATS_KEY, this.stats);
+    this.storage.setItem(HISTORY_KEY, this.history);
   }
 }

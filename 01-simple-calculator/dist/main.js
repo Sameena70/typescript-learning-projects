@@ -2,13 +2,17 @@ import { CalculatorStateModel } from './calculator-state.js';
 import { HistoryService } from './history-service.js';
 import { CalculatorUI } from './ui.js';
 /**
- * Main Application Bootstrap for the Advanced TypeScript Calculator.
+ * Main Application Bootstrap for the Simple Calculator.
+ * Orchestrates user interactions, state transitions, and UI updates.
  */
-class CalculatorApp {
-    constructor() {
-        this.stateModel = new CalculatorStateModel();
-        this.historyService = new HistoryService();
-        this.ui = new CalculatorUI();
+export class CalculatorApp {
+    /**
+     * Accepts dependencies via constructor for clean testing and loose coupling.
+     */
+    constructor(stateModel = new CalculatorStateModel(), historyService = new HistoryService(), ui = new CalculatorUI()) {
+        this.stateModel = stateModel;
+        this.historyService = historyService;
+        this.ui = ui;
         this.init();
     }
     init() {

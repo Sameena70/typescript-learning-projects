@@ -161,3 +161,24 @@ export interface ImportSummary {
  * Generic Storage Validator predicate function.
  */
 export type StorageValidator<T> = (val: unknown) => val is T;
+
+/**
+ * Storage Driver Interface for Contact Manager persistence.
+ * Decouples ContactRepository / ContactService from browser LocalStorage.
+ */
+export interface IContactStorageDriver {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+  clear(): void;
+}
+
+/**
+ * Contact Repository Interface defining persistence operations.
+ * Allows ContactService to depend on an abstraction rather than concrete storage.
+ */
+export interface IContactRepository {
+  loadContacts(): Contact[];
+  saveContacts(contacts: readonly Contact[]): boolean;
+  clearContacts(): void;
+}

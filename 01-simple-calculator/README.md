@@ -2,7 +2,7 @@
 
 A modern, responsive client-side arithmetic calculator built with **TypeScript, HTML5, and CSS3**.
 
-This project demonstrates clean modular TypeScript architecture, strict type safety, safe `localStorage` persistence with runtime validation, continuous chained calculation support, floating-point precision handling, and responsive desktop keyboard shortcuts.
+This project demonstrates clean modular TypeScript architecture, strict type safety, safe `localStorage` persistence with runtime validation, continuous chained calculation support, floating-point precision handling, dependency injection, and responsive desktop keyboard shortcuts.
 
 ---
 
@@ -20,41 +20,82 @@ This project demonstrates clean modular TypeScript architecture, strict type saf
 
 ---
 
-## 🏛️ Advanced TypeScript Architecture & Concepts Applied
+## 🏛️ Application Architecture & Data Flow
 
-### 1. Discriminated Unions for State Transitions
-Instead of optional or conflicting outcome properties (`{ error?: string; resultToSave?: string }`), `CalculationOutcome` is structured as a strict **discriminated union** with a shared discriminator `status`:
+The project follows a modular, decoupled architecture driven by pure functions, state encapsulation, and dependency injection:
+
+```text
+[ User / Keyboard Input ]
+           │
+           ▼
+     [ CalculatorApp ] (main.ts - Orchestrator & Event Controller)
+      ├── [ CalculatorUI ] (ui.ts - DOM & Display Renderer)
+      ├── [ CalculatorStateModel ] (calculator-state.ts - State Machine)
+      │     └── [ Pure Math Functions & Operator Map ] (calculator-logic.ts)
+      └── [ HistoryService ] (history-service.ts - History Manager)
+            └── [ IStorageDriver / StorageService ] (storage.ts - Persistence)
+```
+
+1. **User / Keyboard Input:** Captured in `main.ts` via delegated event listeners and keyboard shortcuts.
+2. **State & Orchestration:** `CalculatorApp` coordinates between the UI, the state model, and the history service.
+3. **Pure Arithmetic Operations:** Pure functions (`add`, `subtract`, `multiply`, `divide`, `modulo`, `percentage`, `roundToPrecision`, `toggleSign`) and an immutable operator map (`OPERATOR_OPERATIONS: Record<Operator, ArithmeticOperation>`) execute calculations without side effects.
+4. **State Machine (`CalculatorStateModel`):** Encapsulates active operand, operator, memory accumulator, and calculation outcome transitions.
+5. **Storage Abstraction (`IStorageDriver`):** Decouples memory and history persistence from browser `window.localStorage`, enabling in-memory testing.
+
+---
+
+## 💡 Important TypeScript Concepts & Design Patterns
+
+### 1. Pure Functions & Operator Map Pattern
+Arithmetic functions are pure named exports, replacing fragile `switch` statements with an exhaustive `Record<Operator, ArithmeticOperation>` map:
+```typescript
+export type ArithmeticOperation = (a: number, b: number) => number;
+
+export const OPERATOR_OPERATIONS: Record<Operator, ArithmeticOperation> = {
+  '+': add,
+  '-': subtract,
+  '*': multiply,
+  '/': divide,
+  '%': modulo
+};
+```
+
+### 2. Backward-Compatible Static Facade
+To guarantee 100% backward compatibility for existing consumers, a static `CalculatorLogic` facade delegates calls to the pure functions:
+```typescript
+export class CalculatorLogic {
+  public static add(a: number, b: number): number { return add(a, b); }
+  public static compute(op: Operator, a: number, b: number): number { return compute(op, a, b); }
+}
+```
+
+### 3. Discriminated Unions for State Transitions
+Instead of optional or conflicting properties, `CalculationOutcome` is structured as a strict discriminated union:
 ```typescript
 export type CalculationOutcome =
   | { status: 'success'; expressionToSave: string; resultToSave: string }
   | { status: 'error'; error: string }
   | { status: 'idle' };
 ```
-This guarantees that an outcome either has valid result strings or a failure message, never an invalid hybrid state.
 
-### 2. Compile-Time Exhaustiveness Checking with `never`
-In `CalculatorLogic.compute()` and `CalculatorLogic.formatOperator()`, the `default` branch delegates to an `assertNever(x: never)` helper:
+### 4. Compile-Time Exhaustiveness Checking with `never`
+The fallback branch in `formatOperator()` and `compute()` invokes `assertNever(x: never)`:
 ```typescript
 export function assertNever(x: never, message: string = 'Unexpected value encountered'): never {
   throw new Error(`${message}: ${String(x)}`);
 }
 ```
-If a new operator is added to the `Operator` union in `types.ts` without implementing its branch, the TypeScript compiler refuses to build, alerting the engineer at compile time rather than failing silently in production.
 
-### 3. Reusable Generic Storage with Type Guards (`<T>`)
-`StorageService.getItem<T>()` accepts a generic type predicate `validator?: (val: unknown) => val is T`.
+### 5. Dependency Inversion via `IStorageDriver`
+High-level services (`HistoryService`, `CalculatorStateModel`) depend on the storage interface rather than concrete browser APIs:
 ```typescript
-static getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T
+export interface IStorageDriver {
+  getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T;
+  setItem<T>(key: string, value: T): boolean;
+  removeItem(key: string): void;
+  clear(): void;
+}
 ```
-This safely validates raw JSON retrieved from the browser `localStorage` and eliminates dangerous `as T` casting.
-
-### 4. Type Narrowing (`typeof`, `in`, and User-Defined Type Guards)
-- **`in` operator**: Safely tests whether unknown objects parsed from storage contain expected keys (`id`, `expression`, `result`, `timestamp`) before reading them.
-- **`typeof` operator**: Narrows primitives like strings and numbers across input parsers.
-- **`instanceof` operator**: Handles DOM event targets (`e.target instanceof HTMLInputElement`) and runtime errors (`error instanceof Error`).
-
-### 5. Replacing Sentinel Values with `null`
-The legacy `selectedOperator: Operator | ''` sentinel has been replaced with `selectedOperator: Operator | null`, establishing clear semantic distinction between an active operation and an idle calculator state.
 
 ---
 
@@ -62,53 +103,64 @@ The legacy `selectedOperator: Operator | ''` sentinel has been replaced with `se
 
 ```text
 01-simple-calculator/
-├── index.html               # Main user interface and history drawer
-├── style.css                # Dark theme, active operator styling, and drawer animations
-├── package.json             # Build, test, lint, and formatting scripts
-├── tsconfig.json            # Strict TypeScript configuration
-├── eslint.config.mjs        # Flat ESLint configuration
+├── index.html                     # Main user interface and history drawer
+├── style.css                      # Calculator theme, animations, and responsive styles
+├── package.json                   # Build, test, lint, and formatting scripts
+├── tsconfig.json                  # Strict TypeScript configuration
+├── eslint.config.mjs              # ESLint configuration
 ├── src/
-│   ├── types.ts             # Domain types, discriminated unions, and interfaces
-│   ├── calculator-logic.ts  # Pure arithmetic methods, assertNever, precision algorithms
-│   ├── calculator-state.ts  # Calculator state machine and memory management
-│   ├── history-service.ts   # Persistent history list manager with type guards
-│   ├── storage.ts           # Safe generic localStorage wrapper with runtime schema guards
-│   ├── ui.ts                # DOM updating, operator highlighting, and drawer controller
-│   └── main.ts              # Entry point and event binding (clicks & keyboard)
+│   ├── types.ts                   # Domain types, discriminated unions, and IStorageDriver
+│   ├── calculator-logic.ts        # Pure arithmetic functions, operator map (OPERATOR_OPERATIONS), and facade
+│   ├── calculator-state.ts        # Encapsulated state machine with constructor DI
+│   ├── history-service.ts         # Calculation history manager with constructor DI
+│   ├── storage.ts                 # StorageService implementing IStorageDriver
+│   ├── ui.ts                      # DOM updating, operator highlighting, and drawer animations
+│   └── main.ts                    # CalculatorApp controller and event listener bindings
 ├── tests/
-│   └── calculator-logic.test.ts  # Vitest unit test suite (30 comprehensive tests)
-└── dist/                    # Compiled ES6 JavaScript modules
+│   └── calculator-logic.test.ts   # Vitest unit test suite (32 comprehensive tests)
+└── dist/                          # Compiled ES6 JavaScript modules
 ```
 
 ---
 
-## 🛠️ Installation & Setup
+## 💾 Storage & Data Persistence
 
-Navigate into the project directory and install the local developer dependencies:
-
-```bash
-cd 01-simple-calculator
-npm install
-```
+- **Primary LocalStorage Keys:**
+  - `ts_calculator_history`: Persists up to 50 recent calculation records `{ id, expression, result, timestamp }`.
+  - `ts_calculator_memory`: Persists active memory accumulator numeric state.
+- **Corrupt Storage Fallback:** `StorageService` wraps all reads in a `try...catch` block. If parsing fails, it logs a warning and returns the safe fallback value (`[]` or `0`).
 
 ---
 
-## 💻 Available Scripts
+## 🚀 Installation & Setup
 
-- **`npm run build`**: Compiles TypeScript files from `src/` to `dist/` using `tsc`.
-- **`npm run watch`**: Starts the TypeScript compiler in watch mode for live recompilation.
-- **`npm run test`**: Executes the 30 unit tests with **Vitest**.
-- **`npm run lint`**: Analyzes TypeScript code for potential issues with **ESLint**.
-- **`npm run format:check`**: Verifies code formatting against **Prettier** rules.
+1. **Install Dependencies:**
+   ```bash
+   npm install
+   ```
 
----
+2. **Build TypeScript:**
+   ```bash
+   npm run build
+   ```
 
-## 🌐 Running Locally
+3. **Run Unit Tests:**
+   ```bash
+   npm run test
+   ```
 
-Because this project uses native browser ES Modules, serve it using an HTTP server:
+4. **Lint Code:**
+   ```bash
+   npm run lint
+   ```
 
-```bash
-npx serve .
-```
+5. **Check Formatting:**
+   ```bash
+   npm run format:check
+   ```
 
-Open `http://localhost:3000/index.html` in your browser.
+6. **Run Locally:**
+   Open `index.html` directly in any modern browser, or serve it with a local HTTP server:
+   ```bash
+   npx serve .
+   ```

@@ -4,13 +4,18 @@ import {
   sortByField,
   filterItems,
   isIncomeTransaction,
-  isExpenseTransaction
+  isExpenseTransaction,
+  calculateTotalExpenses,
+  calculateTotalIncome,
+  calculateNetBalance,
+  formatCurrency
 } from '../src/calculations.js';
 import { ExpenseService } from '../src/expense-service.js';
-import { ExpenseValidator } from '../src/validation.js';
-import { ExpenseImportExport } from '../src/import-export.js';
+import { ExpenseValidator, validateExpense } from '../src/validation.js';
+import { ExpenseImportExport, parseCSVContent } from '../src/import-export.js';
 import { StorageService } from '../src/storage.js';
-import { Expense, CategoryBudget } from '../src/types.js';
+import { Expense, CategoryBudget, IExpenseStorageDriver } from '../src/types.js';
+import { generateInsights } from '../src/insights.js';
 
 // Setup Mock LocalStorage for headless tests
 const createLocalStorageMock = () => {
@@ -380,5 +385,90 @@ describe('Generic Storage Resilience and CSV Parsing', () => {
     expect(parsed.validExpenses).toHaveLength(0);
     expect(parsed.result.skippedCount).toBe(1);
     expect(parsed.result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('supports custom IExpenseStorageDriver injection into ExpenseService (DIP)', () => {
+    const memoryStore = new Map<string, unknown>();
+    const customDriver: IExpenseStorageDriver = {
+      getItem: <T>(key: string, fallback: T): T =>
+        memoryStore.has(key) ? (memoryStore.get(key) as T) : fallback,
+      setItem: <T>(key: string, value: T): boolean => {
+        memoryStore.set(key, value);
+        return true;
+      },
+      removeItem: (key: string): void => {
+        memoryStore.delete(key);
+      },
+      clear: (): void => {
+        memoryStore.clear();
+      }
+    };
+
+    const service = new ExpenseService(customDriver);
+    expect(service.getExpenses()).toHaveLength(0);
+
+    service.addExpense({
+      title: 'Domain Purchase',
+      amount: 1200,
+      category: 'Bills & Utilities',
+      date: '2026-11-16',
+      type: 'expense'
+    });
+
+    expect(service.getExpenses()).toHaveLength(1);
+    expect(memoryStore.has('ts_expense_tracker_items')).toBe(true);
+  });
+
+  it('verifies extracted pure functions directly across calculations, validation, insights, and import-export', () => {
+    const directTransactions: Expense[] = [
+      {
+        id: '1',
+        title: 'Groceries',
+        amount: 1500,
+        category: 'Food & Dining',
+        date: '2026-11-01',
+        type: 'expense'
+      },
+      {
+        id: '2',
+        title: 'Salary Deposit',
+        amount: 50000,
+        category: 'Salary',
+        date: '2026-11-01',
+        type: 'income'
+      }
+    ];
+
+    // Pure calculation functions
+    expect(calculateTotalExpenses(directTransactions)).toBe(1500);
+    expect(calculateTotalIncome(directTransactions)).toBe(50000);
+    expect(calculateNetBalance(directTransactions)).toBe(48500);
+    expect(formatCurrency(100, 'USD')).toMatch(/\$|USD/);
+
+    // Pure validation function
+    const valid = validateExpense({
+      title: 'Valid expense',
+      amount: 50,
+      category: 'Shopping',
+      date: '2026-11-16',
+      type: 'expense'
+    });
+    expect(valid.isValid).toBe(true);
+
+    // Pure insight generator
+    const insights = generateInsights(
+      directTransactions,
+      1500,
+      10000,
+      { 'Food & Dining': 1500 },
+      calculateTotalExpenses
+    );
+    expect(insights.length).toBeGreaterThan(0);
+
+    // Pure CSV parser function
+    const csvParsed = parseCSVContent(
+      'ID,Type,Title,Amount,Category,Date\n1,expense,Lunch,250,Food & Dining,2026-11-16'
+    );
+    expect(csvParsed.validExpenses).toHaveLength(1);
   });
 });

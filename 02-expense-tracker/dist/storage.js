@@ -4,6 +4,7 @@
  * Safely persists transactions, recurring rules, and financial settings in localStorage.
  * Handles missing, malformed, or corrupted data gracefully using generic types `<T>`
  * and runtime validator predicates.
+ * Implements IExpenseStorageDriver for Dependency Injection.
  */
 export class StorageService {
     /**
@@ -69,4 +70,21 @@ export class StorageService {
             }
         }
     }
+    // Instance methods implementing IExpenseStorageDriver for Dependency Injection
+    getItem(key, fallback, validator) {
+        return StorageService.getItem(key, fallback, validator);
+    }
+    setItem(key, value) {
+        return StorageService.setItem(key, value);
+    }
+    removeItem(key) {
+        StorageService.removeItem(key);
+    }
+    clear() {
+        StorageService.clear();
+    }
 }
+/**
+ * Default singleton storage driver for Expense Tracker.
+ */
+export const defaultExpenseStorageDriver = new StorageService();

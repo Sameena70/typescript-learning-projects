@@ -1,7 +1,13 @@
 import { ExpenseService } from './expense-service.js';
-import { ExpenseCalculations } from './calculations.js';
-import { ExpenseValidator } from './validation.js';
-import { ExpenseImportExport } from './import-export.js';
+import { generateSummary } from './calculations.js';
+import { validateExpense } from './validation.js';
+import {
+  exportToJSON,
+  exportToCSV,
+  parseAndValidateImport,
+  parseCSVContent,
+  readTextFile
+} from './import-export.js';
 import { ExpenseUI } from './ui.js';
 import {
   CurrencyCode,
@@ -13,14 +19,19 @@ import {
   SortOrder
 } from './types.js';
 
-class ExpenseApp {
+/**
+ * Main Controller for the Personal Expense Tracker Application.
+ * Coordinates user input, services, and UI rendering.
+ * Supports constructor Dependency Injection for testability and modularity.
+ */
+export class ExpenseApp {
   private service: ExpenseService;
   private ui: ExpenseUI;
   private currentEditingId: string | null = null;
 
-  constructor() {
-    this.service = new ExpenseService();
-    this.ui = new ExpenseUI();
+  constructor(service: ExpenseService = new ExpenseService(), ui: ExpenseUI = new ExpenseUI()) {
+    this.service = service;
+    this.ui = ui;
 
     this.init();
   }
@@ -45,7 +56,7 @@ class ExpenseApp {
     const categoryBudgets = this.service.getCategoryBudgets();
     const settings = this.service.getSettings();
 
-    const summary = ExpenseCalculations.generateSummary(allExpenses, budget, categoryBudgets);
+    const summary = generateSummary(allExpenses, budget, categoryBudgets);
     this.ui.updateDashboard(summary, settings);
 
     this.ui.renderExpensesTable(
@@ -153,7 +164,7 @@ class ExpenseApp {
         isRecurring: recurringInput?.checked || false
       };
 
-      const validation = ExpenseValidator.validateExpense(formData);
+      const validation = validateExpense(formData);
       if (!validation.isValid) {
         const firstError = Object.values(validation.errors)[0];
         this.ui.showToast(firstError || 'Validation failed.', true);
@@ -207,7 +218,7 @@ class ExpenseApp {
         notes: editNotes?.value || ''
       };
 
-      const validation = ExpenseValidator.validateExpense(formData);
+      const validation = validateExpense(formData);
       if (!validation.isValid) {
         const firstError = Object.values(validation.errors)[0];
         this.ui.showToast(firstError || 'Validation failed.', true);
@@ -360,13 +371,13 @@ class ExpenseApp {
 
     // Export JSON
     document.getElementById('exportJSONBtn')?.addEventListener('click', () => {
-      ExpenseImportExport.exportToJSON(this.service.getExpenses());
+      exportToJSON(this.service.getExpenses());
       this.ui.showToast('JSON export downloaded.');
     });
 
     // Export CSV
     document.getElementById('exportCSVBtn')?.addEventListener('click', () => {
-      ExpenseImportExport.exportToCSV(this.service.getExpenses());
+      exportToCSV(this.service.getExpenses());
       this.ui.showToast('CSV export downloaded.');
     });
 
@@ -378,7 +389,7 @@ class ExpenseApp {
 
       try {
         if (file.name.endsWith('.json')) {
-          const { validExpenses, result } = await ExpenseImportExport.parseAndValidateImport(file);
+          const { validExpenses, result } = await parseAndValidateImport(file);
           if (validExpenses.length > 0) {
             validExpenses.forEach((exp) => this.service.addExpense(exp));
             this.refresh();
@@ -387,8 +398,8 @@ class ExpenseApp {
             this.ui.showToast(`No valid records found. ${result.errors.join(' ')}`, true);
           }
         } else if (file.name.endsWith('.csv')) {
-          const text = await ExpenseImportExport.readTextFile(file);
-          const { validExpenses, result } = ExpenseImportExport.parseCSVContent(text);
+          const text = await readTextFile(file);
+          const { validExpenses, result } = parseCSVContent(text);
           if (validExpenses.length > 0) {
             validExpenses.forEach((exp) => this.service.addExpense(exp));
             this.refresh();
@@ -419,6 +430,7 @@ class ExpenseApp {
   }
 }
 
+// Bootstrap application on DOM ready
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     new ExpenseApp();

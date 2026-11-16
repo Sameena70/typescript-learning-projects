@@ -1,4 +1,4 @@
-import { StorageValidator } from './types.js';
+import { StorageValidator, IExpenseStorageDriver } from './types.js';
 
 /**
  * Storage Service for Expense Tracker
@@ -6,8 +6,9 @@ import { StorageValidator } from './types.js';
  * Safely persists transactions, recurring rules, and financial settings in localStorage.
  * Handles missing, malformed, or corrupted data gracefully using generic types `<T>`
  * and runtime validator predicates.
+ * Implements IExpenseStorageDriver for Dependency Injection.
  */
-export class StorageService {
+export class StorageService implements IExpenseStorageDriver {
   /**
    * Safely retrieves and parses JSON items from localStorage with type-safe validation.
    */
@@ -70,4 +71,26 @@ export class StorageService {
       }
     }
   }
+
+  // Instance methods implementing IExpenseStorageDriver for Dependency Injection
+  public getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T {
+    return StorageService.getItem(key, fallback, validator);
+  }
+
+  public setItem<T>(key: string, value: T): boolean {
+    return StorageService.setItem(key, value);
+  }
+
+  public removeItem(key: string): void {
+    StorageService.removeItem(key);
+  }
+
+  public clear(): void {
+    StorageService.clear();
+  }
 }
+
+/**
+ * Default singleton storage driver for Expense Tracker.
+ */
+export const defaultExpenseStorageDriver: IExpenseStorageDriver = new StorageService();

@@ -1,11 +1,11 @@
-import { StorageService } from './storage.js';
+import { defaultStorageDriver } from './storage.js';
 const STORAGE_KEY = 'ts_calculator_history';
 const MAX_HISTORY = 50;
 /**
  * Type guard for CalculationRecord objects loaded from storage.
  * Uses typeof and the 'in' operator to safely inspect arbitrary unknown JSON inputs.
  */
-function isValidRecord(item) {
+export function isValidCalculationRecord(item) {
     if (typeof item !== 'object' || item === null) {
         return false;
     }
@@ -20,19 +20,24 @@ function isValidRecord(item) {
     return false;
 }
 /**
- * Service to manage persistent calculation history using localStorage and JSON.
+ * Service to manage persistent calculation history using an injected storage driver.
  */
 export class HistoryService {
-    constructor() {
+    /**
+     * Accepts an optional IStorageDriver to support Dependency Injection.
+     * Defaults to defaultStorageDriver if not provided.
+     */
+    constructor(storage = defaultStorageDriver) {
         this.history = [];
+        this.storage = storage;
         this.loadHistory();
     }
     /**
-     * Loads history from localStorage with strict runtime filtering and generic type guards.
+     * Loads history from storage with runtime filtering and generic type guards.
      */
     loadHistory() {
-        const records = StorageService.getItem(STORAGE_KEY, [], (val) => Array.isArray(val));
-        this.history = records.filter(isValidRecord);
+        const records = this.storage.getItem(STORAGE_KEY, [], (val) => Array.isArray(val));
+        this.history = records.filter(isValidCalculationRecord);
         return [...this.history];
     }
     /**
@@ -49,11 +54,11 @@ export class HistoryService {
         if (this.history.length > MAX_HISTORY) {
             this.history = this.history.slice(0, MAX_HISTORY);
         }
-        StorageService.setItem(STORAGE_KEY, this.history);
+        this.storage.setItem(STORAGE_KEY, this.history);
         return record;
     }
     /**
-     * Retrieves current history list.
+     * Retrieves a copy of the current history list (defensive copy).
      */
     getHistory() {
         return [...this.history];
@@ -63,6 +68,6 @@ export class HistoryService {
      */
     clearHistory() {
         this.history = [];
-        StorageService.removeItem(STORAGE_KEY);
+        this.storage.removeItem(STORAGE_KEY);
     }
 }

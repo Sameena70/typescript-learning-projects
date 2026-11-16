@@ -8,18 +8,19 @@ import {
   CurrencyCode,
   CategoryBudget,
   PaymentMethod,
-  TransactionStatus
+  TransactionStatus,
+  IExpenseStorageDriver
 } from './types.js';
-import { StorageService } from './storage.js';
-import { ExpenseValidator } from './validation.js';
-import { sortByField, filterItems } from './calculations.js';
+import { defaultExpenseStorageDriver } from './storage.js';
+import { isValidExpenseObject } from './validation.js';
+import { sortByField, filterItems } from './utils.js';
 
-const STORAGE_EXPENSES_KEY = 'ts_expense_tracker_items';
-const STORAGE_BUDGET_KEY = 'ts_expense_tracker_budget';
-const STORAGE_RECURRING_KEY = 'ts_expense_tracker_recurring';
-const STORAGE_SETTINGS_KEY = 'ts_expense_tracker_settings';
+export const STORAGE_EXPENSES_KEY = 'ts_expense_tracker_items';
+export const STORAGE_BUDGET_KEY = 'ts_expense_tracker_budget';
+export const STORAGE_RECURRING_KEY = 'ts_expense_tracker_recurring';
+export const STORAGE_SETTINGS_KEY = 'ts_expense_tracker_settings';
 
-const DEFAULT_SETTINGS: UserFinanceSettings = {
+export const DEFAULT_SETTINGS: UserFinanceSettings = {
   currency: 'INR',
   monthlyBudget: 25000,
   categoryBudgets: {
@@ -35,23 +36,26 @@ const DEFAULT_SETTINGS: UserFinanceSettings = {
 
 /**
  * Service managing all transaction CRUD, recurring rules, budgets, and settings.
+ * Supports Dependency Injection of IExpenseStorageDriver.
  */
 export class ExpenseService {
   private transactions: Expense[] = [];
   private recurringRules: RecurringRule[] = [];
   private settings: UserFinanceSettings = { ...DEFAULT_SETTINGS };
+  private storage: IExpenseStorageDriver;
 
-  constructor() {
+  constructor(storage: IExpenseStorageDriver = defaultExpenseStorageDriver) {
+    this.storage = storage;
     this.loadState();
     this.processRecurringTransactions();
   }
 
   private loadState(): void {
     // 1. Load transactions with backward-compatibility for legacy expenses (defaulting type to 'expense')
-    const rawTransactions = StorageService.getItem<unknown[]>(STORAGE_EXPENSES_KEY, []);
+    const rawTransactions = this.storage.getItem<unknown[]>(STORAGE_EXPENSES_KEY, []);
     this.transactions = Array.isArray(rawTransactions)
       ? rawTransactions
-          .filter((item): item is Expense => ExpenseValidator.isValidExpenseObject(item))
+          .filter((item): item is Expense => isValidExpenseObject(item))
           .map((item) => ({
             ...item,
             type: item.type || 'expense'
@@ -59,15 +63,15 @@ export class ExpenseService {
       : [];
 
     // 2. Load recurring rules
-    const rawRecurring = StorageService.getItem<RecurringRule[]>(STORAGE_RECURRING_KEY, []);
+    const rawRecurring = this.storage.getItem<RecurringRule[]>(STORAGE_RECURRING_KEY, []);
     this.recurringRules = Array.isArray(rawRecurring) ? rawRecurring : [];
 
     // 3. Load user settings
-    const savedSettings = StorageService.getItem<Partial<UserFinanceSettings>>(
+    const savedSettings = this.storage.getItem<Partial<UserFinanceSettings>>(
       STORAGE_SETTINGS_KEY,
       {}
     );
-    const legacyBudget = StorageService.getItem<number>(STORAGE_BUDGET_KEY, 25000);
+    const legacyBudget = this.storage.getItem<number>(STORAGE_BUDGET_KEY, 25000);
 
     this.settings = {
       currency: savedSettings.currency || 'INR',
@@ -111,7 +115,7 @@ export class ExpenseService {
     }
     this.settings.monthlyBudget = newBudget;
     this.saveSettings();
-    StorageService.setItem(STORAGE_BUDGET_KEY, newBudget);
+    this.storage.setItem(STORAGE_BUDGET_KEY, newBudget);
   }
 
   public getCategoryBudgets(): CategoryBudget[] {
@@ -334,14 +338,14 @@ export class ExpenseService {
   }
 
   private save(): void {
-    StorageService.setItem(STORAGE_EXPENSES_KEY, this.transactions);
+    this.storage.setItem(STORAGE_EXPENSES_KEY, this.transactions);
   }
 
   private saveRecurring(): void {
-    StorageService.setItem(STORAGE_RECURRING_KEY, this.recurringRules);
+    this.storage.setItem(STORAGE_RECURRING_KEY, this.recurringRules);
   }
 
   private saveSettings(): void {
-    StorageService.setItem(STORAGE_SETTINGS_KEY, this.settings);
+    this.storage.setItem(STORAGE_SETTINGS_KEY, this.settings);
   }
 }

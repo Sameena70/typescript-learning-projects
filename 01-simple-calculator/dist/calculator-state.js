@@ -1,12 +1,25 @@
-import { CalculatorLogic } from './calculator-logic.js';
-import { StorageService } from './storage.js';
+import { compute, formatOperator, percentage, roundToPrecision, toggleSign } from './calculator-logic.js';
+import { defaultStorageDriver } from './storage.js';
 const MEMORY_STORAGE_KEY = 'ts_calculator_memory';
+const MAX_DIGIT_LENGTH = 15;
 /**
- * Manages the state machine and arithmetic flow of the calculator.
+ * Type guard for validating retrieved memory numeric value.
+ */
+function isMemoryNumber(val) {
+    return typeof val === 'number' && !isNaN(val) && isFinite(val);
+}
+/**
+ * Manages the state machine, input validation, and arithmetic flow of the calculator.
+ * Supports Dependency Injection for memory persistence while fully encapsulating state.
  */
 export class CalculatorStateModel {
-    constructor() {
-        const savedMemory = StorageService.getItem(MEMORY_STORAGE_KEY, 0, (val) => typeof val === 'number' && !isNaN(val) && isFinite(val));
+    /**
+     * Accepts an optional IStorageDriver to support Dependency Injection.
+     * Defaults to defaultStorageDriver.
+     */
+    constructor(storage = defaultStorageDriver) {
+        this.storage = storage;
+        const savedMemory = this.storage.getItem(MEMORY_STORAGE_KEY, 0, isMemoryNumber);
         this.state = {
             currentInput: '0',
             previousInput: '',
@@ -17,6 +30,9 @@ export class CalculatorStateModel {
             isError: false
         };
     }
+    /**
+     * Returns an immutable read-only snapshot of current calculator state.
+     */
     getState() {
         return Object.assign({}, this.state);
     }
@@ -40,7 +56,7 @@ export class CalculatorStateModel {
             }
             else {
                 // Prevent exceeding sensible display length (15 digits)
-                if (this.state.currentInput.replace(/[-.]/g, '').length >= 15) {
+                if (this.state.currentInput.replace(/[-.]/g, '').length >= MAX_DIGIT_LENGTH) {
                     return;
                 }
                 this.state.currentInput += digit;
@@ -60,7 +76,7 @@ export class CalculatorStateModel {
     }
     toggleSign() {
         this.dismissError();
-        this.state.currentInput = CalculatorLogic.toggleSign(this.state.currentInput);
+        this.state.currentInput = toggleSign(this.state.currentInput);
     }
     deleteLast() {
         if (this.state.isError) {
@@ -93,8 +109,8 @@ export class CalculatorStateModel {
         this.dismissError();
         const value = parseFloat(this.state.currentInput);
         if (!isNaN(value)) {
-            const result = CalculatorLogic.percentage(value);
-            this.state.currentInput = CalculatorLogic.roundToPrecision(result).toString();
+            const result = percentage(value);
+            this.state.currentInput = roundToPrecision(result).toString();
             this.state.shouldResetDisplay = true;
         }
     }
@@ -140,10 +156,10 @@ export class CalculatorStateModel {
             this.state.isError = true;
             return { status: 'error', error: 'Invalid Input' };
         }
-        const formattedOp = CalculatorLogic.formatOperator(op);
+        const formattedOp = formatOperator(op);
         const expression = `${first} ${formattedOp} ${second}`;
         try {
-            const result = CalculatorLogic.compute(first, second, op);
+            const result = compute(first, second, op);
             const resultStr = result.toString();
             this.state.currentInput = resultStr;
             this.state.previousInput = '';
@@ -167,7 +183,7 @@ export class CalculatorStateModel {
     // Memory functions
     memoryClear() {
         this.state.memoryValue = 0;
-        StorageService.setItem(MEMORY_STORAGE_KEY, 0);
+        this.storage.setItem(MEMORY_STORAGE_KEY, 0);
     }
     memoryRecall() {
         this.dismissError();
@@ -178,8 +194,8 @@ export class CalculatorStateModel {
         this.dismissError();
         const current = parseFloat(this.state.currentInput);
         if (!isNaN(current)) {
-            this.state.memoryValue = CalculatorLogic.roundToPrecision(this.state.memoryValue + current);
-            StorageService.setItem(MEMORY_STORAGE_KEY, this.state.memoryValue);
+            this.state.memoryValue = roundToPrecision(this.state.memoryValue + current);
+            this.storage.setItem(MEMORY_STORAGE_KEY, this.state.memoryValue);
             this.state.shouldResetDisplay = true;
         }
     }
@@ -187,8 +203,8 @@ export class CalculatorStateModel {
         this.dismissError();
         const current = parseFloat(this.state.currentInput);
         if (!isNaN(current)) {
-            this.state.memoryValue = CalculatorLogic.roundToPrecision(this.state.memoryValue - current);
-            StorageService.setItem(MEMORY_STORAGE_KEY, this.state.memoryValue);
+            this.state.memoryValue = roundToPrecision(this.state.memoryValue - current);
+            this.storage.setItem(MEMORY_STORAGE_KEY, this.state.memoryValue);
             this.state.shouldResetDisplay = true;
         }
     }

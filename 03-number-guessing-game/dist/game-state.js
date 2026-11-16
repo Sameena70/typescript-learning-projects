@@ -1,6 +1,7 @@
-import { GameLogic } from './game-logic.js';
+import { GameConfigManager } from './game-config.js';
+import { generateSecret, evaluateGuess } from './game-logic.js';
 export class GameStateModel {
-    constructor(configManager) {
+    constructor(configManager = new GameConfigManager()) {
         this.currentDifficulty = 'easy';
         this.secret = 0;
         this.remainingAttempts = 7;
@@ -26,7 +27,7 @@ export class GameStateModel {
         this.guesses = [];
         this.isGameOver = false;
         this.hasWon = false;
-        this.secret = GameLogic.generateSecret(config.min, config.max);
+        this.secret = generateSecret(config.min, config.max);
     }
     /**
      * Retrieves the current game play state as a discriminated union.
@@ -73,7 +74,7 @@ export class GameStateModel {
         if (guess < this.minRange || guess > this.maxRange) {
             throw new Error(`Guess must be between ${this.minRange} and ${this.maxRange}.`);
         }
-        const result = GameLogic.evaluateGuess(guess, this.secret, this.remainingAttempts, this.guesses, this.maxAttempts);
+        const result = evaluateGuess(guess, this.secret, this.remainingAttempts, this.guesses, this.maxAttempts);
         if (result.status !== 'duplicate') {
             this.guesses.push(guess);
             this.remainingAttempts = result.attemptsLeft;
@@ -94,7 +95,7 @@ export class GameStateModel {
             guesses: [...this.guesses]
         };
     }
-    // Getters
+    // Encapsulated state getters
     getDifficulty() {
         return this.currentDifficulty;
     }

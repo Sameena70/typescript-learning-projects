@@ -1,10 +1,11 @@
-import { StorageValidator } from './types.js';
+import { StorageValidator, IGameStorageDriver } from './types.js';
 
 /**
  * Storage utility for game statistics and history
  * with runtime validation and schema protection using generics `<T>`.
+ * Implements IGameStorageDriver for Dependency Injection.
  */
-export class GameStorage {
+export class GameStorage implements IGameStorageDriver {
   public static getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T {
     try {
       const data = localStorage.getItem(key);
@@ -53,4 +54,26 @@ export class GameStorage {
       }
     }
   }
+
+  // Instance methods implementing IGameStorageDriver
+  public getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T {
+    return GameStorage.getItem(key, fallback, validator);
+  }
+
+  public setItem<T>(key: string, value: T): boolean {
+    return GameStorage.setItem(key, value);
+  }
+
+  public removeItem(key: string): void {
+    GameStorage.removeItem(key);
+  }
+
+  public clear(): void {
+    GameStorage.clear();
+  }
 }
+
+/**
+ * Default singleton storage driver for the Number Guessing Game.
+ */
+export const defaultGameStorageDriver: IGameStorageDriver = new GameStorage();

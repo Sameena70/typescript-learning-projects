@@ -2,12 +2,17 @@ import { GameConfigManager } from './game-config.js';
 import { GameStateModel } from './game-state.js';
 import { StatisticsManager } from './statistics.js';
 import { GameUI } from './ui.js';
-class NumberGuessingGameApp {
-    constructor() {
-        this.configManager = new GameConfigManager();
-        this.stateModel = new GameStateModel(this.configManager);
-        this.statsManager = new StatisticsManager();
-        this.ui = new GameUI();
+/**
+ * Application Controller for Number Guessing Game.
+ * Orchestrates event handling, state updates, persistence, and UI synchronization.
+ * Supports constructor Dependency Injection for testability and modularity.
+ */
+export class NumberGuessingGameApp {
+    constructor(configManager = new GameConfigManager(), stateModel = new GameStateModel(configManager), statsManager = new StatisticsManager(), ui = new GameUI()) {
+        this.configManager = configManager;
+        this.stateModel = stateModel;
+        this.statsManager = statsManager;
+        this.ui = ui;
         this.init();
     }
     init() {

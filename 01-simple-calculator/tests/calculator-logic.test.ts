@@ -1,8 +1,21 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { CalculatorLogic, assertNever } from '../src/calculator-logic.js';
+import {
+  CalculatorLogic,
+  assertNever,
+  add,
+  subtract,
+  multiply,
+  divide,
+  modulo,
+  compute,
+  formatOperator,
+  OPERATOR_OPERATIONS,
+  OPERATOR_SYMBOLS
+} from '../src/calculator-logic.js';
 import { CalculatorStateModel } from '../src/calculator-state.js';
 import { HistoryService } from '../src/history-service.js';
 import { StorageService } from '../src/storage.js';
+import { IStorageDriver } from '../src/types.js';
 
 // Mock localStorage for Node test environment
 const storageMock: Record<string, string> = {};
@@ -324,5 +337,46 @@ describe('HistoryService and Storage Resilience', () => {
       (val: unknown): val is number => typeof val === 'number'
     );
     expect(result).toBe(0);
+  });
+
+  it('supports custom IStorageDriver injection into HistoryService and CalculatorStateModel (DIP)', () => {
+    const memoryStore = new Map<string, unknown>();
+    const customDriver: IStorageDriver = {
+      getItem: <T>(key: string, fallback: T): T =>
+        memoryStore.has(key) ? (memoryStore.get(key) as T) : fallback,
+      setItem: <T>(key: string, value: T): boolean => {
+        memoryStore.set(key, value);
+        return true;
+      },
+      removeItem: (key: string): void => {
+        memoryStore.delete(key);
+      },
+      clear: (): void => {
+        memoryStore.clear();
+      }
+    };
+
+    const historyService = new HistoryService(customDriver);
+    historyService.addRecord('3 + 3 =', '6');
+    expect(historyService.getHistory()).toHaveLength(1);
+    expect(memoryStore.has('ts_calculator_history')).toBe(true);
+
+    const stateModel = new CalculatorStateModel(customDriver);
+    stateModel.appendDigit('7');
+    stateModel.memoryAdd();
+    expect(stateModel.getState().memoryValue).toBe(7);
+    expect(memoryStore.get('ts_calculator_memory')).toBe(7);
+  });
+
+  it('verifies pure named arithmetic functions and operator strategy maps directly', () => {
+    expect(add(12, 8)).toBe(20);
+    expect(subtract(20, 5)).toBe(15);
+    expect(multiply(4, 5)).toBe(20);
+    expect(divide(30, 6)).toBe(5);
+    expect(modulo(17, 5)).toBe(2);
+    expect(compute(9, 3, '/')).toBe(3);
+    expect(formatOperator('*')).toBe('×');
+    expect(OPERATOR_OPERATIONS['+'](10, 2)).toBe(12);
+    expect(OPERATOR_SYMBOLS['-']).toBe('−');
   });
 });

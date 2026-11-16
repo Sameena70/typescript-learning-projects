@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { GameLogic, assertNever } from '../src/game-logic.js';
+import { GameLogic, assertNever, generateSecret, evaluateGuess } from '../src/game-logic.js';
 import { GameConfigManager } from '../src/game-config.js';
 import { GameStateModel } from '../src/game-state.js';
 import {
@@ -9,7 +9,7 @@ import {
   isValidGameRecord
 } from '../src/statistics.js';
 import { GameStorage } from '../src/storage.js';
-import { GameRecord } from '../src/types.js';
+import { GameRecord, IGameStorageDriver } from '../src/types.js';
 
 // Mock localStorage for headless Node test environment
 const storageMock: Record<string, string> = {};
@@ -308,5 +308,59 @@ describe('StatisticsManager (Stats Calculation, Generics & Storage Resilience)',
 
     GameStorage.removeItem('test_key');
     expect(GameStorage.getItem('test_key', null)).toBeNull();
+  });
+
+  it('supports custom IGameStorageDriver injection into StatisticsManager (DIP)', () => {
+    const inMemoryMap = new Map<string, unknown>();
+    const customDriver: IGameStorageDriver = {
+      getItem: <T>(key: string, fallback: T): T =>
+        inMemoryMap.has(key) ? (inMemoryMap.get(key) as T) : fallback,
+      setItem: <T>(key: string, value: T): boolean => {
+        inMemoryMap.set(key, value);
+        return true;
+      },
+      removeItem: (key: string): void => {
+        inMemoryMap.delete(key);
+      },
+      clear: (): void => {
+        inMemoryMap.clear();
+      }
+    };
+
+    const manager = new StatisticsManager(customDriver);
+    expect(manager.getStatistics().totalGames).toBe(0);
+
+    const record: GameRecord = {
+      id: 'test-dip-1',
+      difficulty: 'easy',
+      targetNumber: 42,
+      attemptsUsed: 3,
+      maxAttempts: 7,
+      won: true,
+      timestamp: Date.now(),
+      guesses: [10, 30, 42]
+    };
+
+    manager.recordGame(record);
+    expect(manager.getStatistics().totalGames).toBe(1);
+    expect(manager.getStatistics().gamesWon).toBe(1);
+    expect(manager.getStatistics().bestScore).toBe(3);
+    expect(inMemoryMap.has('ts_game_lifetime_stats')).toBe(true);
+    expect(inMemoryMap.has('ts_game_records_history')).toBe(true);
+  });
+
+  it('directly verifies pure functions generateSecret and evaluateGuess', () => {
+    const secret = generateSecret(1, 10);
+    expect(secret).toBeGreaterThanOrEqual(1);
+    expect(secret).toBeLessThanOrEqual(10);
+
+    const winOutcome = evaluateGuess(50, 50, 4, []);
+    expect(winOutcome.status).toBe('won');
+    if (winOutcome.status === 'won') {
+      expect(winOutcome.attemptsUsed).toBe(1);
+    }
+
+    const duplicateOutcome = evaluateGuess(20, 50, 4, [20]);
+    expect(duplicateOutcome.status).toBe('duplicate');
   });
 });

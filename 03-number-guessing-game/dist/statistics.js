@@ -1,26 +1,17 @@
-import { GameStorage } from './storage.js';
+import { defaultGameStorageDriver } from './storage.js';
+import { filterRecordsByField, aggregateNumericField } from './utils.js';
+// Re-export utility functions for backward compatibility with existing tests/consumers
+export { filterRecordsByField, aggregateNumericField };
 const STATS_KEY = 'ts_game_lifetime_stats';
 const HISTORY_KEY = 'ts_game_records_history';
 const MAX_HISTORY = 40;
-const DEFAULT_STATS = {
+export const DEFAULT_STATS = {
     totalGames: 0,
     gamesWon: 0,
     gamesLost: 0,
     bestScore: null,
     totalAttemptsUsed: 0
 };
-/**
- * Generic filtering helper preserving type information with property constraint.
- */
-export function filterRecordsByField(items, key, value) {
-    return items.filter((item) => item[key] === value);
-}
-/**
- * Generic aggregation helper for calculating numeric sums across collections.
- */
-export function aggregateNumericField(items, extractor) {
-    return items.reduce((sum, item) => sum + extractor(item), 0);
-}
 /**
  * Type guard for GameRecord objects loaded from storage.
  * Uses `in` operator and `typeof` checks to validate schema without blind casting.
@@ -48,8 +39,13 @@ export function isValidGameRecord(item) {
     }
     return false;
 }
+/**
+ * Manages persistent lifetime game statistics and history records.
+ * Supports Dependency Injection of IGameStorageDriver (defaults to defaultGameStorageDriver).
+ */
 export class StatisticsManager {
-    constructor() {
+    constructor(storage = defaultGameStorageDriver) {
+        this.storage = storage;
         this.stats = this.loadStatistics();
         this.history = this.loadHistory();
     }
@@ -57,7 +53,7 @@ export class StatisticsManager {
      * Safely loads and sanitizes lifetime statistics with schema validation.
      */
     loadStatistics() {
-        const raw = GameStorage.getItem(STATS_KEY, DEFAULT_STATS);
+        const raw = this.storage.getItem(STATS_KEY, DEFAULT_STATS);
         if (typeof raw !== 'object' || raw === null) {
             return Object.assign({}, DEFAULT_STATS);
         }
@@ -78,7 +74,7 @@ export class StatisticsManager {
         };
     }
     loadHistory() {
-        const saved = GameStorage.getItem(HISTORY_KEY, [], (val) => Array.isArray(val));
+        const saved = this.storage.getItem(HISTORY_KEY, [], (val) => Array.isArray(val));
         if (Array.isArray(saved)) {
             return saved.filter(isValidGameRecord);
         }
@@ -129,15 +125,15 @@ export class StatisticsManager {
     }
     clearHistory() {
         this.history = [];
-        GameStorage.removeItem(HISTORY_KEY);
+        this.storage.removeItem(HISTORY_KEY);
     }
     resetStatistics() {
         this.stats = Object.assign({}, DEFAULT_STATS);
         this.clearHistory();
-        GameStorage.removeItem(STATS_KEY);
+        this.storage.removeItem(STATS_KEY);
     }
     save() {
-        GameStorage.setItem(STATS_KEY, this.stats);
-        GameStorage.setItem(HISTORY_KEY, this.history);
+        this.storage.setItem(STATS_KEY, this.stats);
+        this.storage.setItem(HISTORY_KEY, this.history);
     }
 }

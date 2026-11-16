@@ -3,11 +3,13 @@
  *
  * Safe persistence, schema migration, and retrieval of contacts in browser localStorage.
  * Handles corrupted, incomplete, and legacy stored data using type narrowing and generics.
+ * Implements IContactRepository and IContactStorageDriver for Dependency Injection.
  */
 import { VALID_CATEGORIES, isContactCategory } from './generic-utils.js';
-export { VALID_CATEGORIES };
-const STORAGE_KEY = 'ts_contact_manager_contacts_v1';
-const LEGACY_STORAGE_KEY = 'ts_contact_manager_contacts';
+import { SEED_CONTACTS } from './data/seed-contacts.js';
+export { VALID_CATEGORIES, SEED_CONTACTS };
+export const STORAGE_KEY = 'ts_contact_manager_contacts_v1';
+export const LEGACY_STORAGE_KEY = 'ts_contact_manager_contacts';
 /**
  * Type guard verifying if an arbitrary unknown value satisfies the Contact structure.
  * Uses `in` operator and `typeof` checks to avoid blind type casts.
@@ -38,91 +40,60 @@ export function isContact(value) {
     return false;
 }
 /**
- * Seed contacts loaded when the user has no existing saved contacts.
+ * Default browser LocalStorage driver implementation with defensive try-catch guards.
  */
-const SEED_CONTACTS = [
-    {
-        id: 'seed-1',
-        fullName: 'Priya Sharma',
-        phoneNumber: '+91 98765 43210',
-        email: 'priya.sharma@techcorp.in',
-        age: 29,
-        company: 'TechCorp Innovations',
-        jobTitle: 'Lead Frontend Engineer',
-        address: 'Koramangala, Bengaluru, Karnataka',
-        category: 'Work',
-        status: 'active',
-        isFavourite: true,
-        tags: ['Tech', 'Lead'],
-        notes: 'Lead contact for TypeScript UI components.',
-        reminderDate: '2026-11-20',
-        createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-        id: 'seed-2',
-        fullName: 'Aarav Patel',
-        phoneNumber: '+91 91234 56789',
-        email: 'aarav.p@cloudsystems.com',
-        age: 34,
-        company: 'Cloud Systems India',
-        jobTitle: 'Senior DevOps Architect',
-        address: 'Hinjawadi Phase 2, Pune, Maharashtra',
-        category: 'Clients',
-        status: 'active',
-        isFavourite: false,
-        tags: ['Cloud', 'AWS'],
-        notes: 'Consulting client for AWS infrastructure migration.',
-        createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-        id: 'seed-3',
-        fullName: 'Rohan Verma',
-        phoneNumber: '+91 99887 76655',
-        email: 'rohan.verma@familyconnect.net',
-        age: 26,
-        company: 'Verma Enterprises',
-        jobTitle: 'Associate Manager',
-        address: 'Vasant Vihar, New Delhi',
-        category: 'Family',
-        status: 'active',
-        isFavourite: true,
-        tags: ['Family'],
-        notes: 'Cousin - planning family reunion.',
-        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-        id: 'seed-4',
-        fullName: 'Sneha Mukherjee',
-        phoneNumber: '+91 97654 32109',
-        email: 'sneha.design@freelance.org',
-        age: 31,
-        company: 'Mukherjee Design Studio',
-        jobTitle: 'UI/UX Consultant',
-        address: 'Salt Lake Sector V, Kolkata, West Bengal',
-        category: 'Business',
-        status: 'inactive',
-        isFavourite: false,
-        tags: ['Design', 'Contractor'],
-        notes: 'Contract paused until next fiscal quarter.',
-        createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-        id: 'seed-5',
-        fullName: 'Vikram Malhotra',
-        phoneNumber: '+91 98450 12345',
-        email: 'vikram.m@friendsnetwork.io',
-        age: 28,
-        company: 'Apex Media',
-        jobTitle: 'Creative Director',
-        address: 'Bandra West, Mumbai, Maharashtra',
-        category: 'Friends',
-        status: 'active',
-        isFavourite: true,
-        tags: ['College', 'Sports'],
-        notes: 'College roommate and weekend badminton partner.',
-        createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+export class LocalStorageDriver {
+    getItem(key) {
+        try {
+            if (typeof localStorage === 'undefined')
+                return null;
+            return localStorage.getItem(key);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.warn(`[LocalStorageDriver] Error reading key "${key}":`, error.message);
+            }
+            return null;
+        }
     }
-];
+    setItem(key, value) {
+        try {
+            if (typeof localStorage === 'undefined')
+                return;
+            localStorage.setItem(key, value);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error(`[LocalStorageDriver] Error writing key "${key}":`, error.message);
+            }
+        }
+    }
+    removeItem(key) {
+        try {
+            if (typeof localStorage === 'undefined')
+                return;
+            localStorage.removeItem(key);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error(`[LocalStorageDriver] Error removing key "${key}":`, error.message);
+            }
+        }
+    }
+    clear() {
+        try {
+            if (typeof localStorage === 'undefined')
+                return;
+            localStorage.clear();
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('[LocalStorageDriver] Error clearing storage:', error.message);
+            }
+        }
+    }
+}
+export const defaultContactStorageDriver = new LocalStorageDriver();
 /**
  * Sanitizes and migrates a raw or legacy contact record to ensure complete schema compliance.
  */
@@ -212,75 +183,88 @@ export function sanitizeContactRecord(raw, index = 0) {
     };
 }
 /**
- * Loads contacts from localStorage with automatic migration and deduplication.
+ * ContactRepository implementing IContactRepository.
+ * Interacts with an IContactStorageDriver for persistence, schema migrations, and deduplication.
+ */
+export class ContactRepository {
+    constructor(driver = defaultContactStorageDriver) {
+        this.driver = driver;
+    }
+    loadContacts() {
+        try {
+            let rawData = this.driver.getItem(STORAGE_KEY);
+            // Migration: check legacy storage key if primary is empty
+            if (!rawData) {
+                const legacyData = this.driver.getItem(LEGACY_STORAGE_KEY);
+                if (legacyData) {
+                    rawData = legacyData;
+                    this.driver.setItem(STORAGE_KEY, legacyData);
+                }
+            }
+            if (!rawData) {
+                this.saveContacts(SEED_CONTACTS);
+                return SEED_CONTACTS.map((c) => (Object.assign({}, c)));
+            }
+            const parsed = JSON.parse(rawData);
+            if (!Array.isArray(parsed)) {
+                console.warn('Storage data is not an array, falling back to seed contacts.');
+                return SEED_CONTACTS.map((c) => (Object.assign({}, c)));
+            }
+            const seenIds = new Set();
+            const validContacts = [];
+            parsed.forEach((item, index) => {
+                const sanitized = sanitizeContactRecord(item, index);
+                if (sanitized) {
+                    if (seenIds.has(sanitized.id)) {
+                        sanitized.id = `ct_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
+                    }
+                    seenIds.add(sanitized.id);
+                    validContacts.push(sanitized);
+                }
+            });
+            return validContacts.length > 0 ? validContacts : SEED_CONTACTS.map((c) => (Object.assign({}, c)));
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('Failed to load contacts from storage driver:', error.message);
+            }
+            return SEED_CONTACTS.map((c) => (Object.assign({}, c)));
+        }
+    }
+    saveContacts(contacts) {
+        try {
+            const serialized = JSON.stringify(contacts);
+            this.driver.setItem(STORAGE_KEY, serialized);
+            return true;
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('Failed to save contacts to storage driver:', error.message);
+            }
+            return false;
+        }
+    }
+    clearContacts() {
+        try {
+            this.driver.removeItem(STORAGE_KEY);
+        }
+        catch (error) {
+            if (error instanceof Error) {
+                console.error('Failed to clear contacts from storage driver:', error.message);
+            }
+        }
+    }
+}
+export const defaultContactRepository = new ContactRepository();
+/**
+ * Backward compatibility facade functions.
  */
 export function loadSavedContacts() {
-    try {
-        let rawData = localStorage.getItem(STORAGE_KEY);
-        // Migration: check legacy storage key if primary is empty
-        if (!rawData) {
-            const legacyData = localStorage.getItem(LEGACY_STORAGE_KEY);
-            if (legacyData) {
-                rawData = legacyData;
-                localStorage.setItem(STORAGE_KEY, legacyData);
-            }
-        }
-        if (!rawData) {
-            saveContactsToStorage(SEED_CONTACTS);
-            return [...SEED_CONTACTS];
-        }
-        const parsed = JSON.parse(rawData);
-        if (!Array.isArray(parsed)) {
-            console.warn('Storage data is not an array, falling back to seed contacts.');
-            return [...SEED_CONTACTS];
-        }
-        const seenIds = new Set();
-        const validContacts = [];
-        parsed.forEach((item, index) => {
-            const sanitized = sanitizeContactRecord(item, index);
-            if (sanitized) {
-                if (seenIds.has(sanitized.id)) {
-                    sanitized.id = `ct_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
-                }
-                seenIds.add(sanitized.id);
-                validContacts.push(sanitized);
-            }
-        });
-        return validContacts.length > 0 ? validContacts : [...SEED_CONTACTS];
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error('Failed to load contacts from localStorage:', error.message);
-        }
-        return [...SEED_CONTACTS];
-    }
+    return defaultContactRepository.loadContacts();
 }
-/**
- * Saves contacts to localStorage safely.
- */
 export function saveContactsToStorage(contacts) {
-    try {
-        const serialized = JSON.stringify(contacts);
-        localStorage.setItem(STORAGE_KEY, serialized);
-        return true;
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error('Failed to save contacts to localStorage:', error.message);
-        }
-        return false;
-    }
+    return defaultContactRepository.saveContacts(contacts);
 }
-/**
- * Clears stored contacts.
- */
 export function clearStoredContacts() {
-    try {
-        localStorage.removeItem(STORAGE_KEY);
-    }
-    catch (error) {
-        if (error instanceof Error) {
-            console.error('Failed to clear contacts from localStorage:', error.message);
-        }
-    }
+    defaultContactRepository.clearContacts();
 }

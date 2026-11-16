@@ -1,5 +1,5 @@
-import { CalculationRecord } from './types.js';
-import { StorageService } from './storage.js';
+import { CalculationRecord, IStorageDriver } from './types.js';
+import { defaultStorageDriver } from './storage.js';
 
 const STORAGE_KEY = 'ts_calculator_history';
 const MAX_HISTORY = 50;
@@ -8,7 +8,7 @@ const MAX_HISTORY = 50;
  * Type guard for CalculationRecord objects loaded from storage.
  * Uses typeof and the 'in' operator to safely inspect arbitrary unknown JSON inputs.
  */
-function isValidRecord(item: unknown): item is CalculationRecord {
+export function isValidCalculationRecord(item: unknown): item is CalculationRecord {
   if (typeof item !== 'object' || item === null) {
     return false;
   }
@@ -33,26 +33,32 @@ function isValidRecord(item: unknown): item is CalculationRecord {
 }
 
 /**
- * Service to manage persistent calculation history using localStorage and JSON.
+ * Service to manage persistent calculation history using an injected storage driver.
  */
 export class HistoryService {
   private history: CalculationRecord[] = [];
+  private storage: IStorageDriver;
 
-  constructor() {
+  /**
+   * Accepts an optional IStorageDriver to support Dependency Injection.
+   * Defaults to defaultStorageDriver if not provided.
+   */
+  constructor(storage: IStorageDriver = defaultStorageDriver) {
+    this.storage = storage;
     this.loadHistory();
   }
 
   /**
-   * Loads history from localStorage with strict runtime filtering and generic type guards.
+   * Loads history from storage with runtime filtering and generic type guards.
    */
   public loadHistory(): CalculationRecord[] {
-    const records = StorageService.getItem<CalculationRecord[]>(
+    const records = this.storage.getItem<CalculationRecord[]>(
       STORAGE_KEY,
       [],
       (val: unknown): val is CalculationRecord[] => Array.isArray(val)
     );
 
-    this.history = records.filter(isValidRecord);
+    this.history = records.filter(isValidCalculationRecord);
     return [...this.history];
   }
 
@@ -73,12 +79,12 @@ export class HistoryService {
       this.history = this.history.slice(0, MAX_HISTORY);
     }
 
-    StorageService.setItem(STORAGE_KEY, this.history);
+    this.storage.setItem(STORAGE_KEY, this.history);
     return record;
   }
 
   /**
-   * Retrieves current history list.
+   * Retrieves a copy of the current history list (defensive copy).
    */
   public getHistory(): CalculationRecord[] {
     return [...this.history];
@@ -89,6 +95,6 @@ export class HistoryService {
    */
   public clearHistory(): void {
     this.history = [];
-    StorageService.removeItem(STORAGE_KEY);
+    this.storage.removeItem(STORAGE_KEY);
   }
 }

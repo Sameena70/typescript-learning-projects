@@ -122,6 +122,14 @@ export interface SpendingInsight {
   message: string;
 }
 
+export interface CategoryBudgetProgress {
+  category: string;
+  spent: number;
+  budget: number;
+  percentage: number;
+  isOver: boolean;
+}
+
 export interface ExpenseDashboardSummary {
   totalBalance: number;
   totalIncome: number;
@@ -141,13 +149,7 @@ export interface ExpenseDashboardSummary {
   monthlyTrends: PeriodSummary[];
   yearlyTrends: PeriodSummary[];
   insights: SpendingInsight[];
-  categoryBudgetProgress: Array<{
-    category: string;
-    spent: number;
-    budget: number;
-    percentage: number;
-    isOver: boolean;
-  }>;
+  categoryBudgetProgress: CategoryBudgetProgress[];
   categoryBudgets: Array<{
     category: string;
     spent: number;
@@ -193,3 +195,13 @@ export interface ImportResult {
  * Generic Storage Validator Predicate function.
  */
 export type StorageValidator<T> = (val: unknown) => val is T;
+
+/**
+ * Generic Storage Driver interface (DIP - Dependency Inversion Principle).
+ */
+export interface IExpenseStorageDriver {
+  getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T;
+  setItem<T>(key: string, value: T): boolean;
+  removeItem(key: string): void;
+  clear(): void;
+}

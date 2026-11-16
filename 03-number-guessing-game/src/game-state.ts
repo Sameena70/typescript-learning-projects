@@ -1,6 +1,6 @@
 import { DifficultyLevel, GuessResult, GameRecord, GamePlayState } from './types.js';
 import { GameConfigManager } from './game-config.js';
-import { GameLogic } from './game-logic.js';
+import { generateSecret, evaluateGuess } from './game-logic.js';
 
 export class GameStateModel {
   private configManager: GameConfigManager;
@@ -14,7 +14,7 @@ export class GameStateModel {
   private isGameOver = false;
   private hasWon = false;
 
-  constructor(configManager: GameConfigManager) {
+  constructor(configManager: GameConfigManager = new GameConfigManager()) {
     this.configManager = configManager;
     this.startNewGame();
   }
@@ -33,7 +33,7 @@ export class GameStateModel {
     this.guesses = [];
     this.isGameOver = false;
     this.hasWon = false;
-    this.secret = GameLogic.generateSecret(config.min, config.max);
+    this.secret = generateSecret(config.min, config.max);
   }
 
   /**
@@ -85,7 +85,7 @@ export class GameStateModel {
       throw new Error(`Guess must be between ${this.minRange} and ${this.maxRange}.`);
     }
 
-    const result = GameLogic.evaluateGuess(
+    const result = evaluateGuess(
       guess,
       this.secret,
       this.remainingAttempts,
@@ -116,7 +116,7 @@ export class GameStateModel {
     };
   }
 
-  // Getters
+  // Encapsulated state getters
   public getDifficulty(): DifficultyLevel {
     return this.currentDifficulty;
   }

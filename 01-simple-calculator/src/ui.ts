@@ -1,9 +1,9 @@
 import { CalculationRecord, CalculatorState, Operator } from './types.js';
-import { CalculatorLogic } from './calculator-logic.js';
+import { formatOperator } from './calculator-logic.js';
 
 /**
  * UI Renderer and DOM Manager for the Calculator.
- * Employs safe element retrieval with defensive checks and type-safe operator formatting.
+ * Employs safe element retrieval with defensive checks and direct format functions.
  */
 export class CalculatorUI {
   private currentDisplay: HTMLElement | null;
@@ -30,7 +30,7 @@ export class CalculatorUI {
       if (overrideHistory !== undefined) {
         this.historyDisplay.textContent = overrideHistory;
       } else if (state.previousInput !== '' && state.selectedOperator !== null) {
-        const opSymbol = CalculatorLogic.formatOperator(state.selectedOperator);
+        const opSymbol = formatOperator(state.selectedOperator);
         this.historyDisplay.textContent = `${state.previousInput} ${opSymbol}`;
       } else if (state.lastExpression !== '') {
         this.historyDisplay.textContent = state.lastExpression;

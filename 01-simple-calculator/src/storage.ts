@@ -1,12 +1,13 @@
-import { StorageValidator } from './types.js';
+import { StorageValidator, IStorageDriver } from './types.js';
 
 /**
  * Calculator Storage Module
  *
  * Provides safe localStorage reading, writing, and quota management.
  * Leverages TypeScript generics `<T>`, generic type guards, and error narrowing.
+ * Implements IStorageDriver to support Dependency Injection.
  */
-export class StorageService {
+export class StorageService implements IStorageDriver {
   /**
    * Safely reads and parses data from localStorage with type guard validation.
    * Uses unknown for parsed JSON and type narrows via validator predicate.
@@ -71,4 +72,26 @@ export class StorageService {
       }
     }
   }
+
+  // Instance methods implementing IStorageDriver for dependency injection
+  public getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T {
+    return StorageService.getItem(key, fallback, validator);
+  }
+
+  public setItem<T>(key: string, value: T): boolean {
+    return StorageService.setItem(key, value);
+  }
+
+  public removeItem(key: string): void {
+    StorageService.removeItem(key);
+  }
+
+  public clear(): void {
+    StorageService.clear();
+  }
 }
+
+/**
+ * Default shared storage driver instance.
+ */
+export const defaultStorageDriver: IStorageDriver = new StorageService();

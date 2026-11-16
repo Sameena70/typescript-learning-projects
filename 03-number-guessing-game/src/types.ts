@@ -155,3 +155,14 @@ export interface LifetimeStatistics {
  * Generic Storage Validator Predicate function.
  */
 export type StorageValidator<T> = (val: unknown) => val is T;
+
+/**
+ * Generic Storage Driver interface (DIP - Dependency Inversion Principle).
+ * Decouples game statistics and records from concrete browser localStorage.
+ */
+export interface IGameStorageDriver {
+  getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T;
+  setItem<T>(key: string, value: T): boolean;
+  removeItem(key: string): void;
+  clear(): void;
+}

@@ -3,6 +3,7 @@
  *
  * Provides safe localStorage reading, writing, and quota management.
  * Leverages TypeScript generics `<T>`, generic type guards, and error narrowing.
+ * Implements IStorageDriver to support Dependency Injection.
  */
 export class StorageService {
     /**
@@ -70,4 +71,21 @@ export class StorageService {
             }
         }
     }
+    // Instance methods implementing IStorageDriver for dependency injection
+    getItem(key, fallback, validator) {
+        return StorageService.getItem(key, fallback, validator);
+    }
+    setItem(key, value) {
+        return StorageService.setItem(key, value);
+    }
+    removeItem(key) {
+        StorageService.removeItem(key);
+    }
+    clear() {
+        StorageService.clear();
+    }
 }
+/**
+ * Default shared storage driver instance.
+ */
+export const defaultStorageDriver = new StorageService();

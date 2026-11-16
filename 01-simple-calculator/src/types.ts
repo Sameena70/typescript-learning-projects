@@ -63,3 +63,14 @@ export type CalculationOutcome =
  * Storage item validator predicate function type.
  */
 export type StorageValidator<T> = (val: unknown) => val is T;
+
+/**
+ * Generic Storage Driver interface (DIP - Dependency Inversion Principle).
+ * Decouples state and service models from concrete browser localStorage APIs.
+ */
+export interface IStorageDriver {
+  getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T;
+  setItem<T>(key: string, value: T): boolean;
+  removeItem(key: string): void;
+  clear(): void;
+}

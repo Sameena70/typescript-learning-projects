@@ -1,17 +1,34 @@
+/**
+ * Standard game boundaries and attempt limits.
+ */
+export const MIN_POSSIBLE_VALUE = 1;
+export const MAX_POSSIBLE_VALUE = 100000;
+export const MIN_ATTEMPTS = 1;
+export const MAX_ATTEMPTS = 50;
+/**
+ * Standard preset difficulty configurations.
+ */
 export const DEFAULT_DIFFICULTIES = {
     easy: { name: 'Easy', min: 1, max: 100, maxAttempts: 7 },
     medium: { name: 'Medium', min: 1, max: 500, maxAttempts: 9 },
     hard: { name: 'Hard', min: 1, max: 1000, maxAttempts: 10 }
 };
+/**
+ * Default custom configuration fallback.
+ */
+export const DEFAULT_CUSTOM_CONFIG = {
+    name: 'Custom',
+    difficulty: 'custom',
+    min: 1,
+    max: 200,
+    maxAttempts: 8
+};
+/**
+ * Manages standard difficulty presets and custom user configuration boundaries.
+ */
 export class GameConfigManager {
-    constructor() {
-        this.customConfig = {
-            name: 'Custom',
-            difficulty: 'custom',
-            min: 1,
-            max: 200,
-            maxAttempts: 8
-        };
+    constructor(initialCustomConfig = Object.assign({}, DEFAULT_CUSTOM_CONFIG)) {
+        this.customConfig = Object.assign({}, initialCustomConfig);
     }
     getConfig(difficulty) {
         if (difficulty === 'custom') {
@@ -26,14 +43,14 @@ export class GameConfigManager {
         if (min >= max) {
             throw new Error('Minimum value must be less than maximum value.');
         }
-        if (min < 1) {
-            throw new Error('Minimum value must be at least 1.');
+        if (min < MIN_POSSIBLE_VALUE) {
+            throw new Error(`Minimum value must be at least ${MIN_POSSIBLE_VALUE}.`);
         }
-        if (max > 100000) {
-            throw new Error('Maximum range cannot exceed 100,000.');
+        if (max > MAX_POSSIBLE_VALUE) {
+            throw new Error(`Maximum range cannot exceed ${MAX_POSSIBLE_VALUE.toLocaleString()}.`);
         }
-        if (maxAttempts < 1 || maxAttempts > 50) {
-            throw new Error('Attempts must be between 1 and 50.');
+        if (maxAttempts < MIN_ATTEMPTS || maxAttempts > MAX_ATTEMPTS) {
+            throw new Error(`Attempts must be between ${MIN_ATTEMPTS} and ${MAX_ATTEMPTS}.`);
         }
         this.customConfig = {
             name: 'Custom',

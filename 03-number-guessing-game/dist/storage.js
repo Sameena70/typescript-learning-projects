@@ -1,6 +1,7 @@
 /**
  * Storage utility for game statistics and history
  * with runtime validation and schema protection using generics `<T>`.
+ * Implements IGameStorageDriver for Dependency Injection.
  */
 export class GameStorage {
     static getItem(key, fallback, validator) {
@@ -53,4 +54,21 @@ export class GameStorage {
             }
         }
     }
+    // Instance methods implementing IGameStorageDriver
+    getItem(key, fallback, validator) {
+        return GameStorage.getItem(key, fallback, validator);
+    }
+    setItem(key, value) {
+        return GameStorage.setItem(key, value);
+    }
+    removeItem(key) {
+        GameStorage.removeItem(key);
+    }
+    clear() {
+        GameStorage.clear();
+    }
 }
+/**
+ * Default singleton storage driver for the Number Guessing Game.
+ */
+export const defaultGameStorageDriver = new GameStorage();
