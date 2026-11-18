@@ -102,6 +102,7 @@ export class ContactService {
       isFavourite: formData.isFavourite,
       notes: formData.notes.trim().length > 0 ? formData.notes.trim() : undefined,
       tags: tagsList && tagsList.length > 0 ? tagsList : undefined,
+      avatarUrl: formData.avatarUrl?.trim() || undefined,
       birthday: formData.birthday.trim().length > 0 ? formData.birthday.trim() : undefined,
       reminderDate:
         formData.reminderDate.trim().length > 0 ? formData.reminderDate.trim() : undefined,
@@ -167,6 +168,9 @@ export class ContactService {
     target.isFavourite = formData.isFavourite;
     target.notes = formData.notes.trim().length > 0 ? formData.notes.trim() : undefined;
     target.tags = tagsList && tagsList.length > 0 ? tagsList : undefined;
+    if (formData.avatarUrl !== undefined) {
+      target.avatarUrl = formData.avatarUrl.trim() || undefined;
+    }
     target.birthday = formData.birthday.trim().length > 0 ? formData.birthday.trim() : undefined;
     target.reminderDate =
       formData.reminderDate.trim().length > 0 ? formData.reminderDate.trim() : undefined;

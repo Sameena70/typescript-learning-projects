@@ -1,333 +1,237 @@
 import { formatCurrency, isIncomeTransaction } from './calculations.js';
-/**
- * Escapes HTML characters for safe innerHTML injection.
- */
+import { computeDailyTrend, renderMonthlyLineChartSVG, renderDonutChart, renderComparisonBarChartSVG, renderAnalyticsMonthlyTrendsSVG } from './charts.js';
 export function escapeHTML(str) {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
 }
-/**
- * Renders the primary financial dashboard statistics and progress bars.
- */
-export class DashboardRenderer {
+export class ExpenseUI {
     constructor() {
         this.totalExpensesDisplay = document.getElementById('totalExpensesDisplay');
         this.totalIncomeDisplay = document.getElementById('totalIncomeDisplay');
         this.netBalanceDisplay = document.getElementById('netBalanceDisplay');
-        this.savingsRateDisplay = document.getElementById('savingsRateDisplay');
-        this.expenseCountText = document.getElementById('expenseCountText');
+        this.expenseTableBody = document.getElementById('expenseTableBody');
+        this.emptyState = document.getElementById('emptyState');
+        this.toastElement = document.getElementById('appToast');
         this.budgetDisplay = document.getElementById('budgetDisplay');
         this.remainingBalanceDisplay = document.getElementById('remainingBalanceDisplay');
-        this.balanceBadge = document.getElementById('balanceBadge');
         this.budgetProgressBar = document.getElementById('budgetProgressBar');
-        this.highestExpenseDisplay = document.getElementById('highestExpenseDisplay');
-        this.avgExpenseDisplay = document.getElementById('avgExpenseDisplay');
+        this.budgetSpentDisplay = document.getElementById('budgetSpentDisplay');
+        this.budgetPercentDisplay = document.getElementById('budgetPercentDisplay');
+        this.budgetAlertText = document.getElementById('budgetAlertText');
+        this.categoryBudgetList = document.getElementById('categoryBudgetList');
+        this.insightsContainer = document.getElementById('insightsContainer');
+        this.monthlyChartSVG = document.getElementById('monthlyOverviewChartSVG');
+        this.donutCanvas = document.getElementById('topCategoriesCanvas');
+        this.donutLegend = document.getElementById('topCategoriesLegend');
+        // Analytics elements
+        this.analyticsNetSavings = document.getElementById('analyticsNetSavings');
+        this.analyticsSavingsRate = document.getElementById('analyticsSavingsRate');
+        this.analyticsAvgExpense = document.getElementById('analyticsAvgExpense');
+        this.analyticsTxCount = document.getElementById('analyticsTxCount');
+        this.analyticsHighestExpense = document.getElementById('analyticsHighestExpense');
+        this.incomeVsExpenseChartSVG = document.getElementById('incomeVsExpenseChartSVG');
+        this.analyticsMonthlyTrendsSVG = document.getElementById('analyticsMonthlyTrendsSVG');
     }
-    render(summary, settings) {
+    updateDashboard(summary, settings, allExpenses = [], insights = [], categoryBudgets = [], onDeleteCategoryBudget) {
         const currency = settings.currency;
-        if (this.totalExpensesDisplay) {
-            this.totalExpensesDisplay.textContent = formatCurrency(summary.totalExpenses, currency);
+        if (this.netBalanceDisplay) {
+            this.netBalanceDisplay.textContent = formatCurrency(summary.totalBalance, currency);
         }
         if (this.totalIncomeDisplay) {
             this.totalIncomeDisplay.textContent = formatCurrency(summary.totalIncome, currency);
         }
-        if (this.netBalanceDisplay) {
-            this.netBalanceDisplay.textContent = formatCurrency(summary.totalBalance, currency);
-            if (summary.totalBalance >= 0) {
-                this.netBalanceDisplay.className = 'stat-value text-positive';
-            }
-            else {
-                this.netBalanceDisplay.className = 'stat-value text-negative';
-            }
+        if (this.totalExpensesDisplay) {
+            this.totalExpensesDisplay.textContent = formatCurrency(summary.totalExpenses, currency);
         }
-        if (this.savingsRateDisplay) {
-            this.savingsRateDisplay.textContent = `${summary.savingsRate.toFixed(1)}% savings rate`;
-        }
-        if (this.expenseCountText) {
-            this.expenseCountText.textContent = `${summary.transactionCount} transactions recorded`;
-        }
+        // Budgets Section elements
         if (this.budgetDisplay) {
             this.budgetDisplay.textContent = formatCurrency(summary.monthlyBudget, currency);
+        }
+        if (this.budgetSpentDisplay) {
+            this.budgetSpentDisplay.textContent = formatCurrency(summary.monthlyExpenses, currency);
         }
         if (this.remainingBalanceDisplay) {
             this.remainingBalanceDisplay.textContent = formatCurrency(summary.remainingBudget, currency);
         }
-        if (this.highestExpenseDisplay) {
-            this.highestExpenseDisplay.textContent = formatCurrency(summary.highestExpense, currency);
+        if (this.budgetPercentDisplay) {
+            this.budgetPercentDisplay.textContent = `${summary.budgetPercentageUsed.toFixed(1)}%`;
         }
-        if (this.avgExpenseDisplay) {
-            this.avgExpenseDisplay.textContent = formatCurrency(summary.averageExpense, currency);
-        }
-        // Budget utilization bar and warning badges
         if (this.budgetProgressBar) {
-            const clampedPct = Math.min(100, Math.max(0, summary.budgetPercentageUsed));
-            this.budgetProgressBar.style.width = `${clampedPct}%`;
-            if (summary.isOverBudget) {
-                this.budgetProgressBar.className = 'progress-bar bg-danger';
-            }
-            else if (clampedPct > 80) {
-                this.budgetProgressBar.className = 'progress-bar bg-warning';
-            }
-            else {
-                this.budgetProgressBar.className = 'progress-bar bg-success';
-            }
+            const pct = Math.min(100, Math.max(0, summary.budgetPercentageUsed));
+            this.budgetProgressBar.style.width = `${pct}%`;
+            this.budgetProgressBar.className = `progress-bar-fill ${summary.isOverBudget ? 'bg-danger' : summary.budgetPercentageUsed > 80 ? 'bg-warning' : 'bg-primary'}`;
         }
-        if (this.balanceBadge) {
-            if (summary.monthlyBudget === 0) {
-                this.balanceBadge.textContent = 'No monthly budget set';
-                this.balanceBadge.className = 'badge badge-neutral';
+        if (this.budgetAlertText) {
+            if (summary.monthlyBudget <= 0) {
+                this.budgetAlertText.textContent =
+                    'No monthly limit set. Click "Set Monthly Budget" to establish one.';
+                this.budgetAlertText.className = 'budget-status-msg';
             }
             else if (summary.isOverBudget) {
-                this.balanceBadge.textContent = `Over budget by ${formatCurrency(Math.abs(summary.remainingBudget), currency)}`;
-                this.balanceBadge.className = 'badge badge-danger';
+                this.budgetAlertText.textContent = `Warning: Over budget by ${formatCurrency(summary.monthlyExpenses - summary.monthlyBudget, currency)}!`;
+                this.budgetAlertText.className = 'budget-status-msg text-danger font-bold';
             }
             else {
-                this.balanceBadge.textContent = `${(100 - summary.budgetPercentageUsed).toFixed(1)}% remaining`;
-                this.balanceBadge.className = 'badge badge-success';
+                this.budgetAlertText.textContent = `Healthy status: ${formatCurrency(summary.remainingBudget, currency)} left for this month.`;
+                this.budgetAlertText.className = 'budget-status-msg text-green font-bold';
             }
         }
+        // Dashboard Charts
+        if (this.monthlyChartSVG) {
+            const now = new Date();
+            const points = computeDailyTrend(allExpenses, now.getFullYear(), now.getMonth());
+            renderMonthlyLineChartSVG(this.monthlyChartSVG, points, formatCurrency(summary.totalBalance, currency));
+        }
+        if (this.donutCanvas && this.donutLegend) {
+            renderDonutChart(this.donutCanvas, this.donutLegend, summary.categoryBreakdown, summary.totalExpenses);
+        }
+        // Analytics Page Updating
+        this.updateAnalyticsPage(summary, currency);
+        // Insights & Category Budgets
+        this.renderInsights(insights);
+        this.renderCategoryBudgets(categoryBudgets, currency, onDeleteCategoryBudget);
     }
-}
-/**
- * Renders the interactive analytics views (category breakdown, ratio bar, trends, insights).
- */
-export class AnalyticsRenderer {
-    constructor() {
-        this.insightsContainer = document.getElementById('insightsContainer');
-        this.categoryChartContainer = document.getElementById('categoryChartContainer');
-        this.incomeVsExpenseChart = document.getElementById('incomeVsExpenseChart');
-        this.monthlySummaryTableBody = document.getElementById('monthlySummaryTableBody');
-        this.yearlySummaryTableBody = document.getElementById('yearlySummaryTableBody');
-        this.categoryBudgetList = document.getElementById('categoryBudgetList');
+    updateAnalyticsPage(summary, currency) {
+        if (this.analyticsNetSavings) {
+            this.analyticsNetSavings.textContent = formatCurrency(summary.netSavings, currency);
+        }
+        if (this.analyticsSavingsRate) {
+            this.analyticsSavingsRate.textContent = `Savings Rate: ${summary.savingsRate.toFixed(1)}%`;
+        }
+        if (this.analyticsAvgExpense) {
+            this.analyticsAvgExpense.textContent = formatCurrency(summary.averageExpense, currency);
+        }
+        if (this.analyticsTxCount) {
+            this.analyticsTxCount.textContent = `${summary.transactionCount} transactions recorded`;
+        }
+        if (this.analyticsHighestExpense) {
+            this.analyticsHighestExpense.textContent = formatCurrency(summary.highestExpense, currency);
+        }
+        const currSymbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£';
+        if (this.incomeVsExpenseChartSVG) {
+            renderComparisonBarChartSVG(this.incomeVsExpenseChartSVG, summary.totalIncome, summary.totalExpenses, currSymbol);
+        }
+        if (this.analyticsMonthlyTrendsSVG) {
+            renderAnalyticsMonthlyTrendsSVG(this.analyticsMonthlyTrendsSVG, summary.monthlyTrends);
+        }
     }
-    renderCategoryBudgets(budgets, currency) {
+    renderCategoryBudgets(budgets, currency, onDelete) {
         if (!this.categoryBudgetList)
             return;
         this.categoryBudgetList.innerHTML = '';
         if (budgets.length === 0) {
             this.categoryBudgetList.innerHTML =
-                '<div class="text-muted">No category budgets defined.</div>';
+                '<p class="text-sub text-sm">No category budgets configured yet. Click "+ Add Category Limit" to define spending caps for food, transit, etc.</p>';
             return;
         }
         budgets.forEach((cb) => {
-            var _a;
+            var _a, _b;
             const item = document.createElement('div');
-            item.className = 'cat-budget-item';
-            const progressColor = cb.isOver
-                ? 'progress-danger'
-                : cb.percentage > 80
-                    ? 'progress-warning'
-                    : 'progress-success';
+            item.className = 'cat-budget-card';
+            const pctFormatted = cb.percentage.toFixed(0);
+            const isOver = cb.isOver;
+            const barClass = isOver ? 'bg-danger' : cb.percentage > 80 ? 'bg-warning' : 'bg-primary';
             item.innerHTML = `
         <div class="cat-budget-header">
-          <span class="cat-budget-name">${escapeHTML(cb.category)}</span>
-          <span class="cat-budget-values">
-            ${formatCurrency(cb.spent, currency)} /
-            ${formatCurrency(cb.budget, currency)}
-          </span>
+          <div>
+            <strong class="text-main">${escapeHTML(cb.category)}</strong>
+            <span class="badge ${isOver ? 'badge-danger' : 'badge-neutral'}" style="margin-left: 8px;">${pctFormatted}%</span>
+          </div>
+          <div class="cat-budget-actions">
+            <span class="text-sub text-xs">${formatCurrency(cb.spent, currency)} / ${formatCurrency(cb.budget, currency)}</span>
+            <button class="action-btn del-cat-btn" data-cat="${escapeHTML(cb.category)}" title="Remove Category Budget" type="button">🗑️</button>
+          </div>
         </div>
-        <div class="progress-container">
-          <div class="progress-bar ${progressColor}" style="width: ${Math.min(100, Math.max(0, cb.percentage))}%"></div>
+        <div class="progress-track-wrap">
+          <div class="progress-bar-fill ${barClass}" style="width: ${Math.min(100, cb.percentage)}%"></div>
+        </div>
+        <div class="text-xs ${isOver ? 'text-pink font-bold' : 'text-sub'}">
+          ${isOver ? `Over budget by ${formatCurrency(cb.spent - cb.budget, currency)}!` : `${formatCurrency(Math.max(0, cb.budget - cb.spent), currency)} remaining`}
         </div>
       `;
-            (_a = this.categoryBudgetList) === null || _a === void 0 ? void 0 : _a.appendChild(item);
+            (_a = item.querySelector('.del-cat-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
+                if (onDelete)
+                    onDelete(cb.category);
+            });
+            (_b = this.categoryBudgetList) === null || _b === void 0 ? void 0 : _b.appendChild(item);
         });
     }
     renderInsights(insights) {
         if (!this.insightsContainer)
             return;
         this.insightsContainer.innerHTML = '';
-        insights.forEach((insight) => {
+        if (insights.length === 0) {
+            this.insightsContainer.innerHTML =
+                '<p class="text-sub text-sm">No financial insights recorded yet. Add transactions to generate spending recommendations.</p>';
+            return;
+        }
+        insights.forEach((ins) => {
             var _a;
             const card = document.createElement('div');
-            card.className = `insight-card insight-${insight.type}`;
+            card.className = `insight-item insight-${ins.type}`;
             card.innerHTML = `
-        <div class="insight-title">${escapeHTML(insight.title)}</div>
-        <div class="insight-message">${escapeHTML(insight.message)}</div>
+        <h4>${escapeHTML(ins.title)}</h4>
+        <p>${escapeHTML(ins.message)}</p>
       `;
             (_a = this.insightsContainer) === null || _a === void 0 ? void 0 : _a.appendChild(card);
         });
     }
-    renderCategoryBars(breakdown, totalExpense, currency) {
-        if (!this.categoryChartContainer)
-            return;
-        this.categoryChartContainer.innerHTML = '';
-        const entries = Object.entries(breakdown).filter(([, amt]) => amt > 0);
-        if (entries.length === 0) {
-            this.categoryChartContainer.innerHTML =
-                '<div class="text-muted text-center py-4">No spending data to display.</div>';
-            return;
-        }
-        entries.sort((a, b) => b[1] - a[1]);
-        entries.forEach(([cat, amt]) => {
-            var _a;
-            const pct = totalExpense > 0 ? (amt / totalExpense) * 100 : 0;
-            const row = document.createElement('div');
-            row.className = 'chart-bar-row';
-            row.innerHTML = `
-        <div class="chart-bar-label">${escapeHTML(cat)}</div>
-        <div class="chart-bar-track">
-          <div class="chart-bar-fill" style="width: ${pct}%"></div>
-        </div>
-        <div class="chart-bar-amt">${formatCurrency(amt, currency)} (${pct.toFixed(0)}%)</div>
-      `;
-            (_a = this.categoryChartContainer) === null || _a === void 0 ? void 0 : _a.appendChild(row);
-        });
-    }
-    renderIncomeExpenseRatio(income, expenses, currency) {
-        if (!this.incomeVsExpenseChart)
-            return;
-        this.incomeVsExpenseChart.innerHTML = '';
-        const total = income + expenses;
-        if (total === 0) {
-            this.incomeVsExpenseChart.innerHTML =
-                '<div class="text-muted text-center py-4">No transactions recorded.</div>';
-            return;
-        }
-        const incPct = (income / total) * 100;
-        const expPct = (expenses / total) * 100;
-        this.incomeVsExpenseChart.innerHTML = `
-      <div class="ratio-bar-wrapper">
-        <div class="ratio-segment ratio-income" style="width: ${incPct}%" title="Income: ${incPct.toFixed(1)}%"></div>
-        <div class="ratio-segment ratio-expense" style="width: ${expPct}%" title="Expenses: ${expPct.toFixed(1)}%"></div>
-      </div>
-      <div class="ratio-legend">
-        <span class="legend-income">● Income: ${formatCurrency(income, currency)} (${incPct.toFixed(1)}%)</span>
-        <span class="legend-expense">● Expenses: ${formatCurrency(expenses, currency)} (${expPct.toFixed(1)}%)</span>
-      </div>
-    `;
-    }
-    renderPeriodTrends(monthly, yearly, currency) {
-        if (this.monthlySummaryTableBody) {
-            this.monthlySummaryTableBody.innerHTML = '';
-            monthly.forEach((m) => {
-                var _a;
-                const row = document.createElement('tr');
-                row.innerHTML = `
-          <td><strong>${m.period}</strong></td>
-          <td class="amount-income">+${formatCurrency(m.income, currency)}</td>
-          <td class="amount-expense">-${formatCurrency(m.expenses, currency)}</td>
-          <td class="${m.netSavings >= 0 ? 'text-positive' : 'text-negative'}">
-            ${formatCurrency(m.netSavings, currency)}
-          </td>
-          <td>${m.savingsRate.toFixed(1)}%</td>
-        `;
-                (_a = this.monthlySummaryTableBody) === null || _a === void 0 ? void 0 : _a.appendChild(row);
-            });
-        }
-        if (this.yearlySummaryTableBody) {
-            this.yearlySummaryTableBody.innerHTML = '';
-            yearly.forEach((y) => {
-                var _a;
-                const row = document.createElement('tr');
-                row.innerHTML = `
-          <td><strong>${y.period}</strong></td>
-          <td class="amount-income">+${formatCurrency(y.income, currency)}</td>
-          <td class="amount-expense">-${formatCurrency(y.expenses, currency)}</td>
-          <td class="${y.netSavings >= 0 ? 'text-positive' : 'text-negative'}">
-            ${formatCurrency(y.netSavings, currency)}
-          </td>
-          <td>${y.savingsRate.toFixed(1)}%</td>
-        `;
-                (_a = this.yearlySummaryTableBody) === null || _a === void 0 ? void 0 : _a.appendChild(row);
-            });
-        }
-    }
-}
-/**
- * Renders the transactions data table.
- */
-export class TransactionTableRenderer {
-    constructor() {
-        this.expenseTableBody = document.getElementById('expenseTableBody');
-        this.emptyState = document.getElementById('emptyState');
-    }
-    render(expenses, settings, onEdit, onDelete) {
+    renderExpensesTable(expenses, settings, onEdit, onDelete, dateFormat = 'YYYY-MM-DD') {
         if (!this.expenseTableBody)
             return;
         this.expenseTableBody.innerHTML = '';
         if (expenses.length === 0) {
             if (this.emptyState)
-                this.emptyState.style.display = 'block';
+                this.emptyState.style.display = 'flex';
             return;
         }
         if (this.emptyState)
             this.emptyState.style.display = 'none';
-        expenses.forEach((exp) => {
-            var _a;
-            const isIncome = isIncomeTransaction(exp);
+        expenses.forEach((item) => {
+            var _a, _b, _c;
             const row = document.createElement('tr');
-            row.className = isIncome ? 'row-income' : 'row-expense';
-            // Type Badge
-            const typeBadge = isIncome
-                ? '<span class="badge badge-success">Income</span>'
-                : '<span class="badge badge-danger">Expense</span>';
-            // Recurring badge
-            const recurringBadge = exp.isRecurring
-                ? '<span class="badge badge-neutral badge-recurring" title="Recurring Transaction">🔄</span> '
-                : '';
-            const formattedAmount = `${isIncome ? '+' : '-'}${formatCurrency(exp.amount, settings.currency)}`;
-            const amountClass = isIncome ? 'amount-income' : 'amount-expense';
+            const isIncome = isIncomeTransaction(item);
+            const amountClass = isIncome ? 'text-green font-bold' : 'text-pink font-bold';
+            const amountPrefix = isIncome ? '+' : '-';
+            let formattedDate = item.date;
+            if (dateFormat === 'DD/MM/YYYY' && item.date.includes('-')) {
+                const parts = item.date.split('-');
+                formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+            else if (dateFormat === 'MM/DD/YYYY' && item.date.includes('-')) {
+                const parts = item.date.split('-');
+                formattedDate = `${parts[1]}/${parts[2]}/${parts[0]}`;
+            }
             row.innerHTML = `
-        <td>${exp.date}</td>
-        <td>${typeBadge}</td>
+        <td class="font-medium text-sub text-xs">${escapeHTML(formattedDate)}</td>
         <td>
-          <strong>${escapeHTML(exp.title)}</strong>
-          ${recurringBadge}
-          ${exp.notes ? `<div class="tx-notes">${escapeHTML(exp.notes)}</div>` : ''}
+          <div class="font-semibold text-main">${escapeHTML(item.title)}</div>
+          ${item.notes ? `<div class="text-sub text-xs">${escapeHTML(item.notes)}</div>` : ''}
         </td>
-        <td><span class="category-pill">${escapeHTML(exp.category)}</span></td>
-        <td class="${amountClass}"><strong>${formattedAmount}</strong></td>
-        <td class="action-cell">
-          <button class="btn btn-sm btn-icon btn-edit" data-id="${exp.id}" title="Edit transaction">✏️</button>
-          <button class="btn btn-sm btn-icon btn-delete" data-id="${exp.id}" title="Delete transaction">🗑️</button>
+        <td><span class="badge badge-neutral">${escapeHTML(item.category)}</span></td>
+        <td><span class="badge ${isIncome ? 'badge-success' : 'badge-danger'}">${isIncome ? 'Income' : 'Expense'}</span></td>
+        <td><span class="text-sub text-xs">${escapeHTML(item.paymentMethod || 'UPI / Card')}</span></td>
+        <td class="${amountClass}">${amountPrefix}${formatCurrency(item.amount, settings.currency)}</td>
+        <td style="text-align: right;">
+          <button class="action-btn edit-btn" data-id="${item.id}" title="Edit" type="button">✏️</button>
+          <button class="action-btn delete-btn" data-id="${item.id}" title="Delete" type="button">🗑️</button>
         </td>
       `;
-            const editBtn = row.querySelector('.btn-edit');
-            editBtn === null || editBtn === void 0 ? void 0 : editBtn.addEventListener('click', () => onEdit(exp.id));
-            const deleteBtn = row.querySelector('.btn-delete');
-            deleteBtn === null || deleteBtn === void 0 ? void 0 : deleteBtn.addEventListener('click', () => onDelete(exp.id));
-            (_a = this.expenseTableBody) === null || _a === void 0 ? void 0 : _a.appendChild(row);
+            (_a = row.querySelector('.edit-btn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => onEdit(item.id));
+            (_b = row.querySelector('.delete-btn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => onDelete(item.id));
+            (_c = this.expenseTableBody) === null || _c === void 0 ? void 0 : _c.appendChild(row);
         });
     }
-}
-/**
- * UI Renderer coordinating the focused view renderers.
- * Preserves complete backward compatibility with the existing ExpenseUI API.
- */
-export class ExpenseUI {
-    constructor() {
-        this.dashboardRenderer = new DashboardRenderer();
-        this.analyticsRenderer = new AnalyticsRenderer();
-        this.tableRenderer = new TransactionTableRenderer();
-    }
-    updateDashboard(summary, settings) {
-        const currency = settings.currency;
-        this.dashboardRenderer.render(summary, settings);
-        this.analyticsRenderer.renderCategoryBudgets(summary.categoryBudgetProgress, currency);
-        this.analyticsRenderer.renderInsights(summary.insights);
-        this.analyticsRenderer.renderCategoryBars(summary.categoryBreakdown, summary.totalExpenses, currency);
-        this.analyticsRenderer.renderIncomeExpenseRatio(summary.totalIncome, summary.totalExpenses, currency);
-        this.analyticsRenderer.renderPeriodTrends(summary.monthlyTrends, summary.yearlyTrends, currency);
-    }
-    renderExpensesTable(expenses, settings, onEdit, onDelete) {
-        this.tableRenderer.render(expenses, settings, onEdit, onDelete);
-    }
     showToast(message, isError = false) {
-        const toast = document.createElement('div');
-        toast.className = `toast ${isError ? 'toast-error' : 'toast-success'}`;
-        toast.textContent = message;
-        document.body.appendChild(toast);
+        if (!this.toastElement)
+            return;
+        this.toastElement.textContent = message;
+        this.toastElement.className = `app-toast ${isError ? 'toast-error' : 'toast-success'}`;
+        this.toastElement.style.display = 'block';
         setTimeout(() => {
-            toast.classList.add('show');
-        }, 10);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => {
-                if (toast.parentElement)
-                    toast.parentElement.removeChild(toast);
-            }, 300);
-        }, 3000);
+            if (this.toastElement)
+                this.toastElement.style.display = 'none';
+        }, 3200);
     }
 }

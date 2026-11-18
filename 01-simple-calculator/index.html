@@ -3,83 +3,259 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TypeScript Calculator</title>
+  <title>Calculator | Professional Dark Suite</title>
   <link rel="stylesheet" href="style.css">
-  <!-- Link the compiled JavaScript module -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script type="module" src="dist/main.js" defer></script>
 </head>
 <body>
-  <div class="calculator-container">
-    <div class="calculator-card">
-      <div class="calculator-header">
-        <span class="app-title">TypeScript Calculator</span>
-        <div class="header-right">
-          <span id="memoryIndicator" class="memory-badge" style="display: none;">M: 0</span>
-          <button id="toggleHistoryBtn" class="icon-btn" title="View History" type="button">🕒</button>
+  <!-- Ambient background lighting matching top-left reference image -->
+  <div class="ambient-glow glow-blue"></div>
+  <div class="ambient-glow glow-purple"></div>
+
+  <div class="app-layout">
+    <!-- Left Navigation Sidebar -->
+    <aside class="sidebar-nav" aria-label="Calculator navigation">
+      <div class="brand-header">
+        <div class="brand-icon-box" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="4" y="2" width="16" height="20" rx="4"></rect>
+            <line x1="8" y1="6" x2="16" y2="6"></line>
+            <circle cx="8" cy="11" r="1"></circle>
+            <circle cx="12" cy="11" r="1"></circle>
+            <circle cx="16" cy="11" r="1"></circle>
+            <circle cx="8" cy="15" r="1"></circle>
+            <circle cx="12" cy="15" r="1"></circle>
+            <circle cx="16" cy="15" r="1"></circle>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <h1 class="brand-title">Calculator</h1>
+          <p class="brand-tagline">Calculate Smart. Live Better.</p>
         </div>
       </div>
 
-      <!-- Calculator Display -->
-      <div class="display-screen">
-        <div id="historyDisplay" class="history-text"></div>
-        <div id="currentDisplay" class="current-text">0</div>
-      </div>
+      <nav class="nav-menu" role="tablist">
+        <button class="nav-item active" data-tab="standard" role="tab" aria-selected="true">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="3" width="18" height="18" rx="4"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="8" x2="12" y2="16"/></svg>
+          </span>
+          <span class="nav-label">Standard</span>
+        </button>
 
-      <!-- Memory Row -->
-      <div class="memory-grid">
-        <button id="mcBtn" class="btn btn-memory" type="button">MC</button>
-        <button id="mrBtn" class="btn btn-memory" type="button">MR</button>
-        <button id="mPlusBtn" class="btn btn-memory" type="button">M+</button>
-        <button id="mMinusBtn" class="btn btn-memory" type="button">M−</button>
-      </div>
+        <button class="nav-item" data-tab="scientific" role="tab" aria-selected="false">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 19l4-14h8l4 14"/><path d="M7 14h10"/><circle cx="12" cy="9" r="2"/></svg>
+          </span>
+          <span class="nav-label">Scientific</span>
+        </button>
 
-      <!-- Buttons Grid -->
-      <div class="buttons-grid">
-        <!-- Row 1: Actions -->
-        <button id="clearBtn" class="btn btn-action" type="button">AC</button>
-        <button id="deleteBtn" class="btn btn-action" type="button">DEL</button>
-        <button id="percentBtn" class="btn btn-action" type="button">%</button>
-        <button class="btn btn-operator" data-operator="/" type="button">÷</button>
+        <button class="nav-item" data-tab="history" role="tab" aria-selected="false">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </span>
+          <span class="nav-label">History</span>
+        </button>
 
-        <!-- Row 2: 7, 8, 9, Multiply -->
-        <button class="btn btn-number" data-number="7" type="button">7</button>
-        <button class="btn btn-number" data-number="8" type="button">8</button>
-        <button class="btn btn-number" data-number="9" type="button">9</button>
-        <button class="btn btn-operator" data-operator="*" type="button">×</button>
+        <button class="nav-item" data-tab="settings" role="tab" aria-selected="false">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </span>
+          <span class="nav-label">Settings</span>
+        </button>
+      </nav>
+    </aside>
 
-        <!-- Row 3: 4, 5, 6, Subtract -->
-        <button class="btn btn-number" data-number="4" type="button">4</button>
-        <button class="btn btn-number" data-number="5" type="button">5</button>
-        <button class="btn btn-number" data-number="6" type="button">6</button>
-        <button class="btn btn-operator" data-operator="-" type="button">−</button>
-
-        <!-- Row 4: 1, 2, 3, Add -->
-        <button class="btn btn-number" data-number="1" type="button">1</button>
-        <button class="btn btn-number" data-number="2" type="button">2</button>
-        <button class="btn btn-number" data-number="3" type="button">3</button>
-        <button class="btn btn-operator" data-operator="+" type="button">+</button>
-
-        <!-- Row 5: Plus/Minus, 0, Decimal, Equals -->
-        <button id="signBtn" class="btn btn-action" type="button">±</button>
-        <button class="btn btn-number" data-number="0" type="button">0</button>
-        <button id="decimalBtn" class="btn btn-number" type="button">.</button>
-        <button id="equalsBtn" class="btn btn-equals" type="button">=</button>
-      </div>
-
-      <!-- History Drawer (Collapsible) -->
-      <div id="historyDrawer" class="history-drawer">
-        <div class="drawer-header">
-          <span class="drawer-title">Calculation History</span>
-          <div class="drawer-actions">
-            <button id="clearHistoryBtn" class="btn-text-danger" type="button">Clear</button>
-            <button id="closeHistoryBtn" class="btn-text-close" type="button">✕</button>
+    <!-- Main Calculator Window Panel -->
+    <main class="main-panel">
+      <div class="calculator-card">
+        <!-- Display Screen Area (Faithfully matching reference) -->
+        <div class="display-screen" role="region" aria-label="Calculator display">
+          <div class="display-meta">
+            <div id="historyDisplay" class="history-text" aria-live="polite"></div>
+            <button id="toggleHistoryBtn" class="history-clock-btn" type="button" title="View History" aria-label="Open calculation history">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </button>
+          </div>
+          <div class="display-main-row">
+            <span id="memoryIndicator" class="memory-badge" style="display: none;">M: 0</span>
+            <div id="currentDisplay" class="current-text" aria-live="assertive">0</div>
           </div>
         </div>
-        <div id="historyList" class="history-list">
-          <!-- History items injected dynamically -->
+
+        <!-- 1. STANDARD KEYPAD -->
+        <div id="standardKeypad" class="keypad-container standard-mode" role="region" aria-label="Standard Keypad">
+          <!-- Memory Row -->
+          <div class="memory-grid">
+            <button id="mcBtn" class="btn btn-memory" type="button">MC</button>
+            <button id="mrBtn" class="btn btn-memory" type="button">MR</button>
+            <button id="mPlusBtn" class="btn btn-memory" type="button">M+</button>
+            <button id="mMinusBtn" class="btn btn-memory" type="button">M−</button>
+          </div>
+
+          <!-- Buttons Grid (5 rows x 4 columns) -->
+          <div class="buttons-grid">
+            <!-- Row 1 -->
+            <button id="clearBtn" class="btn btn-action btn-clear" type="button">C</button>
+            <button id="signBtn" class="btn btn-action btn-sign" type="button">±</button>
+            <button id="percentBtn" class="btn btn-action btn-percent" type="button">%</button>
+            <button class="btn btn-operator" data-operator="/" type="button">÷</button>
+
+            <!-- Row 2 -->
+            <button class="btn btn-number" data-number="7" type="button">7</button>
+            <button class="btn btn-number" data-number="8" type="button">8</button>
+            <button class="btn btn-number" data-number="9" type="button">9</button>
+            <button class="btn btn-operator" data-operator="*" type="button">×</button>
+
+            <!-- Row 3 -->
+            <button class="btn btn-number" data-number="4" type="button">4</button>
+            <button class="btn btn-number" data-number="5" type="button">5</button>
+            <button class="btn btn-number" data-number="6" type="button">6</button>
+            <button class="btn btn-operator" data-operator="-" type="button">−</button>
+
+            <!-- Row 4 -->
+            <button class="btn btn-number" data-number="1" type="button">1</button>
+            <button class="btn btn-number" data-number="2" type="button">2</button>
+            <button class="btn btn-number" data-number="3" type="button">3</button>
+            <button class="btn btn-operator" data-operator="+" type="button">+</button>
+
+            <!-- Row 5 -->
+            <button class="btn btn-number btn-zero" data-number="0" type="button">0</button>
+            <button id="decimalBtn" class="btn btn-number btn-decimal" type="button">.</button>
+            <button id="equalsBtn" class="btn btn-equals" type="button">=</button>
+          </div>
+        </div>
+
+        <!-- 2. SCIENTIFIC KEYPAD -->
+        <div id="scientificKeypad" class="keypad-container scientific-mode" role="region" aria-label="Scientific Keypad" style="display: none;">
+          <!-- Scientific Function Grid -->
+          <div class="sci-func-grid">
+            <button id="angleModeBtn" class="btn btn-sci-toggle" type="button" title="Switch DEG / RAD">DEG</button>
+            <button class="btn btn-sci" data-sci-func="sin" type="button">sin</button>
+            <button class="btn btn-sci" data-sci-func="cos" type="button">cos</button>
+            <button class="btn btn-sci" data-sci-func="tan" type="button">tan</button>
+            <button class="btn btn-sci" data-sci-func="log" type="button">log</button>
+
+            <button class="btn btn-sci" data-sci-func="asin" type="button">sin⁻¹</button>
+            <button class="btn btn-sci" data-sci-func="acos" type="button">cos⁻¹</button>
+            <button class="btn btn-sci" data-sci-func="atan" type="button">tan⁻¹</button>
+            <button class="btn btn-sci" data-sci-func="ln" type="button">ln</button>
+            <button class="btn btn-sci" data-sci-func="sqrt" type="button">√</button>
+
+            <button class="btn btn-sci" data-sci-func="sqr" type="button">x²</button>
+            <button class="btn btn-sci" data-sci-func="cube" type="button">x³</button>
+            <button class="btn btn-sci" data-sci-append="^" type="button">xʸ</button>
+            <button class="btn btn-sci" data-sci-func="recip" type="button">1/x</button>
+            <button class="btn btn-sci" data-sci-func="fact" type="button">n!</button>
+
+            <button class="btn btn-sci" data-sci-append="π" type="button">π</button>
+            <button class="btn btn-sci" data-sci-append="e" type="button">e</button>
+            <button class="btn btn-sci" data-sci-append="(" type="button">(</button>
+            <button class="btn btn-sci" data-sci-append=")" type="button">)</button>
+            <button class="btn btn-operator" data-operator="%" type="button">mod</button>
+
+            <button class="btn btn-sci" data-sci-func="tenPow" type="button">10ˣ</button>
+            <button class="btn btn-sci" data-sci-func="ePow" type="button">eˣ</button>
+            <button class="btn btn-sci" data-sci-func="cbrt" type="button">∛x</button>
+            <button class="btn btn-sci" data-sci-func="abs" type="button">|x|</button>
+            <button class="btn btn-sci" data-sci-append="ans" type="button">Ans</button>
+          </div>
+
+          <!-- Divider -->
+          <div class="sci-divider"></div>
+
+          <!-- Bottom Standard Keypad in Scientific Mode -->
+          <div class="buttons-grid sci-standard-grid">
+            <button class="btn btn-action btn-clear" type="button">C</button>
+            <button class="btn btn-action btn-sign" type="button">±</button>
+            <button class="btn btn-action btn-del" type="button" title="Backspace">DEL</button>
+            <button class="btn btn-operator" data-operator="/" type="button">÷</button>
+
+            <button class="btn btn-number" data-number="7" type="button">7</button>
+            <button class="btn btn-number" data-number="8" type="button">8</button>
+            <button class="btn btn-number" data-number="9" type="button">9</button>
+            <button class="btn btn-operator" data-operator="*" type="button">×</button>
+
+            <button class="btn btn-number" data-number="4" type="button">4</button>
+            <button class="btn btn-number" data-number="5" type="button">5</button>
+            <button class="btn btn-number" data-number="6" type="button">6</button>
+            <button class="btn btn-operator" data-operator="-" type="button">−</button>
+
+            <button class="btn btn-number" data-number="1" type="button">1</button>
+            <button class="btn btn-number" data-number="2" type="button">2</button>
+            <button class="btn btn-number" data-number="3" type="button">3</button>
+            <button class="btn btn-operator" data-operator="+" type="button">+</button>
+
+            <button class="btn btn-number btn-zero" data-number="0" type="button">0</button>
+            <button class="btn btn-number btn-decimal" type="button">.</button>
+            <button class="btn btn-equals" type="button">=</button>
+          </div>
+        </div>
+
+        <!-- 3. HISTORY FULL VIEW -->
+        <div id="historyPanel" class="tab-panel history-panel-view" role="region" aria-label="Calculation History" style="display: none;">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Calculation History</h2>
+              <p class="panel-desc">Review, recall or copy previous equations</p>
+            </div>
+            <button id="clearAllHistoryBtn" class="btn-text-danger" type="button">Clear All</button>
+          </div>
+          <div id="historyViewList" class="history-list-full"></div>
+        </div>
+
+        <!-- 4. SETTINGS PANEL -->
+        <div id="settingsPanel" class="tab-panel settings-panel-view" role="region" aria-label="Settings" style="display: none;">
+          <div class="panel-header">
+            <div>
+              <h2 class="panel-title">Calculator Settings</h2>
+              <p class="panel-desc">Customize calculations, accuracy & local storage</p>
+            </div>
+          </div>
+          <div class="settings-form">
+            <div class="setting-item">
+              <label for="settingAngleMode">Default Angle Mode</label>
+              <select id="settingAngleMode" class="setting-select">
+                <option value="DEG">Degrees (DEG)</option>
+                <option value="RAD">Radians (RAD)</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label for="settingPrecision">Decimal Precision</label>
+              <select id="settingPrecision" class="setting-select">
+                <option value="6">6 decimal places</option>
+                <option value="10" selected>10 decimal places</option>
+                <option value="14">14 decimal places</option>
+              </select>
+            </div>
+            <div class="setting-item">
+              <label>Memory Storage</label>
+              <button id="clearMemorySettingBtn" class="btn-secondary-action" type="button">Clear Memory Cache</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Collapsible Overlay History Drawer (accessible from clock icon anytime) -->
+        <div id="historyDrawer" class="history-drawer" aria-hidden="true">
+          <div class="drawer-header">
+            <div>
+              <span class="drawer-title">History</span>
+              <span class="drawer-subtitle">Tap to reuse</span>
+            </div>
+            <div class="drawer-actions">
+              <button id="clearHistoryBtn" class="btn-text-danger" type="button">Clear</button>
+              <button id="closeHistoryBtn" class="btn-text-close" type="button" aria-label="Close history">✕</button>
+            </div>
+          </div>
+          <div id="historyList" class="history-list"></div>
         </div>
       </div>
-    </div>
+    </main>
   </div>
 </body>
 </html>

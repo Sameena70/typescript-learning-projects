@@ -46,6 +46,7 @@ export class ContactService {
      * Adds a new contact after validation and duplicate checks.
      */
     addContact(formData) {
+        var _a;
         const validation = validateContactForm(formData, this.contacts);
         if (!validation.isValid) {
             return { success: false, validation };
@@ -70,6 +71,7 @@ export class ContactService {
             isFavourite: formData.isFavourite,
             notes: formData.notes.trim().length > 0 ? formData.notes.trim() : undefined,
             tags: tagsList && tagsList.length > 0 ? tagsList : undefined,
+            avatarUrl: ((_a = formData.avatarUrl) === null || _a === void 0 ? void 0 : _a.trim()) || undefined,
             birthday: formData.birthday.trim().length > 0 ? formData.birthday.trim() : undefined,
             reminderDate: formData.reminderDate.trim().length > 0 ? formData.reminderDate.trim() : undefined,
             createdAt: new Date().toISOString()
@@ -118,6 +120,9 @@ export class ContactService {
         target.isFavourite = formData.isFavourite;
         target.notes = formData.notes.trim().length > 0 ? formData.notes.trim() : undefined;
         target.tags = tagsList && tagsList.length > 0 ? tagsList : undefined;
+        if (formData.avatarUrl !== undefined) {
+            target.avatarUrl = formData.avatarUrl.trim() || undefined;
+        }
         target.birthday = formData.birthday.trim().length > 0 ? formData.birthday.trim() : undefined;
         target.reminderDate =
             formData.reminderDate.trim().length > 0 ? formData.reminderDate.trim() : undefined;

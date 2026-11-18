@@ -3,596 +3,643 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Personal Finance & Expense Tracker</title>
+  <title>Expense Tracker | Financial Management Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <!-- Load the compiled TypeScript ES6 modules -->
   <script type="module" src="dist/main.js" defer></script>
 </head>
 <body>
-  <div class="app-wrapper">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="header-brand">
-        <div class="brand-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23"></line>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+  <!-- Root App Shell Container matching reference -->
+  <div class="app-layout">
+    <!-- 1. LEFT SIDEBAR (Dark Navy, Exactly Matching Reference) -->
+    <aside class="sidebar-panel">
+      <!-- App Logo & Title -->
+      <div class="sidebar-brand">
+        <div class="brand-logo-circle" aria-hidden="true">
+          <!-- Stylized Leaf Logo from reference -->
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"></path>
+            <path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"></path>
           </svg>
         </div>
+        <div class="brand-title-wrap">
+          <span class="brand-name">Expense</span>
+          <span class="brand-name">Tracker</span>
+        </div>
+      </div>
+
+      <!-- Navigation Menu -->
+      <nav class="sidebar-nav" aria-label="Main Navigation">
+        <button class="nav-item active" data-view="dashboard" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          </span>
+          <span class="nav-text">Dashboard</span>
+        </button>
+
+        <button class="nav-item" data-view="transactions" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+          </span>
+          <span class="nav-text">Transactions</span>
+        </button>
+
+        <button class="nav-item" data-view="analytics" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+          </span>
+          <span class="nav-text">Analytics</span>
+        </button>
+
+        <button class="nav-item" data-view="budgets" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+          </span>
+          <span class="nav-text">Budgets</span>
+        </button>
+
+        <button class="nav-item" data-view="settings" type="button">
+          <span class="nav-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+          </span>
+          <span class="nav-text">Settings</span>
+        </button>
+      </nav>
+
+      <!-- Theme Switcher at bottom -->
+      <div class="sidebar-theme-toggle">
+        <span class="theme-label">Light</span>
+        <label class="switch-toggle" for="themeToggleCheckbox">
+          <input type="checkbox" id="themeToggleCheckbox" aria-label="Toggle Dark/Light Mode">
+          <span class="slider-round"></span>
+        </label>
+        <span class="theme-label">Dark</span>
+      </div>
+    </aside>
+
+    <!-- 2. MAIN DASHBOARD CONTENT (Light Background, Exactly Matching Reference) -->
+    <main class="dashboard-main">
+      <!-- Top Search & User Header -->
+      <header class="top-nav-bar">
+        <div class="search-box-wrap">
+          <span class="search-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+          </span>
+          <input type="text" id="topSearchInput" placeholder="Search transactions..." aria-label="Search transactions">
+        </div>
+
+        <div class="top-profile-actions">
+          <!-- Notification Bell -->
+          <button id="notificationBellBtn" class="icon-round-btn" type="button" aria-label="Notifications" title="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+          </button>
+          <!-- User Avatar Initials JD -->
+          <div class="profile-avatar" title="User Profile">JD</div>
+        </div>
+      </header>
+
+      <!-- View Title & Month Dropdown Row -->
+      <div class="dashboard-header-row">
         <div>
-          <h1>Finance & Expense Tracker</h1>
-          <p class="subtitle">Complete Income, Expense & Budget Management</p>
+          <h1 class="page-title">Dashboard</h1>
+          <p class="page-subtitle">Track your spending, achieve your goals</p>
+        </div>
+
+        <div class="header-controls-right">
+          <!-- Month Selector Pill from reference -->
+          <div class="month-selector-pill">
+            <select id="monthFilterSelect" class="month-select-input" aria-label="Filter by month">
+              <option value="all" selected>This Month</option>
+              <option value="0">January</option>
+              <option value="1">February</option>
+              <option value="2">March</option>
+              <option value="3">April</option>
+              <option value="4">May</option>
+              <option value="5">June</option>
+              <option value="6">July</option>
+              <option value="7">August</option>
+              <option value="8">September</option>
+              <option value="9">October</option>
+              <option value="10">November</option>
+              <option value="11">December</option>
+            </select>
+            <svg class="chevron-down-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
         </div>
       </div>
 
-      <!-- Currency Switcher & Header Actions -->
-      <div class="header-actions">
-        <div class="currency-picker">
-          <label for="currencySelect" class="currency-label">Currency:</label>
-          <select id="currencySelect" class="currency-select" title="Change active currency">
-            <option value="INR">INR (₹)</option>
-            <option value="USD">USD ($)</option>
-            <option value="EUR">EUR (€)</option>
-            <option value="GBP">GBP (£)</option>
-          </select>
-        </div>
+      <!-- MAIN DASHBOARD CONTENT SECTION -->
+      <div id="mainDashboardSection">
+        <!-- 3 Financial Summary Cards (Total Balance, Total Income, Total Expenses) -->
+        <section class="summary-cards-grid">
+          <!-- 1. Total Balance Card (Mint Green) -->
+          <div class="summary-card card-mint">
+            <div class="summary-icon-circle icon-green">
+              <!-- Wallet Icon -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+            </div>
+            <div class="summary-content">
+              <span class="summary-label">Total Balance</span>
+              <div class="summary-amount" id="netBalanceDisplay">₹0</div>
+              <div class="summary-growth text-green">
+                <span id="balanceGrowthDisplay">↑ +12%</span>
+              </div>
+            </div>
+          </div>
 
-        <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
-        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
-        
-        <div class="io-btn-group">
-          <button id="importJsonBtn" class="btn btn-secondary btn-sm" type="button" title="Import JSON Backup">
-            📥 Import JSON
-          </button>
-          <button id="exportJsonBtn" class="btn btn-secondary btn-sm" type="button" title="Export JSON Backup">
-            📤 Export JSON
-          </button>
-          <button id="importCsvBtn" class="btn btn-secondary btn-sm" type="button" title="Import CSV Spreadsheet">
-            📥 Import CSV
-          </button>
-          <button id="exportCsvBtn" class="btn btn-secondary btn-sm" type="button" title="Export CSV Spreadsheet">
-            📊 Export CSV
-          </button>
-          <button id="recurringRulesBtn" class="btn btn-secondary btn-sm" type="button" title="Manage Recurring Transactions">
-            🔄 Recurring Rules
+          <!-- 2. Total Income Card (Light Blue) -->
+          <div class="summary-card card-blue">
+            <div class="summary-icon-circle icon-blue">
+              <!-- Plus Icon -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </div>
+            <div class="summary-content">
+              <span class="summary-label">Total Income</span>
+              <div class="summary-amount" id="totalIncomeDisplay">₹0</div>
+              <div class="summary-growth text-green">
+                <span id="incomeGrowthDisplay">↑ +8%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. Total Expenses Card (Light Pink) -->
+          <div class="summary-card card-pink">
+            <div class="summary-icon-circle icon-pink">
+              <!-- Minus Icon -->
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            </div>
+            <div class="summary-content">
+              <span class="summary-label">Total Expenses</span>
+              <div class="summary-amount" id="totalExpensesDisplay">₹0</div>
+              <div class="summary-growth text-pink">
+                <span id="expenseGrowthDisplay">↑ +5%</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Two Primary Charts Side-by-Side (Monthly Overview & Top Categories) -->
+        <section class="charts-row-grid">
+          <!-- Monthly Overview Card -->
+          <div class="chart-card monthly-overview-card">
+            <div class="chart-header">
+              <h2 class="chart-title">Monthly Overview</h2>
+              <div class="chart-legends">
+                <span class="legend-dot-label">
+                  <span class="dot dot-blue"></span> Income
+                </span>
+                <span class="legend-dot-label">
+                  <span class="dot dot-purple"></span> Expenses
+                </span>
+              </div>
+            </div>
+            <div class="chart-body-svg">
+              <svg id="monthlyOverviewChartSVG" viewBox="0 0 480 180" class="line-chart-svg"></svg>
+            </div>
+          </div>
+
+          <!-- Top Categories Card -->
+          <div class="chart-card top-categories-card">
+            <div class="chart-header">
+              <h2 class="chart-title">Top Categories</h2>
+            </div>
+            <div class="donut-chart-flex">
+              <div class="canvas-wrap">
+                <canvas id="topCategoriesCanvas" width="140" height="140"></canvas>
+              </div>
+              <div id="topCategoriesLegend" class="donut-legends-list">
+                <!-- Dynamically populated from actual transactions -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bottom Add Transaction Button matching reference -->
+        <div class="bottom-action-row">
+          <button id="bottomAddTransactionBtn" class="btn-add-transaction" type="button">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Add Transaction</span>
           </button>
         </div>
       </div>
-    </header>
 
-    <!-- Overview Stats Cards -->
-    <section class="summary-grid">
-      <!-- Net Balance Card -->
-      <div class="stat-card stat-net">
-        <div class="stat-header">
-          <span class="stat-label">Net Balance</span>
-          <span class="stat-badge badge-neutral" id="netBalanceBadge">Net</span>
-        </div>
-        <div class="stat-value text-positive" id="netBalanceDisplay">₹0.00</div>
-        <div class="stat-subtext" id="savingsRateDisplay">0.0% savings rate</div>
-      </div>
-
-      <!-- Total Income Card -->
-      <div class="stat-card stat-income">
-        <div class="stat-header">
-          <span class="stat-label">Total Income</span>
-          <span class="stat-badge badge-income">Received</span>
-        </div>
-        <div class="stat-value text-income" id="totalIncomeDisplay">₹0.00</div>
-        <div class="stat-subtext" id="incomeSubtext">All time income earned</div>
-      </div>
-
-      <!-- Total Spent Card -->
-      <div class="stat-card stat-spent">
-        <div class="stat-header">
-          <span class="stat-label">Total Expenses</span>
-          <span class="stat-badge badge-danger">Spent</span>
-        </div>
-        <div class="stat-value text-expense" id="totalExpensesDisplay">₹0.00</div>
-        <div class="stat-subtext" id="expenseCountText">0 transactions recorded</div>
-      </div>
-
-      <!-- Monthly Budget Card -->
-      <div class="stat-card stat-budget">
-        <div class="stat-header">
-          <span class="stat-label">Monthly Budget</span>
-          <button id="editBudgetBtn" class="edit-budget-btn" type="button" title="Set Budget">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-            </svg>
-            Edit
-          </button>
-        </div>
-        <div class="stat-value" id="budgetDisplay">₹0.00</div>
-        <div class="stat-subtext">
-          Remaining: <span id="remainingBalanceDisplay" class="font-bold">₹0.00</span>
-          <span class="stat-badge" id="balanceBadge">Safe</span>
-        </div>
-        <div class="progress-bar-container">
-          <div class="progress-bar-fill" id="budgetProgressBar"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Insights Feed -->
-    <div id="insightsContainer" class="insights-container">
-      <!-- Dynamically filled with actionable spending tips -->
-    </div>
-
-    <!-- Charts & Category Budgets Grid -->
-    <section class="visuals-grid">
-      <!-- Left: Spending by Category Chart -->
-      <div class="card visual-card">
-        <div class="card-header">
+      <!-- AUXILIARY TRANSACTIONS TABLE VIEW (Accessed via sidebar 'Transactions' tab) -->
+      <section id="transactionsTableSection" style="display: none;" class="auxiliary-section">
+        <div class="section-title-bar">
           <div>
-            <h2>Spending by Category</h2>
-            <p class="section-desc">Distribution of expenditures across categories</p>
+            <h2>Transactions Management</h2>
+            <p class="section-desc">Search, sort, filter, and manage income and expense records</p>
+          </div>
+          <div class="table-aux-actions">
+            <button id="transactionsAddBtn" class="btn-sub-action primary" type="button">+ New Transaction</button>
+            <button id="exportJsonBtn" class="btn-sub-action" type="button">Export JSON</button>
+            <button id="exportCsvBtn" class="btn-sub-action" type="button">Export CSV</button>
+            <button id="importJsonBtn" class="btn-sub-action" type="button">Import JSON</button>
+            <input type="file" id="jsonFileInput" accept=".json" style="display: none;">
           </div>
         </div>
-        <div id="categoryChartContainer" class="chart-container">
-          <!-- Dynamic category breakdown bars -->
-        </div>
-      </div>
 
-      <!-- Right: Income vs Expenses Ratio & Budget Caps -->
-      <div class="card visual-card">
-        <div class="card-header">
-          <div>
-            <h2>Income vs Expenses Ratio</h2>
-            <p class="section-desc">Proportion of incoming cashflow vs spending</p>
+        <!-- Comprehensive Filter & Sort Bar -->
+        <div class="table-filter-bar">
+          <div class="filter-group">
+            <label for="tableSearchInput">Search:</label>
+            <input type="text" id="tableSearchInput" class="filter-input" placeholder="Search title or notes...">
           </div>
-        </div>
-        <div id="incomeVsExpenseChart" class="comp-chart-wrapper">
-          <!-- Dynamic comparison bar -->
-        </div>
-
-        <div class="card-inner-header">
-          <h3>Category Budgets</h3>
-        </div>
-        <div id="categoryBudgetList" class="category-budget-grid">
-          <!-- Dynamic category budget bars -->
-        </div>
-      </div>
-    </section>
-
-    <!-- Main Content Grid -->
-    <main class="content-grid">
-      <!-- Left Column: Add Transaction Form -->
-      <section class="card form-card">
-        <div class="card-header">
-          <h2>Add Transaction</h2>
-          <span class="chip-info">Income / Expense</span>
-        </div>
-
-        <form id="expenseForm" class="expense-form" novalidate>
-          <!-- Transaction Type Toggle -->
-          <div class="form-group">
-            <label>Transaction Type <span class="required">*</span></label>
-            <div class="type-selector">
-              <label class="type-radio-label">
-                <input type="radio" name="transactionType" value="expense" checked>
-                <span class="radio-custom expense-tab">💸 Expense</span>
-              </label>
-              <label class="type-radio-label">
-                <input type="radio" name="transactionType" value="income">
-                <span class="radio-custom income-tab">💰 Income</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Description Field -->
-          <div class="form-group">
-            <label for="expenseTitle">Description / Title <span class="required">*</span></label>
-            <input 
-              type="text" 
-              id="expenseTitle" 
-              placeholder="e.g., Grocery shopping, Monthly salary" 
-              autocomplete="off"
-            >
-            <span class="error-msg" id="titleError"></span>
-          </div>
-
-          <!-- Amount & Category Row -->
-          <div class="form-row">
-            <div class="form-group">
-              <label for="expenseAmount">Amount <span class="required">*</span></label>
-              <input 
-                type="number" 
-                id="expenseAmount" 
-                placeholder="0.00" 
-                step="0.01" 
-                min="0.01"
-              >
-              <span class="error-msg" id="amountError"></span>
-            </div>
-
-            <div class="form-group">
-              <label for="expenseCategory">Category <span class="required">*</span></label>
-              <select id="expenseCategory">
-                <option value="Food & Dining">🍔 Food & Dining</option>
-                <option value="Transportation">🚗 Transportation</option>
-                <option value="Shopping">🛍️ Shopping</option>
-                <option value="Entertainment">🎬 Entertainment</option>
-                <option value="Bills & Utilities">💡 Bills & Utilities</option>
-                <option value="Health">💊 Health & Fitness</option>
-                <option value="Education">📚 Education</option>
-                <option value="Salary">💼 Salary</option>
-                <option value="Freelance">💻 Freelance</option>
-                <option value="Investment">📈 Investment</option>
-                <option value="Other">📦 Other</option>
-              </select>
-              <span class="error-msg" id="categoryError"></span>
-            </div>
-          </div>
-
-          <!-- Date & Notes Row -->
-          <div class="form-row">
-            <div class="form-group">
-              <label for="expenseDate">Date <span class="required">*</span></label>
-              <input type="date" id="expenseDate">
-              <span class="error-msg" id="dateError"></span>
-            </div>
-
-            <div class="form-group">
-              <label for="expenseNotes">Optional Notes</label>
-              <input type="text" id="expenseNotes" placeholder="e.g. Paid via UPI">
-            </div>
-          </div>
-
-          <!-- Form Buttons -->
-          <div class="form-actions">
-            <button type="submit" id="submitBtn" class="btn btn-primary">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <line x1="12" y1="5" x2="12" y2="19"></line>
-                <line x1="5" y1="12" x2="19" y2="12"></line>
-              </svg>
-              Save Transaction
-            </button>
-            <button type="button" id="resetFormBtn" class="btn btn-secondary">
-              Clear Form
-            </button>
-          </div>
-        </form>
-      </section>
-
-      <!-- Right Column: Transactions Records List -->
-      <section class="card list-card">
-        <div class="card-header">
-          <div>
-            <h2>Transactions Log</h2>
-            <p class="section-desc">Search, filter, and review financial history</p>
-          </div>
-          <button id="clearAllBtn" class="btn-clear-all" type="button" title="Clear All Records">
-            Clear All
-          </button>
-        </div>
-
-        <!-- Filter & Search Toolbar -->
-        <div class="filter-toolbar">
-          <div class="search-box">
-            <input type="text" id="searchDescriptionInput" placeholder="🔍 Search description or notes...">
-          </div>
-
-          <div class="filter-controls-row">
-            <select id="typeFilter" class="filter-select">
+          <div class="filter-group">
+            <label for="tableTypeFilter">Type:</label>
+            <select id="tableTypeFilter" class="filter-select">
               <option value="ALL">All Types</option>
-              <option value="expense">Expenses Only</option>
               <option value="income">Income Only</option>
+              <option value="expense">Expenses Only</option>
             </select>
-
-            <select id="categoryFilter" class="filter-select">
+          </div>
+          <div class="filter-group">
+            <label for="tableCategoryFilter">Category:</label>
+            <select id="tableCategoryFilter" class="filter-select">
               <option value="ALL">All Categories</option>
-              <option value="Food & Dining">🍔 Food & Dining</option>
-              <option value="Transportation">🚗 Transportation</option>
-              <option value="Shopping">🛍️ Shopping</option>
-              <option value="Entertainment">🎬 Entertainment</option>
-              <option value="Bills & Utilities">💡 Bills & Utilities</option>
-              <option value="Health">💊 Health</option>
-              <option value="Education">📚 Education</option>
-              <option value="Salary">💼 Salary</option>
-              <option value="Freelance">💻 Freelance</option>
-              <option value="Investment">📈 Investment</option>
-              <option value="Other">📦 Other</option>
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Bills & Utilities">Bills & Utilities</option>
+              <option value="Health">Health</option>
+              <option value="Education">Education</option>
+              <option value="Salary">Salary</option>
+              <option value="Freelance">Freelance</option>
+              <option value="Investment">Investment</option>
+              <option value="Other">Other</option>
             </select>
-
-            <div class="date-filter-group">
-              <input type="date" id="startDateFilter" title="Start date">
-              <span>to</span>
-              <input type="date" id="endDateFilter" title="End date">
-            </div>
-
-            <select id="sortBySelect" class="filter-select">
-              <option value="date">Sort by Date</option>
-              <option value="amount">Sort by Amount</option>
-              <option value="category">Sort by Category</option>
-              <option value="title">Sort by Title</option>
+          </div>
+          <div class="filter-group">
+            <label for="tableStartDateFilter">From:</label>
+            <input type="date" id="tableStartDateFilter" class="filter-input">
+          </div>
+          <div class="filter-group">
+            <label for="tableEndDateFilter">To:</label>
+            <input type="date" id="tableEndDateFilter" class="filter-input">
+          </div>
+          <div class="filter-group">
+            <label for="tableSortBySelect">Sort By:</label>
+            <select id="tableSortBySelect" class="filter-select">
+              <option value="date">Date</option>
+              <option value="amount">Amount</option>
+              <option value="title">Title</option>
+              <option value="category">Category</option>
             </select>
-
-            <select id="sortOrderSelect" class="filter-select">
-              <option value="desc">Descending</option>
-              <option value="asc">Ascending</option>
+          </div>
+          <div class="filter-group">
+            <label for="tableSortOrderSelect">Order:</label>
+            <select id="tableSortOrderSelect" class="filter-select">
+              <option value="desc">Newest / High to Low</option>
+              <option value="asc">Oldest / Low to High</option>
             </select>
-
-            <button id="resetFiltersBtn" class="btn btn-secondary btn-sm" type="button" title="Reset all filters">
-              Reset Filters
-            </button>
+          </div>
+          <div class="filter-group-actions">
+            <button id="resetFiltersBtn" class="btn-sub-action" type="button">Reset</button>
           </div>
         </div>
 
-        <!-- Expense Table/List -->
-        <div class="table-responsive">
-          <table class="expense-table">
+        <div class="table-container">
+          <table class="transactions-table">
             <thead>
               <tr>
-                <th>Description</th>
-                <th>Type</th>
-                <th>Category</th>
                 <th>Date</th>
+                <th>Title / Notes</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Payment Method</th>
                 <th>Amount</th>
-                <th class="text-center">Action</th>
+                <th style="text-align: right;">Actions</th>
               </tr>
             </thead>
-            <tbody id="expenseTableBody">
-              <!-- Dynamically populated by TypeScript -->
-            </tbody>
+            <tbody id="expenseTableBody"></tbody>
           </table>
-          
-          <!-- Empty State -->
-          <div id="emptyState" class="empty-state">
-            <div class="empty-icon">💸</div>
-            <h3>No transactions found</h3>
-            <p>Log your income or expense using the form on the left or reset search filters.</p>
+          <div id="emptyState" class="empty-state-card" style="display: none;">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+            <p>No transactions match your filters. Add a new transaction or reset filters.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- AUXILIARY ANALYTICS VIEW (Accessed via sidebar 'Analytics' tab) -->
+      <section id="analyticsSection" style="display: none;" class="auxiliary-section">
+        <div class="section-title-bar">
+          <div>
+            <h2>Financial Analytics & Insights</h2>
+            <p class="section-desc">Real-time breakdown of spending habits, income vs expenses, and periodic trends</p>
+          </div>
+          <div class="analytics-filter-wrap">
+            <label for="analyticsMonthFilter" class="filter-label">Period:</label>
+            <select id="analyticsMonthFilter" class="filter-select">
+              <option value="all">All Time</option>
+              <option value="0">January</option>
+              <option value="1">February</option>
+              <option value="2">March</option>
+              <option value="3">April</option>
+              <option value="4">May</option>
+              <option value="5">June</option>
+              <option value="6">July</option>
+              <option value="7">August</option>
+              <option value="8">September</option>
+              <option value="9">October</option>
+              <option value="10">November</option>
+              <option value="11">December</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Analytics Metric Cards -->
+        <div class="analytics-metrics-grid">
+          <div class="analytics-stat-card card-mint">
+            <span class="stat-label">Net Savings</span>
+            <div class="stat-value" id="analyticsNetSavings">₹0</div>
+            <span class="stat-subtext text-green" id="analyticsSavingsRate">Savings Rate: 0%</span>
+          </div>
+          <div class="analytics-stat-card card-blue">
+            <span class="stat-label">Average Expense</span>
+            <div class="stat-value" id="analyticsAvgExpense">₹0</div>
+            <span class="stat-subtext" id="analyticsTxCount">0 transactions recorded</span>
+          </div>
+          <div class="analytics-stat-card card-pink">
+            <span class="stat-label">Highest Expense</span>
+            <div class="stat-value" id="analyticsHighestExpense">₹0</div>
+            <span class="stat-subtext text-pink">Single transaction peak</span>
+          </div>
+        </div>
+
+        <!-- 2 Chart Cards for Analytics -->
+        <div class="charts-row-grid">
+          <!-- Income vs Expenses Bar Comparison -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Income vs Expenses Comparison</h3>
+            </div>
+            <div class="chart-body-svg">
+              <svg id="incomeVsExpenseChartSVG" viewBox="0 0 480 180" class="line-chart-svg"></svg>
+            </div>
+          </div>
+
+          <!-- Monthly Historical Trends -->
+          <div class="chart-card">
+            <div class="chart-header">
+              <h3 class="chart-title">Monthly Trends (Income & Expenses)</h3>
+              <div class="chart-legends">
+                <span class="legend-dot-label"><span class="dot dot-blue"></span> Income</span>
+                <span class="legend-dot-label"><span class="dot dot-purple"></span> Expense</span>
+              </div>
+            </div>
+            <div class="chart-body-svg">
+              <svg id="analyticsMonthlyTrendsSVG" viewBox="0 0 480 180" class="line-chart-svg"></svg>
+            </div>
+          </div>
+        </div>
+
+        <div class="section-sub-header">
+          <h3>Smart Financial Insights & Advisory</h3>
+        </div>
+        <div id="insightsContainer" class="insights-container"></div>
+      </section>
+
+      <!-- AUXILIARY BUDGETS SECTION (Accessed via sidebar 'Budgets' tab) -->
+      <section id="budgetsSection" style="display: none;" class="auxiliary-section">
+        <div class="section-title-bar">
+          <div>
+            <h2>Monthly Budgets & Category Limits</h2>
+            <p class="section-desc">Plan monthly spending caps and control category-level budgets</p>
+          </div>
+          <div class="table-aux-actions">
+            <button id="openBudgetModalBtn" class="btn-sub-action primary" type="button">Set Monthly Budget</button>
+            <button id="openCategoryBudgetModalBtn" class="btn-sub-action" type="button">+ Add Category Limit</button>
+          </div>
+        </div>
+
+        <!-- Total Monthly Budget Summary Hero Card -->
+        <div class="budget-overview-card">
+          <div class="budget-hero-flex">
+            <div>
+              <span class="text-sub font-medium">Monthly Overall Budget</span>
+              <div class="budget-stat-large" id="budgetDisplay">₹0</div>
+            </div>
+            <div class="budget-sub-stats">
+              <div class="sub-stat-pill">
+                <span class="text-sub text-xs">Total Spent</span>
+                <strong id="budgetSpentDisplay" class="text-main">₹0</strong>
+              </div>
+              <div class="sub-stat-pill">
+                <span class="text-sub text-xs">Remaining</span>
+                <strong id="remainingBalanceDisplay" class="text-main">₹0</strong>
+              </div>
+              <div class="sub-stat-pill">
+                <span class="text-sub text-xs">Utilization</span>
+                <strong id="budgetPercentDisplay" class="text-main">0%</strong>
+              </div>
+            </div>
+          </div>
+          <div class="progress-track-wrap large">
+            <div id="budgetProgressBar" class="progress-bar-fill" style="width: 0%;"></div>
+          </div>
+          <div class="budget-status-msg" id="budgetAlertText">Budget on track</div>
+        </div>
+
+        <div class="section-sub-header">
+          <h3>Category Budgets</h3>
+          <span class="text-sub text-xs">Real-time expenditure vs configured category ceilings</span>
+        </div>
+        <div id="categoryBudgetList" class="category-budget-grid-wrap"></div>
+      </section>
+
+      <!-- AUXILIARY SETTINGS SECTION (Accessed via sidebar 'Settings' tab) -->
+      <section id="settingsSection" style="display: none;" class="auxiliary-section">
+        <div class="section-title-bar">
+          <div>
+            <h2>Preferences & Application Settings</h2>
+            <p class="section-desc">Manage currency, interface appearance, and local storage data</p>
+          </div>
+        </div>
+
+        <div class="settings-grid">
+          <!-- Currency & Localization Settings -->
+          <div class="settings-group-card">
+            <h3 class="settings-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"></path><line x1="12" y1="6" x2="12" y2="18"></line></svg>
+              Currency & Region
+            </h3>
+            <p class="text-sub text-sm">Select the currency symbol used across balances, analytics, and tables.</p>
+            <div class="setting-row">
+              <label for="currencySelect">Primary Currency</label>
+              <select id="currencySelect" class="setting-dropdown">
+                <option value="INR">Indian Rupee (₹ - INR)</option>
+                <option value="USD">US Dollar ($ - USD)</option>
+                <option value="EUR">Euro (€ - EUR)</option>
+                <option value="GBP">British Pound (£ - GBP)</option>
+              </select>
+            </div>
+            <div class="setting-row">
+              <label for="dateFormatSelect">Date Display Format</label>
+              <select id="dateFormatSelect" class="setting-dropdown">
+                <option value="YYYY-MM-DD">YYYY-MM-DD (Standard ISO)</option>
+                <option value="DD/MM/YYYY">DD/MM/YYYY (Indian / UK)</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY (US)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Appearance & Interface Settings -->
+          <div class="settings-group-card">
+            <h3 class="settings-group-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+              Theme & Appearance
+            </h3>
+            <p class="text-sub text-sm">Configure theme preference or switch interface mode.</p>
+            <div class="setting-row align-center">
+              <div>
+                <strong>Dark Mode Theme</strong>
+                <p class="text-sub text-xs">Switch between light dashboard and dark navy theme</p>
+              </div>
+              <label class="switch-toggle" for="settingsThemeCheckbox">
+                <input type="checkbox" id="settingsThemeCheckbox" aria-label="Toggle Dark Mode in Settings">
+                <span class="slider-round"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Data Management & Backups -->
+          <div class="settings-group-card full-width">
+            <h3 class="settings-group-title text-danger">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+              Data Management & Backups
+            </h3>
+            <p class="text-sub text-sm">Download full JSON or CSV backups, or restore sample transactions.</p>
+            <div class="settings-actions-flex">
+              <button id="settingsExportJsonBtn" class="btn-sub-action" type="button">Backup to JSON</button>
+              <button id="settingsExportCsvBtn" class="btn-sub-action" type="button">Export to CSV</button>
+              <button id="settingsImportJsonBtn" class="btn-sub-action" type="button">Restore JSON Backup</button>
+              <button id="loadSampleDataBtn" class="btn-sub-action secondary" type="button">Load Sample Data</button>
+              <button id="clearAllDataBtn" class="btn-sub-action danger" type="button">Clear All Transactions</button>
+            </div>
           </div>
         </div>
       </section>
     </main>
-
-    <!-- Financial Reports Section (Monthly & Yearly Summaries) -->
-    <section class="card reports-section">
-      <div class="card-header">
-        <div>
-          <h2>Financial Reports & Trends</h2>
-          <p class="section-desc">Historical income, spending, and savings rate by period</p>
-        </div>
-      </div>
-      <div class="reports-grid">
-        <!-- Monthly Summary Table -->
-        <div class="report-box">
-          <h3>Monthly Performance</h3>
-          <div class="table-responsive">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th>Month</th>
-                  <th>Income</th>
-                  <th>Expenses</th>
-                  <th>Net Savings</th>
-                  <th>Savings Rate</th>
-                </tr>
-              </thead>
-              <tbody id="monthlySummaryTableBody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- Yearly Summary Table -->
-        <div class="report-box">
-          <h3>Yearly Overview</h3>
-          <div class="table-responsive">
-            <table class="report-table">
-              <thead>
-                <tr>
-                  <th>Year</th>
-                  <th>Total Income</th>
-                  <th>Total Expenses</th>
-                  <th>Net Savings</th>
-                  <th>Savings Rate</th>
-                </tr>
-              </thead>
-              <tbody id="yearlySummaryTableBody">
-                <!-- Dynamically populated -->
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
   </div>
 
-  <!-- Budget Modal Dialog -->
-  <div id="budgetModal" class="modal-overlay hidden">
-    <div class="modal-card">
+  <!-- ADD / EDIT TRANSACTION MODAL -->
+  <div id="transactionModal" class="modal-overlay" style="display: none;">
+    <div class="modal-window">
       <div class="modal-header">
-        <h3>Configure Budgets</h3>
-        <button id="closeModalBtn" class="modal-close" type="button">&times;</button>
+        <h3 id="modalHeadingText">Add Transaction</h3>
+        <button class="modal-close-trigger" type="button">✕</button>
       </div>
-      <div class="modal-body">
-        <p class="modal-desc">Set your total monthly budget and optional category limits:</p>
+      <form id="transactionModalForm" class="modal-form">
         <div class="form-group">
-          <label for="monthlyBudgetInput">Monthly Overall Budget</label>
-          <input 
-            type="number" 
-            id="monthlyBudgetInput" 
-            placeholder="e.g. 25000" 
-            min="0" 
-            step="500"
-          >
-          <span class="error-msg" id="budgetError"></span>
+          <label for="modalTitleInput">Description / Title</label>
+          <input type="text" id="modalTitleInput" required placeholder="e.g. Grocery Shopping">
         </div>
 
-        <hr class="modal-divider">
-        <h4 class="modal-subtitle">Category Budgets</h4>
-        <div class="form-row">
+        <div class="form-group-row">
           <div class="form-group">
-            <label for="budgetCategorySelect">Category</label>
-            <select id="budgetCategorySelect">
-              <option value="Food & Dining">🍔 Food & Dining</option>
-              <option value="Transportation">🚗 Transportation</option>
-              <option value="Shopping">🛍️ Shopping</option>
-              <option value="Entertainment">🎬 Entertainment</option>
-              <option value="Bills & Utilities">💡 Bills & Utilities</option>
-              <option value="Health">💊 Health & Fitness</option>
-              <option value="Education">📚 Education</option>
-              <option value="Other">📦 Other</option>
+            <label for="modalAmountInput">Amount</label>
+            <input type="number" id="modalAmountInput" step="0.01" min="0.01" required placeholder="0.00">
+          </div>
+          <div class="form-group">
+            <label>Transaction Type</label>
+            <div class="radio-pill-group">
+              <label class="radio-pill"><input type="radio" name="modalType" value="expense" checked> Expense</label>
+              <label class="radio-pill"><input type="radio" name="modalType" value="income"> Income</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group-row">
+          <div class="form-group">
+            <label for="modalCategorySelect">Category</label>
+            <select id="modalCategorySelect">
+              <option value="Food & Dining">Food & Dining</option>
+              <option value="Transportation">Transportation</option>
+              <option value="Shopping">Shopping</option>
+              <option value="Entertainment">Entertainment</option>
+              <option value="Bills & Utilities">Bills & Utilities</option>
+              <option value="Salary">Salary</option>
+              <option value="Freelance">Freelance</option>
+              <option value="Investment">Investment</option>
+              <option value="Other">Other</option>
             </select>
           </div>
           <div class="form-group">
-            <label for="categoryBudgetLimitInput">Limit</label>
-            <input type="number" id="categoryBudgetLimitInput" placeholder="e.g. 5000" min="0">
+            <label for="modalDateInput">Date</label>
+            <input type="date" id="modalDateInput" required>
           </div>
         </div>
-        <button type="button" id="setCategoryBudgetBtn" class="btn btn-secondary btn-sm">Set Category Budget</button>
-      </div>
-      <div class="modal-footer">
-        <button id="cancelBudgetBtn" type="button" class="btn btn-secondary">Close</button>
-        <button id="saveBudgetBtn" type="button" class="btn btn-primary">Save Monthly Budget</button>
-      </div>
-    </div>
-  </div>
 
-  <!-- Edit Expense Modal Dialog -->
-  <div id="editExpenseModal" class="modal-overlay hidden">
-    <div class="modal-card">
-      <div class="modal-header">
-        <h3>Edit Transaction</h3>
-        <button id="closeEditModalBtn" class="modal-close" type="button">&times;</button>
-      </div>
-      <form id="editExpenseForm">
-        <div class="modal-body">
-          <div class="form-group">
-            <label>Type <span class="required">*</span></label>
-            <div class="type-selector">
-              <label class="type-radio-label">
-                <input type="radio" name="editTransactionType" value="expense" id="editTypeExpense">
-                <span class="radio-custom expense-tab">💸 Expense</span>
-              </label>
-              <label class="type-radio-label">
-                <input type="radio" name="editTransactionType" value="income" id="editTypeIncome">
-                <span class="radio-custom income-tab">💰 Income</span>
-              </label>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="editTitleInput">Description / Title <span class="required">*</span></label>
-            <input type="text" id="editTitleInput" required>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="editAmountInput">Amount <span class="required">*</span></label>
-              <input type="number" id="editAmountInput" min="0.01" step="0.01" required>
-            </div>
-            <div class="form-group">
-              <label for="editCategorySelect">Category <span class="required">*</span></label>
-              <select id="editCategorySelect">
-                <option value="Food & Dining">🍔 Food & Dining</option>
-                <option value="Transportation">🚗 Transportation</option>
-                <option value="Shopping">🛍️ Shopping</option>
-                <option value="Entertainment">🎬 Entertainment</option>
-                <option value="Bills & Utilities">💡 Bills & Utilities</option>
-                <option value="Health">💊 Health & Fitness</option>
-                <option value="Education">📚 Education</option>
-                <option value="Salary">💼 Salary</option>
-                <option value="Freelance">💻 Freelance</option>
-                <option value="Investment">📈 Investment</option>
-                <option value="Other">📦 Other</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="editDateInput">Date <span class="required">*</span></label>
-              <input type="date" id="editDateInput" required>
-            </div>
-            <div class="form-group">
-              <label for="editNotesInput">Notes</label>
-              <input type="text" id="editNotesInput">
-            </div>
-          </div>
-          <span id="editErrorMsg" class="error-msg"></span>
+        <div class="form-group">
+          <label for="modalNotesInput">Notes (Optional)</label>
+          <textarea id="modalNotesInput" rows="2" placeholder="Additional details..."></textarea>
         </div>
+
         <div class="modal-footer">
-          <button id="cancelEditBtn" type="button" class="btn btn-secondary">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="button" class="btn-cancel modal-close-trigger">Cancel</button>
+          <button type="submit" class="btn-save">Save Transaction</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Recurring Rules Modal Dialog -->
-  <div id="recurringModal" class="modal-overlay hidden">
-    <div class="modal-card modal-large">
+  <!-- BUDGET CONFIGURATION MODAL -->
+  <div id="budgetConfigModal" class="modal-overlay" style="display: none;">
+    <div class="modal-window">
       <div class="modal-header">
-        <h3>Recurring Transactions</h3>
-        <button id="closeRecurringModalBtn" class="modal-close" type="button">&times;</button>
+        <h3>Configure Monthly Budget</h3>
+        <button class="modal-close-trigger" type="button">✕</button>
       </div>
-      <div class="modal-body">
-        <form id="recurringRuleForm" class="recurring-form">
-          <div class="form-row">
-            <div class="form-group">
-              <label for="recTitleInput">Title <span class="required">*</span></label>
-              <input type="text" id="recTitleInput" placeholder="e.g. Netflix, Rent, Salary" required>
-            </div>
-            <div class="form-group">
-              <label for="recAmountInput">Amount <span class="required">*</span></label>
-              <input type="number" id="recAmountInput" placeholder="0.00" min="0.01" step="0.01" required>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="recTypeSelect">Type</label>
-              <select id="recTypeSelect">
-                <option value="expense">Expense</option>
-                <option value="income">Income</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="recCategorySelect">Category</label>
-              <select id="recCategorySelect">
-                <option value="Food & Dining">🍔 Food & Dining</option>
-                <option value="Transportation">🚗 Transportation</option>
-                <option value="Shopping">🛍️ Shopping</option>
-                <option value="Entertainment">🎬 Entertainment</option>
-                <option value="Bills & Utilities">💡 Bills & Utilities</option>
-                <option value="Health">💊 Health</option>
-                <option value="Salary">💼 Salary</option>
-                <option value="Other">📦 Other</option>
-              </select>
-            </div>
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="recFrequencySelect">Frequency</label>
-              <select id="recFrequencySelect">
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
-                <option value="monthly">Monthly</option>
-                <option value="yearly">Yearly</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="recStartDateInput">Start Date</label>
-              <input type="date" id="recStartDateInput" required>
-            </div>
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm">+ Add Recurring Rule</button>
-        </form>
-
-        <hr class="modal-divider">
-        <h4>Active Recurring Rules</h4>
-        <div id="recurringRulesList" class="recurring-rules-list">
-          <!-- Populated dynamically -->
+      <form id="budgetConfigForm" class="modal-form">
+        <div class="form-group">
+          <label for="budgetAmountInput">Overall Monthly Budget Limit</label>
+          <input type="number" id="budgetAmountInput" min="0" step="1" required placeholder="e.g. 50000">
         </div>
-      </div>
-      <div class="modal-footer">
-        <button id="closeRecurringBtn" type="button" class="btn btn-secondary">Close</button>
-      </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel modal-close-trigger">Cancel</button>
+          <button type="submit" class="btn-save">Save Budget</button>
+        </div>
+      </form>
     </div>
   </div>
+
+  <!-- CATEGORY BUDGET CONFIGURATION MODAL -->
+  <div id="categoryBudgetModal" class="modal-overlay" style="display: none;">
+    <div class="modal-window">
+      <div class="modal-header">
+        <h3>Configure Category Budget</h3>
+        <button class="modal-close-trigger" type="button">✕</button>
+      </div>
+      <form id="categoryBudgetForm" class="modal-form">
+        <div class="form-group">
+          <label for="catBudgetSelect">Category</label>
+          <select id="catBudgetSelect" required>
+            <option value="Food & Dining">Food & Dining</option>
+            <option value="Transportation">Transportation</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Bills & Utilities">Bills & Utilities</option>
+            <option value="Health">Health</option>
+            <option value="Education">Education</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="catBudgetAmountInput">Monthly Limit</label>
+          <input type="number" id="catBudgetAmountInput" min="0" step="1" required placeholder="e.g. 15000">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn-cancel modal-close-trigger">Cancel</button>
+          <button type="submit" class="btn-save">Save Category Budget</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notification Toast -->
+  <div id="appToast" class="app-toast" style="display: none;"></div>
 </body>
 </html>

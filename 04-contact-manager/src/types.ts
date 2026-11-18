@@ -71,6 +71,7 @@ export interface OptionalContactDetails {
   address?: string;
   notes?: string;
   tags?: string[];
+  avatarUrl?: string;
   birthday?: string; // YYYY-MM-DD
   reminderDate?: string; // YYYY-MM-DD
 }
@@ -111,6 +112,7 @@ export interface ContactFormData {
   isFavourite: boolean;
   notes: string;
   tags: string; // Comma-separated input
+  avatarUrl?: string;
   birthday: string;
   reminderDate: string;
 }

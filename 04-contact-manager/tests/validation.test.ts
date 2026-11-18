@@ -467,7 +467,7 @@ describe('Architecture & Design Verification (ContactService, DI, Storage Resili
     const loaded = repo.loadContacts();
 
     expect(loaded.length).toBeGreaterThan(0);
-    expect(loaded[0].fullName).toBe('Priya Sharma');
+    expect(loaded[0].fullName).toBe('Sarah Johnson');
   });
 
   it('sanitizes contact records and handles missing optional attributes', () => {

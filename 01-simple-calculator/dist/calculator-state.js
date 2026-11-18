@@ -1,25 +1,23 @@
 import { compute, formatOperator, percentage, roundToPrecision, toggleSign } from './calculator-logic.js';
+import { factorial, safeSin, safeCos, safeTan, safeAsin, safeAcos, safeAtan, safeLog10, safeLn, safeSqrt, safeCbrt, safeReciprocal } from './scientific-logic.js';
+import { evaluateExpression } from './expression-parser.js';
 import { defaultStorageDriver } from './storage.js';
 const MEMORY_STORAGE_KEY = 'ts_calculator_memory';
-const MAX_DIGIT_LENGTH = 15;
-/**
- * Type guard for validating retrieved memory numeric value.
- */
+const SETTINGS_STORAGE_KEY = 'ts_calculator_settings';
+const MAX_DIGIT_LENGTH = 20;
 function isMemoryNumber(val) {
     return typeof val === 'number' && !isNaN(val) && isFinite(val);
 }
-/**
- * Manages the state machine, input validation, and arithmetic flow of the calculator.
- * Supports Dependency Injection for memory persistence while fully encapsulating state.
- */
 export class CalculatorStateModel {
-    /**
-     * Accepts an optional IStorageDriver to support Dependency Injection.
-     * Defaults to defaultStorageDriver.
-     */
     constructor(storage = defaultStorageDriver) {
         this.storage = storage;
         const savedMemory = this.storage.getItem(MEMORY_STORAGE_KEY, 0, isMemoryNumber);
+        const defaultSettings = {
+            defaultAngleMode: 'DEG',
+            precision: 10,
+            numberFormat: 'standard'
+        };
+        const savedSettings = this.storage.getItem(SETTINGS_STORAGE_KEY, defaultSettings, (val) => typeof val === 'object' && val !== null);
         this.state = {
             currentInput: '0',
             previousInput: '',
@@ -27,21 +25,35 @@ export class CalculatorStateModel {
             shouldResetDisplay: false,
             memoryValue: savedMemory,
             lastExpression: '',
-            isError: false
+            isError: false,
+            activeTab: 'standard',
+            angleMode: savedSettings.defaultAngleMode || 'DEG',
+            settings: savedSettings,
+            lastAnswer: '0'
         };
     }
-    /**
-     * Returns an immutable read-only snapshot of current calculator state.
-     */
     getState() {
         return Object.assign({}, this.state);
     }
-    /**
-     * Resets error state if a new action is performed.
-     */
     dismissError() {
         if (this.state.isError) {
             this.clearAll();
+        }
+    }
+    setActiveTab(tab) {
+        this.state.activeTab = tab;
+    }
+    toggleAngleMode() {
+        this.state.angleMode = this.state.angleMode === 'DEG' ? 'RAD' : 'DEG';
+    }
+    setAngleMode(mode) {
+        this.state.angleMode = mode;
+    }
+    updateSettings(newSettings) {
+        this.state.settings = Object.assign(Object.assign({}, this.state.settings), newSettings);
+        this.storage.setItem(SETTINGS_STORAGE_KEY, this.state.settings);
+        if (newSettings.defaultAngleMode) {
+            this.state.angleMode = newSettings.defaultAngleMode;
         }
     }
     appendDigit(digit) {
@@ -55,10 +67,8 @@ export class CalculatorStateModel {
                 this.state.currentInput = digit;
             }
             else {
-                // Prevent exceeding sensible display length (15 digits)
-                if (this.state.currentInput.replace(/[-.]/g, '').length >= MAX_DIGIT_LENGTH) {
+                if (this.state.currentInput.length >= MAX_DIGIT_LENGTH)
                     return;
-                }
                 this.state.currentInput += digit;
             }
         }
@@ -70,8 +80,25 @@ export class CalculatorStateModel {
             this.state.shouldResetDisplay = false;
             return;
         }
-        if (!this.state.currentInput.includes('.')) {
+        const parts = this.state.currentInput.split(/[+\-*/^%]/);
+        const lastPart = parts[parts.length - 1];
+        if (!lastPart.includes('.')) {
             this.state.currentInput += '.';
+        }
+    }
+    appendText(text) {
+        this.dismissError();
+        if (this.state.shouldResetDisplay) {
+            this.state.currentInput = text;
+            this.state.shouldResetDisplay = false;
+        }
+        else {
+            if (this.state.currentInput === '0') {
+                this.state.currentInput = text;
+            }
+            else {
+                this.state.currentInput += text;
+            }
         }
     }
     toggleSign() {
@@ -83,16 +110,15 @@ export class CalculatorStateModel {
             this.clearAll();
             return;
         }
-        if (this.state.shouldResetDisplay) {
+        if (this.state.shouldResetDisplay)
             return;
-        }
         if (this.state.currentInput.length === 1 ||
             (this.state.currentInput.length === 2 && this.state.currentInput.startsWith('-'))) {
             this.state.currentInput = '0';
         }
         else {
             this.state.currentInput = this.state.currentInput.slice(0, -1);
-            if (this.state.currentInput === '-' || this.state.currentInput === '') {
+            if (this.state.currentInput === '' || this.state.currentInput === '-') {
                 this.state.currentInput = '0';
             }
         }
@@ -110,26 +136,18 @@ export class CalculatorStateModel {
         const value = parseFloat(this.state.currentInput);
         if (!isNaN(value)) {
             const result = percentage(value);
-            this.state.currentInput = roundToPrecision(result).toString();
+            this.state.currentInput = roundToPrecision(result, this.state.settings.precision).toString();
             this.state.shouldResetDisplay = true;
         }
     }
-    /**
-     * Sets the active operator.
-     * If an operator was already selected and a second operand is entered,
-     * it executes the intermediate calculation to support continuous chaining (e.g., 10 + 5 * 2).
-     * If the user presses a different operator before entering a second operand, it updates the operator.
-     */
     setOperator(operator) {
         this.dismissError();
         let outcome = { status: 'idle' };
         if (this.state.previousInput !== '' && this.state.selectedOperator !== null) {
             if (!this.state.shouldResetDisplay) {
-                // Execute pending calculation for chained operations
                 outcome = this.calculateResult();
-                if (outcome.status === 'error') {
+                if (outcome.status === 'error')
                     return outcome;
-                }
             }
         }
         this.state.previousInput = this.state.currentInput;
@@ -137,14 +155,33 @@ export class CalculatorStateModel {
         this.state.shouldResetDisplay = true;
         return outcome;
     }
-    /**
-     * Calculates the arithmetic result of (previousInput selectedOperator currentInput).
-     * Returns a type-safe discriminated union (`CalculationOutcome`).
-     */
     calculateResult() {
         if (this.state.isError) {
             this.clearAll();
             return { status: 'idle' };
+        }
+        if (this.state.activeTab === 'scientific' || /[()^πe]/.test(this.state.currentInput)) {
+            try {
+                const rawExpr = this.state.currentInput;
+                const res = evaluateExpression(rawExpr, this.state.angleMode);
+                const resStr = roundToPrecision(res, this.state.settings.precision).toString();
+                this.state.lastExpression = `${rawExpr} =`;
+                this.state.currentInput = resStr;
+                this.state.lastAnswer = resStr;
+                this.state.shouldResetDisplay = true;
+                this.state.isError = false;
+                return {
+                    status: 'success',
+                    expressionToSave: `${rawExpr} =`,
+                    resultToSave: resStr
+                };
+            }
+            catch (err) {
+                this.clearAll();
+                this.state.isError = true;
+                const msg = err instanceof Error ? err.message : 'Error';
+                return { status: 'error', error: msg };
+            }
         }
         if (this.state.selectedOperator === null || this.state.previousInput === '') {
             return { status: 'idle' };
@@ -160,8 +197,9 @@ export class CalculatorStateModel {
         const expression = `${first} ${formattedOp} ${second}`;
         try {
             const result = compute(first, second, op);
-            const resultStr = result.toString();
+            const resultStr = roundToPrecision(result, this.state.settings.precision).toString();
             this.state.currentInput = resultStr;
+            this.state.lastAnswer = resultStr;
             this.state.previousInput = '';
             this.state.selectedOperator = null;
             this.state.shouldResetDisplay = true;
@@ -180,7 +218,105 @@ export class CalculatorStateModel {
             return { status: 'error', error: message };
         }
     }
-    // Memory functions
+    applyUnaryScientific(funcName) {
+        this.dismissError();
+        const val = parseFloat(this.state.currentInput);
+        if (isNaN(val)) {
+            this.state.isError = true;
+            return { status: 'error', error: 'Invalid Input' };
+        }
+        try {
+            let res;
+            let exprLabel;
+            switch (funcName) {
+                case 'sin':
+                    res = safeSin(val, this.state.angleMode);
+                    exprLabel = `sin(${val})`;
+                    break;
+                case 'cos':
+                    res = safeCos(val, this.state.angleMode);
+                    exprLabel = `cos(${val})`;
+                    break;
+                case 'tan':
+                    res = safeTan(val, this.state.angleMode);
+                    exprLabel = `tan(${val})`;
+                    break;
+                case 'asin':
+                    res = safeAsin(val, this.state.angleMode);
+                    exprLabel = `sin⁻¹(${val})`;
+                    break;
+                case 'acos':
+                    res = safeAcos(val, this.state.angleMode);
+                    exprLabel = `cos⁻¹(${val})`;
+                    break;
+                case 'atan':
+                    res = safeAtan(val, this.state.angleMode);
+                    exprLabel = `tan⁻¹(${val})`;
+                    break;
+                case 'log':
+                    res = safeLog10(val);
+                    exprLabel = `log(${val})`;
+                    break;
+                case 'ln':
+                    res = safeLn(val);
+                    exprLabel = `ln(${val})`;
+                    break;
+                case 'sqrt':
+                    res = safeSqrt(val);
+                    exprLabel = `√(${val})`;
+                    break;
+                case 'cbrt':
+                    res = safeCbrt(val);
+                    exprLabel = `∛(${val})`;
+                    break;
+                case 'sqr':
+                    res = val * val;
+                    exprLabel = `sqr(${val})`;
+                    break;
+                case 'cube':
+                    res = val * val * val;
+                    exprLabel = `cube(${val})`;
+                    break;
+                case 'recip':
+                    res = safeReciprocal(val);
+                    exprLabel = `1/(${val})`;
+                    break;
+                case 'abs':
+                    res = Math.abs(val);
+                    exprLabel = `|${val}|`;
+                    break;
+                case 'fact':
+                    res = factorial(val);
+                    exprLabel = `${val}!`;
+                    break;
+                case 'tenPow':
+                    res = Math.pow(10, val);
+                    exprLabel = `10^(${val})`;
+                    break;
+                case 'ePow':
+                    res = Math.exp(val);
+                    exprLabel = `e^(${val})`;
+                    break;
+                default: throw new Error(`Unknown scientific function: ${funcName}`);
+            }
+            const resStr = roundToPrecision(res, this.state.settings.precision).toString();
+            this.state.lastExpression = `${exprLabel} =`;
+            this.state.currentInput = resStr;
+            this.state.lastAnswer = resStr;
+            this.state.shouldResetDisplay = true;
+            return {
+                status: 'success',
+                expressionToSave: `${exprLabel} =`,
+                resultToSave: resStr
+            };
+        }
+        catch (err) {
+            this.clearAll();
+            this.state.isError = true;
+            const msg = err instanceof Error ? err.message : 'Error';
+            return { status: 'error', error: msg };
+        }
+    }
     memoryClear() {
         this.state.memoryValue = 0;
         this.storage.setItem(MEMORY_STORAGE_KEY, 0);
@@ -194,7 +330,7 @@ export class CalculatorStateModel {
         this.dismissError();
         const current = parseFloat(this.state.currentInput);
         if (!isNaN(current)) {
-            this.state.memoryValue = roundToPrecision(this.state.memoryValue + current);
+            this.state.memoryValue = roundToPrecision(this.state.memoryValue + current, this.state.settings.precision);
             this.storage.setItem(MEMORY_STORAGE_KEY, this.state.memoryValue);
             this.state.shouldResetDisplay = true;
         }
@@ -203,7 +339,7 @@ export class CalculatorStateModel {
         this.dismissError();
         const current = parseFloat(this.state.currentInput);
         if (!isNaN(current)) {
-            this.state.memoryValue = roundToPrecision(this.state.memoryValue - current);
+            this.state.memoryValue = roundToPrecision(this.state.memoryValue - current, this.state.settings.precision);
             this.storage.setItem(MEMORY_STORAGE_KEY, this.state.memoryValue);
             this.state.shouldResetDisplay = true;
         }

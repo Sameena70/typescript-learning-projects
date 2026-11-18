@@ -331,43 +331,48 @@ export function renderContactList(): void {
   if (contactsCardsContainer) {
     contactsCardsContainer.innerHTML = filtered
       .map((c: Contact) => {
+        const isFav = c.isFavourite;
+        const favTitle = isFav ? 'Remove from favorites' : 'Add to favorites';
+
+        // Avatar: If avatarUrl is present use it, otherwise fall back to clean avatar graphic
+        const avatarContent = c.avatarUrl
+          ? `<img src="${escapeHtml(c.avatarUrl)}" alt="${escapeHtml(c.fullName)}" class="card-avatar-img">`
+          : `<span>${escapeHtml(getInitials(c.fullName))}</span>`;
+
         return `
-          <div class="mobile-contact-card" data-id="${c.id}">
-            <div class="mobile-card-top">
-              <div class="avatar-initials">${escapeHtml(getInitials(c.fullName))}</div>
-              <div class="mobile-card-title-box">
-                <button class="contact-name-link" data-action="view-details" data-id="${c.id}">
-                  ${escapeHtml(c.fullName)}
-                </button>
-                ${c.company ? `<div class="sub-text">${escapeHtml(c.company)}</div>` : ''}
-              </div>
-              <button class="action-icon-btn btn-fav ${c.isFavourite ? 'fav-active' : 'fav-inactive'}" data-action="toggle-fav" data-id="${c.id}">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="${c.isFavourite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
-                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-                </svg>
-              </button>
+          <div class="contact-card-reference" data-id="${c.id}">
+            <!-- Top Right Star Button -->
+            <button class="card-fav-btn ${isFav ? 'is-fav' : ''}" data-action="toggle-fav" data-id="${c.id}" title="${favTitle}">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="${isFav ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+              </svg>
+            </button>
+
+            <!-- Circular Avatar -->
+            <div class="card-avatar-wrap" data-action="view-details" data-id="${c.id}">
+              ${avatarContent}
             </div>
-            <div class="mobile-card-details">
-              <div class="detail-line">
-                <span class="label">Phone:</span>
-                <a href="tel:${escapeHtml(c.phoneNumber)}" class="contact-link">${escapeHtml(c.phoneNumber)}</a>
-              </div>
-              ${
-                c.email
-                  ? `<div class="detail-line"><span class="label">Email:</span><a href="mailto:${escapeHtml(c.email)}" class="contact-link">${escapeHtml(c.email)}</a></div>`
-                  : ''
-              }
-              <div class="detail-badges">
-                ${getCategoryBadge(c.category)}
-                <button class="status-toggle-btn" data-action="toggle-status" data-id="${c.id}">
-                  ${getStatusBadge(c.status)}
-                </button>
-              </div>
+
+            <!-- Name -->
+            <div class="card-contact-name" data-action="view-details" data-id="${c.id}">
+              ${escapeHtml(c.fullName)}
             </div>
-            <div class="mobile-card-actions">
-              <button class="btn btn-secondary btn-sm" data-action="view-details" data-id="${c.id}">Details</button>
-              <button class="btn btn-outline btn-sm" data-action="edit" data-id="${c.id}">Edit</button>
-              <button class="btn btn-danger-outline btn-sm" data-action="delete" data-id="${c.id}">Delete</button>
+
+            <!-- Job Title / Company -->
+            <div class="card-job-title">
+              ${escapeHtml(c.jobTitle ?? (c.company ? c.company : 'Contact'))}
+            </div>
+
+            <!-- Email Link -->
+            <a href="mailto:${escapeHtml(c.email ?? '')}" class="card-email-link" title="${escapeHtml(c.email ?? '')}">
+              ${escapeHtml(c.email ?? c.phoneNumber)}
+            </a>
+
+            <!-- Quick Action Buttons -->
+            <div class="card-quick-actions">
+              <button class="quick-action-btn" data-action="view-details" data-id="${c.id}">View</button>
+              <button class="quick-action-btn" data-action="edit" data-id="${c.id}">Edit</button>
+              <button class="quick-action-btn btn-delete" data-action="delete" data-id="${c.id}">Delete</button>
             </div>
           </div>
         `;
@@ -968,5 +973,163 @@ export function initContactManagerEvents(): void {
         modal.classList.remove('modal-open');
       }
     });
+  });
+
+  // --- View Switching (Sidebar Navigation) ---
+  const navItems = document.querySelectorAll('.sidebar-nav .nav-item');
+  const contactsViewSection = document.getElementById('contactsViewSection');
+  const groupsViewSection = document.getElementById('groupsViewSection');
+  const importExportViewSection = document.getElementById('importExportViewSection');
+  const settingsViewSection = document.getElementById('settingsViewSection');
+  const pageTitleText = document.getElementById('pageTitleText');
+  const pageSubtitleText = document.getElementById('pageSubtitleText');
+  const groupsCardsContainer = document.getElementById('groupsCardsContainer');
+
+  function renderGroupsView(): void {
+    if (!groupsCardsContainer) return;
+    const all = getAllContacts();
+    const categories: ContactCategory[] = [
+      'Work',
+      'Clients',
+      'Business',
+      'Family',
+      'Friends',
+      'Other'
+    ];
+    const icons: Record<ContactCategory, string> = {
+      Work: '💼',
+      Clients: '👥',
+      Business: '🏢',
+      Family: '🏡',
+      Friends: '🎉',
+      Other: '📁'
+    };
+
+    groupsCardsContainer.innerHTML = categories
+      .map((cat) => {
+        const count = all.filter((c) => c.category === cat).length;
+        return `
+          <div class="group-stat-card" data-category="${cat}">
+            <div class="group-icon-circle badge-${cat.toLowerCase()}">
+              ${icons[cat]}
+            </div>
+            <div class="group-stat-info">
+              <h4>${cat}</h4>
+              <p>${count} ${count === 1 ? 'contact' : 'contacts'}</p>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+  }
+
+  groupsCardsContainer?.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement;
+    const card = target.closest('.group-stat-card') as HTMLElement | null;
+    if (!card) return;
+    const cat = card.getAttribute('data-category');
+    if (cat && categoryFilter) {
+      categoryFilter.value = cat;
+      activeFilterOptions.category = cat;
+      switchView('contacts');
+      renderDashboard();
+      renderContactList();
+    }
+  });
+
+  function switchView(viewName: string): void {
+    navItems.forEach((btn) => {
+      if (btn.getAttribute('data-view') === viewName) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    if (contactsViewSection) contactsViewSection.style.display = 'none';
+    if (groupsViewSection) groupsViewSection.style.display = 'none';
+    if (importExportViewSection) importExportViewSection.style.display = 'none';
+    if (settingsViewSection) settingsViewSection.style.display = 'none';
+
+    if (viewName === 'contacts') {
+      if (contactsViewSection) contactsViewSection.style.display = 'flex';
+      if (pageTitleText) pageTitleText.textContent = 'Contacts';
+      if (pageSubtitleText) pageSubtitleText.textContent = 'Manage your contacts efficiently';
+      activeFilterOptions.favouritesOnly = false;
+      renderContactList();
+    } else if (viewName === 'favorites') {
+      if (contactsViewSection) contactsViewSection.style.display = 'flex';
+      if (pageTitleText) pageTitleText.textContent = 'Favorites';
+      if (pageSubtitleText) pageSubtitleText.textContent = 'Quick access to your starred contacts';
+      activeFilterOptions.favouritesOnly = true;
+      renderContactList();
+    } else if (viewName === 'groups') {
+      if (groupsViewSection) groupsViewSection.style.display = 'block';
+      if (pageTitleText) pageTitleText.textContent = 'Groups';
+      if (pageSubtitleText)
+        pageSubtitleText.textContent = 'Segment contacts by categories and teams';
+      renderGroupsView();
+    } else if (viewName === 'import-export') {
+      if (importExportViewSection) importExportViewSection.style.display = 'block';
+      if (pageTitleText) pageTitleText.textContent = 'Import / Export';
+      if (pageSubtitleText)
+        pageSubtitleText.textContent = 'Backup, export or restore your contacts directory';
+    } else if (viewName === 'settings') {
+      if (settingsViewSection) settingsViewSection.style.display = 'block';
+      if (pageTitleText) pageTitleText.textContent = 'Settings';
+      if (pageSubtitleText)
+        pageSubtitleText.textContent = 'Application preferences and system management';
+    }
+  }
+
+  navItems.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const view = btn.getAttribute('data-view');
+      if (view) switchView(view);
+    });
+  });
+
+  // --- Grid View vs List View Toggle ---
+  const gridViewBtn = document.getElementById('gridViewBtn');
+  const listViewBtn = document.getElementById('listViewBtn');
+  const contactsCardsLayout = document.getElementById('contactsCardsContainer');
+  const contactsTableLayout = document.getElementById('contactsTableContainer');
+
+  gridViewBtn?.addEventListener('click', () => {
+    gridViewBtn.classList.add('active');
+    listViewBtn?.classList.remove('active');
+    if (contactsCardsLayout) contactsCardsLayout.style.display = 'grid';
+    if (contactsTableLayout) contactsTableLayout.style.display = 'none';
+  });
+
+  listViewBtn?.addEventListener('click', () => {
+    listViewBtn.classList.add('active');
+    gridViewBtn?.classList.remove('active');
+    if (contactsCardsLayout) contactsCardsLayout.style.display = 'none';
+    if (contactsTableLayout) contactsTableLayout.style.display = 'block';
+  });
+
+  // --- In-App Help Modal ---
+  const helpModal = document.getElementById('helpModal');
+  const openHelpModalBtn = document.getElementById('openHelpModalBtn');
+  const closeHelpBtn = document.getElementById('closeHelpBtn');
+  const gotItHelpBtn = document.getElementById('gotItHelpBtn');
+
+  openHelpModalBtn?.addEventListener('click', () => {
+    helpModal?.classList.add('modal-open');
+  });
+
+  closeHelpBtn?.addEventListener('click', () => {
+    helpModal?.classList.remove('modal-open');
+  });
+
+  gotItHelpBtn?.addEventListener('click', () => {
+    helpModal?.classList.remove('modal-open');
+  });
+
+  helpModal?.addEventListener('click', (e) => {
+    if (e.target === helpModal) {
+      helpModal.classList.remove('modal-open');
+    }
   });
 }

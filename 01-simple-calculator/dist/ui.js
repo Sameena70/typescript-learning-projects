@@ -1,8 +1,4 @@
 import { formatOperator } from './calculator-logic.js';
-/**
- * UI Renderer and DOM Manager for the Calculator.
- * Employs safe element retrieval with defensive checks and direct format functions.
- */
 export class CalculatorUI {
     constructor() {
         this.currentDisplay = document.getElementById('currentDisplay');
@@ -10,6 +6,12 @@ export class CalculatorUI {
         this.memoryIndicator = document.getElementById('memoryIndicator');
         this.historyListEl = document.getElementById('historyList');
         this.historyDrawer = document.getElementById('historyDrawer');
+        this.angleModeBtn = document.getElementById('angleModeBtn');
+        this.standardKeypad = document.getElementById('standardKeypad');
+        this.scientificKeypad = document.getElementById('scientificKeypad');
+        this.historyPanel = document.getElementById('historyPanel');
+        this.settingsPanel = document.getElementById('settingsPanel');
+        this.navBtns = document.querySelectorAll('.nav-item');
     }
     updateDisplay(state, overrideHistory) {
         if (this.currentDisplay) {
@@ -41,7 +43,30 @@ export class CalculatorUI {
                 this.memoryIndicator.style.display = 'none';
             }
         }
+        if (this.angleModeBtn) {
+            this.angleModeBtn.textContent = state.angleMode;
+        }
         this.updateActiveOperator(state.selectedOperator);
+    }
+    switchTab(tab) {
+        this.navBtns.forEach((btn) => {
+            if (btn.getAttribute('data-tab') === tab) {
+                btn.classList.add('active');
+                btn.setAttribute('aria-selected', 'true');
+            }
+            else {
+                btn.classList.remove('active');
+                btn.setAttribute('aria-selected', 'false');
+            }
+        });
+        if (this.standardKeypad)
+            this.standardKeypad.style.display = tab === 'standard' ? 'grid' : 'none';
+        if (this.scientificKeypad)
+            this.scientificKeypad.style.display = tab === 'scientific' ? 'grid' : 'none';
+        if (this.historyPanel)
+            this.historyPanel.style.display = tab === 'history' ? 'flex' : 'none';
+        if (this.settingsPanel)
+            this.settingsPanel.style.display = tab === 'settings' ? 'flex' : 'none';
     }
     showError(message) {
         if (this.currentDisplay) {
@@ -64,40 +89,68 @@ export class CalculatorUI {
             }
         });
     }
-    renderHistory(records, onSelectRecord) {
-        if (!this.historyListEl)
-            return;
-        this.historyListEl.innerHTML = '';
-        if (records.length === 0) {
-            const emptyMsg = document.createElement('div');
-            emptyMsg.className = 'history-empty';
-            emptyMsg.textContent = 'No calculation history yet.';
-            this.historyListEl.appendChild(emptyMsg);
-            return;
-        }
-        records.forEach((rec) => {
-            var _a;
-            const item = document.createElement('div');
-            item.className = 'history-item';
-            item.tabIndex = 0;
-            item.setAttribute('role', 'button');
-            item.setAttribute('aria-label', `Recall calculation: ${rec.expression} ${rec.result}`);
-            const expDiv = document.createElement('div');
-            expDiv.className = 'history-item-exp';
-            expDiv.textContent = rec.expression;
-            const resDiv = document.createElement('div');
-            resDiv.className = 'history-item-res';
-            resDiv.textContent = rec.result;
-            item.appendChild(expDiv);
-            item.appendChild(resDiv);
-            item.addEventListener('click', () => onSelectRecord(rec));
-            item.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    onSelectRecord(rec);
-                }
+    renderHistory(records, onSelectRecord, onDeleteRecord) {
+        const containers = [this.historyListEl, document.getElementById('historyViewList')];
+        containers.forEach((container) => {
+            if (!container)
+                return;
+            container.innerHTML = '';
+            if (records.length === 0) {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'history-empty';
+                emptyMsg.textContent = 'No calculation history yet.';
+                container.appendChild(emptyMsg);
+                return;
+            }
+            records.forEach((rec) => {
+                const item = document.createElement('div');
+                item.className = 'history-item';
+                item.tabIndex = 0;
+                item.setAttribute('role', 'button');
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'history-item-content';
+                const expDiv = document.createElement('div');
+                expDiv.className = 'history-item-exp';
+                expDiv.textContent = rec.expression;
+                const resDiv = document.createElement('div');
+                resDiv.className = 'history-item-res';
+                resDiv.textContent = rec.result;
+                contentDiv.appendChild(expDiv);
+                contentDiv.appendChild(resDiv);
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'history-item-actions';
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'btn-icon-history';
+                copyBtn.title = 'Copy result';
+                copyBtn.innerHTML = '📋';
+                copyBtn.type = 'button';
+                copyBtn.addEventListener('click', (e) => {
+                    var _a;
+                    e.stopPropagation();
+                    (_a = navigator.clipboard) === null || _a === void 0 ? void 0 : _a.writeText(rec.result);
+                });
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-icon-history btn-del-history';
+                deleteBtn.title = 'Delete record';
+                deleteBtn.innerHTML = '✕';
+                deleteBtn.type = 'button';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    onDeleteRecord(rec.id);
+                });
+                actionsDiv.appendChild(copyBtn);
+                actionsDiv.appendChild(deleteBtn);
+                item.appendChild(contentDiv);
+                item.appendChild(actionsDiv);
+                item.addEventListener('click', () => onSelectRecord(rec));
+                item.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        onSelectRecord(rec);
+                    }
+                });
+                container.appendChild(item);
             });
-            (_a = this.historyListEl) === null || _a === void 0 ? void 0 : _a.appendChild(item);
         });
     }
     toggleHistoryPanel() {

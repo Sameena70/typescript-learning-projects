@@ -30,6 +30,8 @@ export class NumberGuessingGameApp {
   }
 
   private init(): void {
+    // Start on medium to mirror reference screenshot (1-100)
+    this.stateModel.setDifficulty('medium');
     this.bindEvents();
     this.syncUI();
   }
@@ -51,7 +53,7 @@ export class NumberGuessingGameApp {
 
   private restart(): void {
     this.stateModel.startNewGame();
-    this.ui.resetFeedback();
+    this.ui.resetFeedback(this.stateModel.getMin(), this.stateModel.getMax());
     this.syncUI();
   }
 
@@ -76,7 +78,7 @@ export class NumberGuessingGameApp {
 
   private bindEvents(): void {
     // Difficulty Buttons
-    const diffButtons = document.querySelectorAll<HTMLButtonElement>('.diff-btn');
+    const diffButtons = document.querySelectorAll<HTMLButtonElement>('.diff-card-btn');
     diffButtons.forEach((btn) => {
       btn.addEventListener('click', () => {
         const diff = btn.getAttribute('data-difficulty') as DifficultyLevel;
@@ -123,12 +125,17 @@ export class NumberGuessingGameApp {
         const modal = document.getElementById('customDiffModal');
         modal?.classList.add('hidden');
 
-        // Update button highlight
+        // Update custom button label and highlight
         diffButtons.forEach((b) => b.classList.remove('active'));
         const customBtn = document.querySelector<HTMLButtonElement>(
-          '.diff-btn[data-difficulty="custom"]'
+          '.diff-card-btn[data-difficulty="custom"]'
         );
         customBtn?.classList.add('active');
+
+        const customRangeLabel = document.getElementById('customRangeLabel');
+        if (customRangeLabel) {
+          customRangeLabel.textContent = `(${min}–${max})`;
+        }
 
         this.restart();
       } catch (err: unknown) {
@@ -139,8 +146,12 @@ export class NumberGuessingGameApp {
       }
     });
 
-    // Cancel Custom Modal
+    // Close Custom Modal triggers
     document.getElementById('cancelCustomBtn')?.addEventListener('click', () => {
+      document.getElementById('customDiffModal')?.classList.add('hidden');
+    });
+
+    document.getElementById('closeCustomModalBtn')?.addEventListener('click', () => {
       document.getElementById('customDiffModal')?.classList.add('hidden');
     });
 
@@ -161,7 +172,7 @@ export class NumberGuessingGameApp {
       input.value = '';
     });
 
-    // Play Again / Restart Button
+    // Restart / New Game Button
     document.getElementById('restartGameBtn')?.addEventListener('click', () => {
       this.restart();
     });
@@ -175,9 +186,13 @@ export class NumberGuessingGameApp {
       this.ui.toggleHistoryDrawer();
     });
 
+    document.getElementById('bestScoreBadge')?.addEventListener('click', () => {
+      this.ui.toggleHistoryDrawer();
+    });
+
     // Clear History Button
     document.getElementById('clearHistoryBtn')?.addEventListener('click', () => {
-      if (confirm('Are you sure you want to clear your game history?')) {
+      if (confirm('Are you sure you want to clear your game match records?')) {
         this.statsManager.clearHistory();
         this.syncUI();
       }

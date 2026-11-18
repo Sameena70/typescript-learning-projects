@@ -16,6 +16,8 @@ export class NumberGuessingGameApp {
         this.init();
     }
     init() {
+        // Start on medium to mirror reference screenshot (1-100)
+        this.stateModel.setDifficulty('medium');
         this.bindEvents();
         this.syncUI();
     }
@@ -30,7 +32,7 @@ export class NumberGuessingGameApp {
     }
     restart() {
         this.stateModel.startNewGame();
-        this.ui.resetFeedback();
+        this.ui.resetFeedback(this.stateModel.getMin(), this.stateModel.getMax());
         this.syncUI();
     }
     handleGuess(guessValue) {
@@ -51,9 +53,9 @@ export class NumberGuessingGameApp {
         }
     }
     bindEvents() {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d, _e, _f, _g, _h;
         // Difficulty Buttons
-        const diffButtons = document.querySelectorAll('.diff-btn');
+        const diffButtons = document.querySelectorAll('.diff-card-btn');
         diffButtons.forEach((btn) => {
             btn.addEventListener('click', () => {
                 const diff = btn.getAttribute('data-difficulty');
@@ -91,10 +93,14 @@ export class NumberGuessingGameApp {
                 // Close modal
                 const modal = document.getElementById('customDiffModal');
                 modal === null || modal === void 0 ? void 0 : modal.classList.add('hidden');
-                // Update button highlight
+                // Update custom button label and highlight
                 diffButtons.forEach((b) => b.classList.remove('active'));
-                const customBtn = document.querySelector('.diff-btn[data-difficulty="custom"]');
+                const customBtn = document.querySelector('.diff-card-btn[data-difficulty="custom"]');
                 customBtn === null || customBtn === void 0 ? void 0 : customBtn.classList.add('active');
+                const customRangeLabel = document.getElementById('customRangeLabel');
+                if (customRangeLabel) {
+                    customRangeLabel.textContent = `(${min}–${max})`;
+                }
                 this.restart();
             }
             catch (err) {
@@ -104,8 +110,12 @@ export class NumberGuessingGameApp {
                 }
             }
         });
-        // Cancel Custom Modal
+        // Close Custom Modal triggers
         (_a = document.getElementById('cancelCustomBtn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
+            var _a;
+            (_a = document.getElementById('customDiffModal')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
+        });
+        (_b = document.getElementById('closeCustomModalBtn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
             var _a;
             (_a = document.getElementById('customDiffModal')) === null || _a === void 0 ? void 0 : _a.classList.add('hidden');
         });
@@ -124,26 +134,29 @@ export class NumberGuessingGameApp {
             this.handleGuess(guessNum);
             input.value = '';
         });
-        // Play Again / Restart Button
-        (_b = document.getElementById('restartGameBtn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
+        // Restart / New Game Button
+        (_c = document.getElementById('restartGameBtn')) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => {
             this.restart();
         });
         // Toggle Game History Drawer
-        (_c = document.getElementById('toggleHistoryBtn')) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => {
+        (_d = document.getElementById('toggleHistoryBtn')) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => {
             this.ui.toggleHistoryDrawer();
         });
-        (_d = document.getElementById('closeHistoryBtn')) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => {
+        (_e = document.getElementById('closeHistoryBtn')) === null || _e === void 0 ? void 0 : _e.addEventListener('click', () => {
+            this.ui.toggleHistoryDrawer();
+        });
+        (_f = document.getElementById('bestScoreBadge')) === null || _f === void 0 ? void 0 : _f.addEventListener('click', () => {
             this.ui.toggleHistoryDrawer();
         });
         // Clear History Button
-        (_e = document.getElementById('clearHistoryBtn')) === null || _e === void 0 ? void 0 : _e.addEventListener('click', () => {
-            if (confirm('Are you sure you want to clear your game history?')) {
+        (_g = document.getElementById('clearHistoryBtn')) === null || _g === void 0 ? void 0 : _g.addEventListener('click', () => {
+            if (confirm('Are you sure you want to clear your game match records?')) {
                 this.statsManager.clearHistory();
                 this.syncUI();
             }
         });
         // Reset All Statistics
-        (_f = document.getElementById('resetStatsBtn')) === null || _f === void 0 ? void 0 : _f.addEventListener('click', () => {
+        (_h = document.getElementById('resetStatsBtn')) === null || _h === void 0 ? void 0 : _h.addEventListener('click', () => {
             if (confirm('Permanently reset all games played, wins, losses, and best scores?')) {
                 this.statsManager.resetStatistics();
                 this.syncUI();

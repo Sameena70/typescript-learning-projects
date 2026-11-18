@@ -1,14 +1,7 @@
 import { CalculatorStateModel } from './calculator-state.js';
 import { HistoryService } from './history-service.js';
 import { CalculatorUI } from './ui.js';
-/**
- * Main Application Bootstrap for the Simple Calculator.
- * Orchestrates user interactions, state transitions, and UI updates.
- */
 export class CalculatorApp {
-    /**
-     * Accepts dependencies via constructor for clean testing and loose coupling.
-     */
     constructor(stateModel = new CalculatorStateModel(), historyService = new HistoryService(), ui = new CalculatorUI()) {
         this.stateModel = stateModel;
         this.historyService = historyService;
@@ -23,12 +16,19 @@ export class CalculatorApp {
     refreshHistory() {
         const history = this.historyService.getHistory();
         this.ui.renderHistory(history, (record) => {
-            // Recall past result into current display
             this.stateModel.clearAll();
             this.stateModel.appendDigit(record.result);
             this.ui.updateDisplay(this.stateModel.getState(), record.expression);
             this.ui.closeHistoryPanel();
+            this.switchTab('standard');
+        }, (id) => {
+            this.historyService.deleteRecord(id);
+            this.refreshHistory();
         });
+    }
+    switchTab(tab) {
+        this.stateModel.setActiveTab(tab);
+        this.ui.switchTab(tab);
     }
     handleOperator(operator) {
         const outcome = this.stateModel.setOperator(operator);
@@ -36,7 +36,7 @@ export class CalculatorApp {
             this.ui.showError(outcome.error);
         }
         else if (outcome.status === 'success') {
-            this.historyService.addRecord(outcome.expressionToSave, outcome.resultToSave);
+            this.historyService.addRecord(outcome.expressionToSave, outcome.resultToSave, 'standard');
             this.refreshHistory();
             this.ui.updateDisplay(this.stateModel.getState());
         }
@@ -50,7 +50,21 @@ export class CalculatorApp {
             this.ui.showError(outcome.error);
         }
         else if (outcome.status === 'success') {
-            this.historyService.addRecord(outcome.expressionToSave, outcome.resultToSave);
+            this.historyService.addRecord(outcome.expressionToSave, outcome.resultToSave, this.stateModel.getState().activeTab === 'scientific' ? 'scientific' : 'standard');
+            this.refreshHistory();
+            this.ui.updateDisplay(this.stateModel.getState(), outcome.expressionToSave);
+        }
+        else {
+            this.ui.updateDisplay(this.stateModel.getState());
+        }
+    }
+    handleUnaryScientific(funcName) {
+        const outcome = this.stateModel.applyUnaryScientific(funcName);
+        if (outcome.status === 'error') {
+            this.ui.showError(outcome.error);
+        }
+        else if (outcome.status === 'success') {
+            this.historyService.addRecord(outcome.expressionToSave, outcome.resultToSave, 'scientific');
             this.refreshHistory();
             this.ui.updateDisplay(this.stateModel.getState(), outcome.expressionToSave);
         }
@@ -59,7 +73,22 @@ export class CalculatorApp {
         }
     }
     bindEvents() {
-        var _a, _b, _c, _d;
+        var _a, _b;
+        // Navigation Tabs
+        const navBtns = document.querySelectorAll('.nav-item');
+        navBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const tab = btn.getAttribute('data-tab');
+                if (tab)
+                    this.switchTab(tab);
+            });
+        });
+        // Angle mode button (DEG/RAD)
+        const angleBtn = document.getElementById('angleModeBtn');
+        angleBtn === null || angleBtn === void 0 ? void 0 : angleBtn.addEventListener('click', () => {
+            this.stateModel.toggleAngleMode();
+            this.ui.updateDisplay(this.stateModel.getState());
+        });
         // Number buttons
         const numberBtns = document.querySelectorAll('.btn-number[data-number]');
         numberBtns.forEach((btn) => {
@@ -71,17 +100,21 @@ export class CalculatorApp {
                 }
             });
         });
-        // Decimal button
-        const decimalBtn = document.getElementById('decimalBtn');
-        decimalBtn === null || decimalBtn === void 0 ? void 0 : decimalBtn.addEventListener('click', () => {
-            this.stateModel.appendDecimal();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Decimal buttons
+        const decimalBtns = document.querySelectorAll('.btn-decimal');
+        decimalBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.stateModel.appendDecimal();
+                this.ui.updateDisplay(this.stateModel.getState());
+            });
         });
-        // Negation button (toggle sign)
-        const signBtn = document.getElementById('signBtn');
-        signBtn === null || signBtn === void 0 ? void 0 : signBtn.addEventListener('click', () => {
-            this.stateModel.toggleSign();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Negation buttons (toggle sign)
+        const signBtns = document.querySelectorAll('.btn-sign');
+        signBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.stateModel.toggleSign();
+                this.ui.updateDisplay(this.stateModel.getState());
+            });
         });
         // Operator buttons
         const operatorBtns = document.querySelectorAll('.btn-operator');
@@ -93,63 +126,107 @@ export class CalculatorApp {
                 }
             });
         });
-        // Equals button
-        const equalsBtn = document.getElementById('equalsBtn');
-        equalsBtn === null || equalsBtn === void 0 ? void 0 : equalsBtn.addEventListener('click', () => {
-            this.handleEquals();
+        // Equals buttons
+        const equalsBtns = document.querySelectorAll('.btn-equals');
+        equalsBtns.forEach((btn) => {
+            btn.addEventListener('click', () => this.handleEquals());
         });
-        // Clear All (AC)
-        const clearBtn = document.getElementById('clearBtn');
-        clearBtn === null || clearBtn === void 0 ? void 0 : clearBtn.addEventListener('click', () => {
-            this.stateModel.clearAll();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Clear All (C / AC)
+        const clearBtns = document.querySelectorAll('.btn-clear');
+        clearBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.stateModel.clearAll();
+                this.ui.updateDisplay(this.stateModel.getState());
+            });
         });
-        // Delete Last (Backspace)
-        const deleteBtn = document.getElementById('deleteBtn');
-        deleteBtn === null || deleteBtn === void 0 ? void 0 : deleteBtn.addEventListener('click', () => {
-            this.stateModel.deleteLast();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Delete Last (DEL / Backspace)
+        const deleteBtns = document.querySelectorAll('.btn-del');
+        deleteBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.stateModel.deleteLast();
+                this.ui.updateDisplay(this.stateModel.getState());
+            });
         });
-        // Percentage button (%)
-        const percentBtn = document.getElementById('percentBtn');
-        percentBtn === null || percentBtn === void 0 ? void 0 : percentBtn.addEventListener('click', () => {
-            this.stateModel.applyPercentage();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Percentage buttons
+        const percentBtns = document.querySelectorAll('.btn-percent');
+        percentBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.stateModel.applyPercentage();
+                this.ui.updateDisplay(this.stateModel.getState());
+            });
         });
-        // Memory Keys
-        (_a = document.getElementById('mcBtn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
-            this.stateModel.memoryClear();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Scientific specific buttons
+        const sciFuncBtns = document.querySelectorAll('[data-sci-func]');
+        sciFuncBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const fn = btn.getAttribute('data-sci-func');
+                if (fn)
+                    this.handleUnaryScientific(fn);
+            });
         });
-        (_b = document.getElementById('mrBtn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
-            this.stateModel.memoryRecall();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Scientific append buttons: (, ), pi, e, power, ans
+        const sciAppendBtns = document.querySelectorAll('[data-sci-append]');
+        sciAppendBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                const text = btn.getAttribute('data-sci-append');
+                if (text === 'ans') {
+                    this.stateModel.appendText(this.stateModel.getState().lastAnswer);
+                }
+                else if (text !== null) {
+                    this.stateModel.appendText(text);
+                }
+                this.ui.updateDisplay(this.stateModel.getState());
+            });
         });
-        (_c = document.getElementById('mPlusBtn')) === null || _c === void 0 ? void 0 : _c.addEventListener('click', () => {
-            this.stateModel.memoryAdd();
-            this.ui.updateDisplay(this.stateModel.getState());
+        // Memory operations
+        const bindMemory = (id, action) => {
+            document.querySelectorAll(`#${id}`).forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    action();
+                    this.ui.updateDisplay(this.stateModel.getState());
+                });
+            });
+        };
+        bindMemory('mcBtn', () => this.stateModel.memoryClear());
+        bindMemory('mrBtn', () => this.stateModel.memoryRecall());
+        bindMemory('mPlusBtn', () => this.stateModel.memoryAdd());
+        bindMemory('mMinusBtn', () => this.stateModel.memorySubtract());
+        // History drawer triggers
+        const toggleHistoryBtns = document.querySelectorAll('#toggleHistoryBtn');
+        toggleHistoryBtns.forEach((btn) => {
+            btn.addEventListener('click', () => this.ui.toggleHistoryPanel());
         });
-        (_d = document.getElementById('mMinusBtn')) === null || _d === void 0 ? void 0 : _d.addEventListener('click', () => {
-            this.stateModel.memorySubtract();
-            this.ui.updateDisplay(this.stateModel.getState());
-        });
-        // History Drawer Triggers
-        const historyToggleBtn = document.getElementById('historyToggleBtn');
-        historyToggleBtn === null || historyToggleBtn === void 0 ? void 0 : historyToggleBtn.addEventListener('click', () => {
-            this.ui.toggleHistoryPanel();
-        });
-        const closeHistoryBtn = document.getElementById('closeHistoryBtn');
-        closeHistoryBtn === null || closeHistoryBtn === void 0 ? void 0 : closeHistoryBtn.addEventListener('click', () => {
+        (_a = document.getElementById('closeHistoryBtn')) === null || _a === void 0 ? void 0 : _a.addEventListener('click', () => {
             this.ui.closeHistoryPanel();
         });
-        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-        clearHistoryBtn === null || clearHistoryBtn === void 0 ? void 0 : clearHistoryBtn.addEventListener('click', () => {
-            this.historyService.clearHistory();
-            this.refreshHistory();
+        const clearHistoryBtns = document.querySelectorAll('#clearHistoryBtn, #clearAllHistoryBtn');
+        clearHistoryBtns.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                this.historyService.clearHistory();
+                this.refreshHistory();
+            });
         });
-        // Keyboard support with safe key handling
+        // Settings actions
+        const angleSetting = document.getElementById('settingAngleMode');
+        angleSetting === null || angleSetting === void 0 ? void 0 : angleSetting.addEventListener('change', () => {
+            const mode = angleSetting.value;
+            this.stateModel.updateSettings({ defaultAngleMode: mode });
+            this.ui.updateDisplay(this.stateModel.getState());
+        });
+        const precisionSetting = document.getElementById('settingPrecision');
+        precisionSetting === null || precisionSetting === void 0 ? void 0 : precisionSetting.addEventListener('change', () => {
+            const prec = parseInt(precisionSetting.value, 10);
+            this.stateModel.updateSettings({ precision: prec });
+            this.ui.updateDisplay(this.stateModel.getState());
+        });
+        (_b = document.getElementById('clearMemorySettingBtn')) === null || _b === void 0 ? void 0 : _b.addEventListener('click', () => {
+            this.stateModel.memoryClear();
+            this.ui.updateDisplay(this.stateModel.getState());
+            alert('Memory has been cleared.');
+        });
+        // Keyboard support
         window.addEventListener('keydown', (e) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) {
                 return;
             }
             if (/^[0-9]$/.test(e.key)) {
@@ -184,7 +261,6 @@ export class CalculatorApp {
         });
     }
 }
-// Instantiate application once DOM is loaded
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => {
         new CalculatorApp();

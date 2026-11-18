@@ -1,29 +1,24 @@
-/**
- * Calculator Type Definitions
- *
- * Defines domain-specific types, discriminated unions, interfaces,
- * and generic storage models for the Simple Calculator application.
- */
-
-/**
- * Valid arithmetic operator literal types.
- */
 export type Operator = '+' | '-' | '*' | '/' | '%';
+export type AngleMode = 'DEG' | 'RAD';
+export type ActiveTab = 'standard' | 'scientific' | 'history' | 'settings';
+export type NumberFormatPreference = 'standard' | 'locale' | 'scientific';
 
-/**
- * Calculation Record persisted in history storage.
- */
+export type StorageValidator<T> = (val: unknown) => val is T;
+
+export interface CalculatorSettings {
+  defaultAngleMode: AngleMode;
+  precision: number;
+  numberFormat: NumberFormatPreference;
+}
+
 export interface CalculationRecord {
   id: string;
   expression: string;
   result: string;
   timestamp: number;
+  mode?: 'standard' | 'scientific';
 }
 
-/**
- * Comprehensive Calculator State.
- * Replaced the empty-string sentinel with `Operator | null` for type-safe operator representation.
- */
 export interface CalculatorState {
   currentInput: string;
   previousInput: string;
@@ -32,18 +27,17 @@ export interface CalculatorState {
   memoryValue: number;
   lastExpression: string;
   isError: boolean;
+  activeTab: ActiveTab;
+  angleMode: AngleMode;
+  settings: CalculatorSettings;
+  lastAnswer: string;
 }
 
-/**
- * Discriminated Union for Calculation Outcomes.
- * Eliminates conflicting states (e.g. error and result simultaneously populated or empty).
- */
 export type CalculationOutcome =
   | {
       status: 'success';
       expressionToSave: string;
       resultToSave: string;
-      /** Backward compatibility helper for legacy code/tests expecting resultToSave directly */
       error?: undefined;
     }
   | {
@@ -59,15 +53,6 @@ export type CalculationOutcome =
       resultToSave?: undefined;
     };
 
-/**
- * Storage item validator predicate function type.
- */
-export type StorageValidator<T> = (val: unknown) => val is T;
-
-/**
- * Generic Storage Driver interface (DIP - Dependency Inversion Principle).
- * Decouples state and service models from concrete browser localStorage APIs.
- */
 export interface IStorageDriver {
   getItem<T>(key: string, fallback: T, validator?: StorageValidator<T>): T;
   setItem<T>(key: string, value: T): boolean;

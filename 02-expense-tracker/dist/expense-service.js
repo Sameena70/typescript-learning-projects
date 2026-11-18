@@ -91,6 +91,12 @@ export class ExpenseService {
         this.settings.categoryBudgets[category] = amount;
         this.saveSettings();
     }
+    deleteCategoryBudget(category) {
+        if (category in this.settings.categoryBudgets) {
+            delete this.settings.categoryBudgets[category];
+            this.saveSettings();
+        }
+    }
     addExpense(data) {
         var _a;
         const id = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;

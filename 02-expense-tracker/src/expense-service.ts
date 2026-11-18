@@ -131,6 +131,13 @@ export class ExpenseService {
     this.saveSettings();
   }
 
+  public deleteCategoryBudget(category: string): void {
+    if (category in this.settings.categoryBudgets) {
+      delete this.settings.categoryBudgets[category];
+      this.saveSettings();
+    }
+  }
+
   public addExpense(data: {
     title: string;
     amount: number;

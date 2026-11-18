@@ -1,33 +1,23 @@
 import { ExpenseService } from './expense-service.js';
 import { generateSummary } from './calculations.js';
 import { validateExpense } from './validation.js';
-import {
-  exportToJSON,
-  exportToCSV,
-  parseAndValidateImport,
-  parseCSVContent,
-  readTextFile
-} from './import-export.js';
+import { exportToJSON, exportToCSV, parseAndValidateImport } from './import-export.js';
 import { ExpenseUI } from './ui.js';
 import {
   CurrencyCode,
   ExpenseCategory,
   ExpenseFilterOptions,
-  RecurringFrequency,
   TransactionType,
+  ExpenseFormData,
   SortField,
   SortOrder
 } from './types.js';
 
-/**
- * Main Controller for the Personal Expense Tracker Application.
- * Coordinates user input, services, and UI rendering.
- * Supports constructor Dependency Injection for testability and modularity.
- */
 export class ExpenseApp {
   private service: ExpenseService;
   private ui: ExpenseUI;
   private currentEditingId: string | null = null;
+  private currentDateFormat: string = 'YYYY-MM-DD';
 
   constructor(service: ExpenseService = new ExpenseService(), ui: ExpenseUI = new ExpenseUI()) {
     this.service = service;
@@ -37,13 +27,17 @@ export class ExpenseApp {
   }
 
   private init(): void {
-    // Process any due recurring transactions upon startup
     const generated = this.service.processRecurringTransactions();
     if (generated > 0) {
       this.ui.showToast(`Processed ${generated} recurring transaction(s).`);
     }
 
+    this.currentDateFormat = localStorage.getItem('date_format_preference') || 'YYYY-MM-DD';
+    const dateSelect = document.getElementById('dateFormatSelect') as HTMLSelectElement;
+    if (dateSelect) dateSelect.value = this.currentDateFormat;
+
     this.bindEvents();
+    this.initTheme();
     this.syncCurrencyUI();
     this.refresh();
   }
@@ -56,15 +50,48 @@ export class ExpenseApp {
     const categoryBudgets = this.service.getCategoryBudgets();
     const settings = this.service.getSettings();
 
+    // Check if analytics month filter is selected
+    const analyticsMonthSelect = document.getElementById(
+      'analyticsMonthFilter'
+    ) as HTMLSelectElement;
+    let analyticsExpenses = allExpenses;
+    if (analyticsMonthSelect && analyticsMonthSelect.value !== 'all') {
+      const monthIdx = parseInt(analyticsMonthSelect.value, 10);
+      const year = new Date().getFullYear();
+      const monthStr = `${year}-${String(monthIdx + 1).padStart(2, '0')}`;
+      analyticsExpenses = allExpenses.filter((e) => e.date.startsWith(monthStr));
+    }
+
     const summary = generateSummary(allExpenses, budget, categoryBudgets);
-    this.ui.updateDashboard(summary, settings);
+    const analyticsSummary =
+      analyticsExpenses === allExpenses
+        ? summary
+        : generateSummary(analyticsExpenses, budget, categoryBudgets);
+
+    this.ui.updateDashboard(
+      analyticsSummary,
+      settings,
+      allExpenses,
+      summary.insights,
+      summary.categoryBudgetProgress,
+      (cat: string) => this.handleDeleteCategoryBudget(cat)
+    );
 
     this.ui.renderExpensesTable(
       filteredExpenses,
       settings,
       (id: string) => this.openEditModal(id),
-      (id: string) => this.handleDelete(id)
+      (id: string) => this.handleDelete(id),
+      this.currentDateFormat
     );
+  }
+
+  private handleDeleteCategoryBudget(category: string): void {
+    if (confirm(`Remove budget ceiling for "${category}"?`)) {
+      this.service.deleteCategoryBudget(category);
+      this.ui.showToast(`Category budget for "${category}" removed.`);
+      this.refresh();
+    }
   }
 
   private syncCurrencyUI(): void {
@@ -74,23 +101,63 @@ export class ExpenseApp {
     }
   }
 
+  private initTheme(): void {
+    const savedTheme = localStorage.getItem('theme_preference') || 'light';
+    const sidebarToggle = document.getElementById('themeToggleCheckbox') as HTMLInputElement;
+    const settingsToggle = document.getElementById('settingsThemeCheckbox') as HTMLInputElement;
+
+    const setDark = (isDark: boolean) => {
+      if (isDark) {
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('theme_preference', 'dark');
+      } else {
+        document.body.classList.remove('dark-theme');
+        localStorage.setItem('theme_preference', 'light');
+      }
+      if (sidebarToggle) sidebarToggle.checked = isDark;
+      if (settingsToggle) settingsToggle.checked = isDark;
+    };
+
+    setDark(savedTheme === 'dark');
+
+    sidebarToggle?.addEventListener('change', () => setDark(sidebarToggle.checked));
+    settingsToggle?.addEventListener('change', () => setDark(settingsToggle.checked));
+  }
+
   private getActiveFilters(): ExpenseFilterOptions {
-    const typeEl = document.getElementById('typeFilter') as HTMLSelectElement;
-    const categoryEl = document.getElementById('categoryFilter') as HTMLSelectElement;
-    const searchEl = document.getElementById('searchDescriptionInput') as HTMLInputElement;
-    const startDateEl = document.getElementById('startDateFilter') as HTMLInputElement;
-    const endDateEl = document.getElementById('endDateFilter') as HTMLInputElement;
-    const sortByEl = document.getElementById('sortBySelect') as HTMLSelectElement;
-    const sortOrderEl = document.getElementById('sortOrderSelect') as HTMLSelectElement;
+    const topSearch = document.getElementById('topSearchInput') as HTMLInputElement;
+    const tableSearch = document.getElementById('tableSearchInput') as HTMLInputElement;
+    const monthSelect = document.getElementById('monthFilterSelect') as HTMLSelectElement;
+    const typeFilter = document.getElementById('tableTypeFilter') as HTMLSelectElement;
+    const categoryFilter = document.getElementById('tableCategoryFilter') as HTMLSelectElement;
+    const startDateInput = document.getElementById('tableStartDateFilter') as HTMLInputElement;
+    const endDateInput = document.getElementById('tableEndDateFilter') as HTMLInputElement;
+    const sortBySelect = document.getElementById('tableSortBySelect') as HTMLSelectElement;
+    const sortOrderSelect = document.getElementById('tableSortOrderSelect') as HTMLSelectElement;
+
+    let startDate: string | undefined = startDateInput?.value || undefined;
+    let endDate: string | undefined = endDateInput?.value || undefined;
+
+    if (!startDate && !endDate && monthSelect && monthSelect.value !== 'all') {
+      const now = new Date();
+      const monthIdx = parseInt(monthSelect.value, 10);
+      const year = now.getFullYear();
+      const start = new Date(year, monthIdx, 1);
+      const end = new Date(year, monthIdx + 1, 0);
+      startDate = start.toISOString().split('T')[0];
+      endDate = end.toISOString().split('T')[0];
+    }
+
+    const searchQuery = (tableSearch?.value || topSearch?.value || '').trim();
 
     return {
-      type: (typeEl?.value as 'ALL' | TransactionType) || 'ALL',
-      category: (categoryEl?.value as 'ALL' | ExpenseCategory) || 'ALL',
-      searchQuery: searchEl?.value || '',
-      startDate: startDateEl?.value || undefined,
-      endDate: endDateEl?.value || undefined,
-      sortBy: (sortByEl?.value as SortField) || 'date',
-      sortOrder: (sortOrderEl?.value as SortOrder) || 'desc'
+      type: (typeFilter?.value as 'ALL' | TransactionType) || 'ALL',
+      category: (categoryFilter?.value as 'ALL' | ExpenseCategory) || 'ALL',
+      searchQuery,
+      startDate,
+      endDate,
+      sortBy: (sortBySelect?.value as SortField) || 'date',
+      sortOrder: (sortOrderSelect?.value as SortOrder) || 'desc'
     };
   }
 
@@ -99,14 +166,12 @@ export class ExpenseApp {
     if (!expense) return;
 
     if (confirm(`Are you sure you want to delete "${expense.title}"?`)) {
-      try {
-        this.service.deleteExpense(id);
+      const success = this.service.deleteExpense(id);
+      if (success) {
         this.ui.showToast('Transaction deleted successfully.');
         this.refresh();
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          this.ui.showToast(error.message, true);
-        }
+      } else {
+        this.ui.showToast('Failed to delete transaction.', true);
       }
     }
   }
@@ -116,321 +181,385 @@ export class ExpenseApp {
     if (!expense) return;
 
     this.currentEditingId = id;
-    const editModal = document.getElementById('editModal');
-    const editTitle = document.getElementById('editTitle') as HTMLInputElement;
-    const editAmount = document.getElementById('editAmount') as HTMLInputElement;
-    const editType = document.getElementById('editType') as HTMLSelectElement;
-    const editCategory = document.getElementById('editCategory') as HTMLSelectElement;
-    const editDate = document.getElementById('editDate') as HTMLInputElement;
-    const editNotes = document.getElementById('editNotes') as HTMLTextAreaElement;
+    const modal = document.getElementById('transactionModal');
+    const titleInput = document.getElementById('modalTitleInput') as HTMLInputElement;
+    const amountInput = document.getElementById('modalAmountInput') as HTMLInputElement;
+    const categorySelect = document.getElementById('modalCategorySelect') as HTMLSelectElement;
+    const dateInput = document.getElementById('modalDateInput') as HTMLInputElement;
+    const notesInput = document.getElementById('modalNotesInput') as HTMLTextAreaElement;
+    const modalHeading = document.getElementById('modalHeadingText');
 
-    if (editTitle) editTitle.value = expense.title;
-    if (editAmount) editAmount.value = expense.amount.toString();
-    if (editType) editType.value = expense.type || 'expense';
-    if (editCategory) editCategory.value = expense.category;
-    if (editDate) editDate.value = expense.date;
-    if (editNotes) editNotes.value = expense.notes || '';
+    if (modalHeading) modalHeading.textContent = 'Edit Transaction';
+    if (titleInput) titleInput.value = expense.title;
+    if (amountInput) amountInput.value = expense.amount.toString();
+    if (categorySelect) categorySelect.value = expense.category;
+    if (dateInput) dateInput.value = expense.date;
+    if (notesInput) notesInput.value = expense.notes || '';
 
-    if (editModal) editModal.classList.add('open');
+    const typeRadio = document.querySelector(
+      `input[name="modalType"][value="${expense.type}"]`
+    ) as HTMLInputElement;
+    if (typeRadio) typeRadio.checked = true;
+
+    if (modal) modal.style.display = 'flex';
   }
 
-  private closeEditModal(): void {
+  private openAddModal(): void {
     this.currentEditingId = null;
-    const editModal = document.getElementById('editModal');
-    if (editModal) editModal.classList.remove('open');
+    const modal = document.getElementById('transactionModal');
+    const form = document.getElementById('transactionModalForm') as HTMLFormElement;
+    form?.reset();
+
+    const dateInput = document.getElementById('modalDateInput') as HTMLInputElement;
+    if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
+    const modalHeading = document.getElementById('modalHeadingText');
+    if (modalHeading) modalHeading.textContent = 'Add Transaction';
+
+    if (modal) modal.style.display = 'flex';
+  }
+
+  private closeModals(): void {
+    document.querySelectorAll('.modal-overlay').forEach((m) => {
+      (m as HTMLElement).style.display = 'none';
+    });
+    this.currentEditingId = null;
   }
 
   private bindEvents(): void {
-    // Add Transaction Form
-    const expenseForm = document.getElementById('expenseForm') as HTMLFormElement;
-    expenseForm?.addEventListener('submit', (e) => {
-      e.preventDefault();
-
-      const titleInput = document.getElementById('expenseTitle') as HTMLInputElement;
-      const amountInput = document.getElementById('expenseAmount') as HTMLInputElement;
-      const typeInput = document.getElementById('expenseType') as HTMLSelectElement;
-      const categoryInput = document.getElementById('expenseCategory') as HTMLSelectElement;
-      const dateInput = document.getElementById('expenseDate') as HTMLInputElement;
-      const notesInput = document.getElementById('expenseNotes') as HTMLTextAreaElement;
-      const recurringInput = document.getElementById('isRecurringCheckbox') as HTMLInputElement;
-
-      const formData = {
-        title: titleInput?.value || '',
-        amount: amountInput?.value || '',
-        type: (typeInput?.value as TransactionType) || 'expense',
-        category: categoryInput?.value || '',
-        date: dateInput?.value || '',
-        notes: notesInput?.value || '',
-        isRecurring: recurringInput?.checked || false
-      };
-
-      const validation = validateExpense(formData);
-      if (!validation.isValid) {
-        const firstError = Object.values(validation.errors)[0];
-        this.ui.showToast(firstError || 'Validation failed.', true);
-        return;
-      }
-
-      try {
-        this.service.addExpense({
-          title: formData.title,
-          amount: parseFloat(formData.amount),
-          type: formData.type,
-          category: formData.category as ExpenseCategory,
-          date: formData.date,
-          notes: formData.notes,
-          isRecurring: formData.isRecurring
-        });
-
-        expenseForm.reset();
-        // Reset default date to today
-        if (dateInput) {
-          dateInput.value = new Date().toISOString().slice(0, 10);
-        }
-
-        this.ui.showToast('Transaction added successfully.');
-        this.refresh();
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          this.ui.showToast(error.message, true);
-        }
-      }
-    });
-
-    // Save Edited Transaction
-    const saveEditBtn = document.getElementById('saveEditBtn');
-    saveEditBtn?.addEventListener('click', () => {
-      if (!this.currentEditingId) return;
-
-      const editTitle = document.getElementById('editTitle') as HTMLInputElement;
-      const editAmount = document.getElementById('editAmount') as HTMLInputElement;
-      const editType = document.getElementById('editType') as HTMLSelectElement;
-      const editCategory = document.getElementById('editCategory') as HTMLSelectElement;
-      const editDate = document.getElementById('editDate') as HTMLInputElement;
-      const editNotes = document.getElementById('editNotes') as HTMLTextAreaElement;
-
-      const formData = {
-        title: editTitle?.value || '',
-        amount: editAmount?.value || '',
-        type: (editType?.value as TransactionType) || 'expense',
-        category: editCategory?.value || '',
-        date: editDate?.value || '',
-        notes: editNotes?.value || ''
-      };
-
-      const validation = validateExpense(formData);
-      if (!validation.isValid) {
-        const firstError = Object.values(validation.errors)[0];
-        this.ui.showToast(firstError || 'Validation failed.', true);
-        return;
-      }
-
-      try {
-        this.service.updateExpense(this.currentEditingId, {
-          title: formData.title,
-          amount: parseFloat(formData.amount),
-          type: formData.type,
-          category: formData.category as ExpenseCategory,
-          date: formData.date,
-          notes: formData.notes
-        });
-
-        this.closeEditModal();
-        this.ui.showToast('Transaction updated.');
-        this.refresh();
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          this.ui.showToast(error.message, true);
-        }
-      }
-    });
-
-    // Cancel Edit Modal
-    document.getElementById('cancelEditBtn')?.addEventListener('click', () => {
-      this.closeEditModal();
-    });
-
-    document.getElementById('closeEditModalBtn')?.addEventListener('click', () => {
-      this.closeEditModal();
-    });
-
-    // Currency Switcher
-    const currencySelect = document.getElementById('currencySelect') as HTMLSelectElement;
-    currencySelect?.addEventListener('change', () => {
-      this.service.setCurrency(currencySelect.value as CurrencyCode);
-      this.ui.showToast(`Currency changed to ${currencySelect.value}`);
-      this.refresh();
-    });
-
-    // Update Overall Budget
-    const updateBudgetBtn = document.getElementById('updateBudgetBtn');
-    updateBudgetBtn?.addEventListener('click', () => {
-      const budgetInput = document.getElementById('monthlyBudgetInput') as HTMLInputElement;
-      const val = parseFloat(budgetInput?.value || '');
-      if (isNaN(val) || val < 0) {
-        this.ui.showToast('Please enter a valid non-negative budget.', true);
-        return;
-      }
-      this.service.setBudget(val);
-      this.ui.showToast('Monthly budget updated.');
-      this.refresh();
-    });
-
-    // Category Budget Form
-    const saveCatBudgetBtn = document.getElementById('saveCatBudgetBtn');
-    saveCatBudgetBtn?.addEventListener('click', () => {
-      const catSelect = document.getElementById('budgetCategorySelect') as HTMLSelectElement;
-      const amtInput = document.getElementById('categoryBudgetAmount') as HTMLInputElement;
-
-      const category = catSelect?.value;
-      const amount = parseFloat(amtInput?.value || '');
-
-      if (!category || isNaN(amount) || amount < 0) {
-        this.ui.showToast('Please provide a valid category and budget amount.', true);
-        return;
-      }
-
-      this.service.setCategoryBudget(category, amount);
-      amtInput.value = '';
-      this.ui.showToast(`Budget for "${category}" updated.`);
-      this.refresh();
-    });
-
-    // Filter Controls
-    const filterElements = [
-      'typeFilter',
-      'categoryFilter',
-      'searchDescriptionInput',
-      'startDateFilter',
-      'endDateFilter',
-      'sortBySelect',
-      'sortOrderSelect'
-    ];
-
-    filterElements.forEach((id) => {
-      const el = document.getElementById(id);
-      el?.addEventListener('input', () => this.refresh());
-      el?.addEventListener('change', () => this.refresh());
-    });
-
-    // Reset Filters
-    document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
-      const typeFilter = document.getElementById('typeFilter') as HTMLSelectElement;
-      const categoryFilter = document.getElementById('categoryFilter') as HTMLSelectElement;
-      const searchInput = document.getElementById('searchDescriptionInput') as HTMLInputElement;
-      const startDate = document.getElementById('startDateFilter') as HTMLInputElement;
-      const endDate = document.getElementById('endDateFilter') as HTMLInputElement;
-      const sortBy = document.getElementById('sortBySelect') as HTMLSelectElement;
-      const sortOrder = document.getElementById('sortOrderSelect') as HTMLSelectElement;
-
-      if (typeFilter) typeFilter.value = 'ALL';
-      if (categoryFilter) categoryFilter.value = 'ALL';
-      if (searchInput) searchInput.value = '';
-      if (startDate) startDate.value = '';
-      if (endDate) endDate.value = '';
-      if (sortBy) sortBy.value = 'date';
-      if (sortOrder) sortOrder.value = 'desc';
-
-      this.refresh();
-    });
-
-    // Recurring Rule Form
-    const recurringForm = document.getElementById('recurringRuleForm') as HTMLFormElement;
-    recurringForm?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const title = (document.getElementById('recurringTitle') as HTMLInputElement)?.value;
-      const amount = parseFloat(
-        (document.getElementById('recurringAmount') as HTMLInputElement)?.value || ''
-      );
-      const type = (document.getElementById('recurringType') as HTMLSelectElement)
-        ?.value as TransactionType;
-      const category = (document.getElementById('recurringCategory') as HTMLSelectElement)
-        ?.value as ExpenseCategory;
-      const frequency = (document.getElementById('recurringFrequency') as HTMLSelectElement)
-        ?.value as RecurringFrequency;
-      const startDate = (document.getElementById('recurringStartDate') as HTMLInputElement)?.value;
-
-      if (!title || isNaN(amount) || amount <= 0 || !startDate) {
-        this.ui.showToast('Please fill all recurring rule fields properly.', true);
-        return;
-      }
-
-      this.service.addRecurringRule({
-        title,
-        amount,
-        type,
-        category,
-        frequency,
-        startDate,
-        active: true
+    document
+      .querySelectorAll('#openAddModalBtn, #bottomAddTransactionBtn, #transactionsAddBtn')
+      .forEach((btn) => {
+        btn.addEventListener('click', () => this.openAddModal());
       });
 
-      recurringForm.reset();
-      this.ui.showToast('Recurring rule saved.');
+    document.querySelectorAll('.modal-close-trigger').forEach((btn) => {
+      btn.addEventListener('click', () => this.closeModals());
     });
 
-    // Export JSON
-    document.getElementById('exportJSONBtn')?.addEventListener('click', () => {
-      exportToJSON(this.service.getExpenses());
-      this.ui.showToast('JSON export downloaded.');
+    const topSearch = document.getElementById('topSearchInput') as HTMLInputElement;
+    topSearch?.addEventListener('input', () => {
+      const tableSearch = document.getElementById('tableSearchInput') as HTMLInputElement;
+      if (tableSearch) tableSearch.value = topSearch.value;
+      this.refresh();
     });
 
-    // Export CSV
-    document.getElementById('exportCSVBtn')?.addEventListener('click', () => {
-      exportToCSV(this.service.getExpenses());
-      this.ui.showToast('CSV export downloaded.');
+    const tableSearch = document.getElementById('tableSearchInput') as HTMLInputElement;
+    tableSearch?.addEventListener('input', () => {
+      if (topSearch) topSearch.value = tableSearch.value;
+      this.refresh();
     });
 
-    // Import File
-    const importFileInput = document.getElementById('importFileInput') as HTMLInputElement;
-    importFileInput?.addEventListener('change', async () => {
-      const file = importFileInput.files?.[0];
-      if (!file) return;
+    const monthSelect = document.getElementById('monthFilterSelect') as HTMLSelectElement;
+    monthSelect?.addEventListener('change', () => this.refresh());
 
-      try {
-        if (file.name.endsWith('.json')) {
-          const { validExpenses, result } = await parseAndValidateImport(file);
-          if (validExpenses.length > 0) {
-            validExpenses.forEach((exp) => this.service.addExpense(exp));
-            this.refresh();
-            this.ui.showToast(`Imported ${validExpenses.length} transactions from JSON.`);
-          } else {
-            this.ui.showToast(`No valid records found. ${result.errors.join(' ')}`, true);
-          }
-        } else if (file.name.endsWith('.csv')) {
-          const text = await readTextFile(file);
-          const { validExpenses, result } = parseCSVContent(text);
-          if (validExpenses.length > 0) {
-            validExpenses.forEach((exp) => this.service.addExpense(exp));
-            this.refresh();
-            this.ui.showToast(`Imported ${validExpenses.length} transactions from CSV.`);
-          } else {
-            this.ui.showToast(`No valid CSV records: ${result.errors.join(' ')}`, true);
-          }
-        } else {
-          this.ui.showToast('Unsupported file type. Use .json or .csv.', true);
-        }
-      } catch (error: unknown) {
-        if (error instanceof Error) {
-          this.ui.showToast(error.message, true);
-        }
-      } finally {
-        importFileInput.value = '';
-      }
+    const typeFilter = document.getElementById('tableTypeFilter') as HTMLSelectElement;
+    typeFilter?.addEventListener('change', () => this.refresh());
+
+    const catFilter = document.getElementById('tableCategoryFilter') as HTMLSelectElement;
+    catFilter?.addEventListener('change', () => this.refresh());
+
+    const startDateInput = document.getElementById('tableStartDateFilter') as HTMLInputElement;
+    startDateInput?.addEventListener('change', () => this.refresh());
+
+    const endDateInput = document.getElementById('tableEndDateFilter') as HTMLInputElement;
+    endDateInput?.addEventListener('change', () => this.refresh());
+
+    const sortBySelect = document.getElementById('tableSortBySelect') as HTMLSelectElement;
+    sortBySelect?.addEventListener('change', () => this.refresh());
+
+    const sortOrderSelect = document.getElementById('tableSortOrderSelect') as HTMLSelectElement;
+    sortOrderSelect?.addEventListener('change', () => this.refresh());
+
+    document.getElementById('resetFiltersBtn')?.addEventListener('click', () => {
+      if (topSearch) topSearch.value = '';
+      if (tableSearch) tableSearch.value = '';
+      if (typeFilter) typeFilter.value = 'ALL';
+      if (catFilter) catFilter.value = 'ALL';
+      if (startDateInput) startDateInput.value = '';
+      if (endDateInput) endDateInput.value = '';
+      if (sortBySelect) sortBySelect.value = 'date';
+      if (sortOrderSelect) sortOrderSelect.value = 'desc';
+      this.refresh();
+      this.ui.showToast('Filters reset to default.');
     });
 
-    // Clear All Data
-    document.getElementById('clearAllDataBtn')?.addEventListener('click', () => {
-      if (confirm('Are you sure you want to permanently clear all transactions?')) {
-        this.service.clearAllExpenses();
-        this.ui.showToast('All transaction data cleared.');
+    const analyticsMonthSelect = document.getElementById(
+      'analyticsMonthFilter'
+    ) as HTMLSelectElement;
+    analyticsMonthSelect?.addEventListener('change', () => this.refresh());
+
+    const currencySelect = document.getElementById('currencySelect') as HTMLSelectElement;
+    currencySelect?.addEventListener('change', () => {
+      const curr = currencySelect.value as CurrencyCode;
+      this.service.setCurrency(curr);
+      this.refresh();
+      this.ui.showToast(`Currency changed to ${curr}`);
+    });
+
+    const dateFormatSelect = document.getElementById('dateFormatSelect') as HTMLSelectElement;
+    dateFormatSelect?.addEventListener('change', () => {
+      this.currentDateFormat = dateFormatSelect.value;
+      localStorage.setItem('date_format_preference', this.currentDateFormat);
+      this.refresh();
+      this.ui.showToast(`Date format set to ${this.currentDateFormat}`);
+    });
+
+    document.getElementById('notificationBellBtn')?.addEventListener('click', () => {
+      this.ui.showToast('You have 0 unread alerts.');
+    });
+
+    // Budget modal triggers
+    document.getElementById('openBudgetModalBtn')?.addEventListener('click', () => {
+      const modal = document.getElementById('budgetConfigModal');
+      const input = document.getElementById('budgetAmountInput') as HTMLInputElement;
+      if (input) input.value = this.service.getBudget().toString();
+      if (modal) modal.style.display = 'flex';
+    });
+
+    document.getElementById('budgetConfigForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const input = document.getElementById('budgetAmountInput') as HTMLInputElement;
+      const val = parseFloat(input.value);
+      if (!isNaN(val) && val >= 0) {
+        this.service.setBudget(val);
+        this.closeModals();
         this.refresh();
+        this.ui.showToast('Monthly budget updated successfully.');
       }
     });
+
+    // Category Budget Modal triggers
+    document.getElementById('openCategoryBudgetModalBtn')?.addEventListener('click', () => {
+      const modal = document.getElementById('categoryBudgetModal');
+      const amountInput = document.getElementById('catBudgetAmountInput') as HTMLInputElement;
+      if (amountInput) amountInput.value = '';
+      if (modal) modal.style.display = 'flex';
+    });
+
+    document.getElementById('categoryBudgetForm')?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const catSelect = document.getElementById('catBudgetSelect') as HTMLSelectElement;
+      const amountInput = document.getElementById('catBudgetAmountInput') as HTMLInputElement;
+      const cat = catSelect.value;
+      const amount = parseFloat(amountInput.value);
+      if (cat && !isNaN(amount) && amount >= 0) {
+        this.service.setCategoryBudget(cat, amount);
+        this.closeModals();
+        this.refresh();
+        this.ui.showToast(`Category budget for "${cat}" saved.`);
+      }
+    });
+
+    document.querySelectorAll('.nav-item').forEach((item) => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach((n) => n.classList.remove('active'));
+        item.classList.add('active');
+        const view = item.getAttribute('data-view');
+        this.switchView(view || 'dashboard');
+      });
+    });
+
+    const form = document.getElementById('transactionModalForm') as HTMLFormElement;
+    form?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const titleInput = document.getElementById('modalTitleInput') as HTMLInputElement;
+      const amountInput = document.getElementById('modalAmountInput') as HTMLInputElement;
+      const categorySelect = document.getElementById('modalCategorySelect') as HTMLSelectElement;
+      const dateInput = document.getElementById('modalDateInput') as HTMLInputElement;
+      const notesInput = document.getElementById('modalNotesInput') as HTMLTextAreaElement;
+      const typeRadio = document.querySelector(
+        'input[name="modalType"]:checked'
+      ) as HTMLInputElement;
+
+      const title = titleInput.value.trim();
+      const amount = parseFloat(amountInput.value);
+      const category = categorySelect.value as ExpenseCategory;
+      const date = dateInput.value;
+      const type = (typeRadio?.value as TransactionType) || 'expense';
+      const notes = notesInput.value.trim();
+
+      const formData: ExpenseFormData = {
+        title,
+        amount,
+        category,
+        date,
+        type,
+        notes: notes || undefined
+      };
+
+      const validation = validateExpense(formData);
+      if (!validation.isValid) {
+        const firstErrorKey = Object.keys(validation.errors)[0] as keyof ExpenseFormData;
+        this.ui.showToast(validation.errors[firstErrorKey] || 'Please check your inputs', true);
+        return;
+      }
+
+      if (this.currentEditingId) {
+        this.service.updateExpense(this.currentEditingId, {
+          title,
+          amount,
+          category,
+          date,
+          type,
+          notes: notes || undefined
+        });
+        this.ui.showToast('Transaction updated successfully');
+      } else {
+        this.service.addExpense({
+          title,
+          amount,
+          category,
+          date,
+          type,
+          notes: notes || undefined
+        });
+        this.ui.showToast('Transaction added successfully');
+      }
+
+      this.closeModals();
+      this.refresh();
+    });
+
+    const handleExportJson = () => {
+      exportToJSON(this.service.getExpenses(), this.service.getSettings().currency);
+      this.ui.showToast('JSON backup exported.');
+    };
+
+    const handleExportCsv = () => {
+      exportToCSV(this.service.getExpenses());
+      this.ui.showToast('CSV spreadsheet exported.');
+    };
+
+    const handleImportJsonClick = () => {
+      document.getElementById('jsonFileInput')?.click();
+    };
+
+    document.getElementById('exportJsonBtn')?.addEventListener('click', handleExportJson);
+    document.getElementById('settingsExportJsonBtn')?.addEventListener('click', handleExportJson);
+    document.getElementById('exportCsvBtn')?.addEventListener('click', handleExportCsv);
+    document.getElementById('settingsExportCsvBtn')?.addEventListener('click', handleExportCsv);
+    document.getElementById('importJsonBtn')?.addEventListener('click', handleImportJsonClick);
+    document
+      .getElementById('settingsImportJsonBtn')
+      ?.addEventListener('click', handleImportJsonClick);
+
+    document.getElementById('jsonFileInput')?.addEventListener('change', async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const { validExpenses, result } = await parseAndValidateImport(file);
+        validExpenses.forEach((item) => this.service.addExpense(item));
+        this.refresh();
+        this.ui.showToast(`Imported ${result.importedCount} transaction(s).`);
+      } catch {
+        this.ui.showToast('Failed to import JSON file.', true);
+      }
+    });
+
+    // Clear all data
+    document.getElementById('clearAllDataBtn')?.addEventListener('click', () => {
+      if (
+        confirm(
+          'Are you sure you want to PERMANENTLY clear all transactions? This cannot be undone.'
+        )
+      ) {
+        this.service.clearAllExpenses();
+        this.refresh();
+        this.ui.showToast('All transactions permanently cleared.', true);
+      }
+    });
+
+    // Load sample data
+    document.getElementById('loadSampleDataBtn')?.addEventListener('click', () => {
+      const samples: Array<{
+        title: string;
+        amount: number;
+        category: ExpenseCategory;
+        type: TransactionType;
+        date: string;
+        notes?: string;
+      }> = [
+        {
+          title: 'Tech Salary Deposit',
+          amount: 75000,
+          category: 'Salary',
+          type: 'income',
+          date: '2026-01-01'
+        },
+        {
+          title: 'Freelance Design Retainer',
+          amount: 25000,
+          category: 'Freelance',
+          type: 'income',
+          date: '2026-01-10'
+        },
+        {
+          title: 'Organic Supermarket Groceries',
+          amount: 4850,
+          category: 'Food & Dining',
+          type: 'expense',
+          date: '2026-01-04'
+        },
+        {
+          title: 'Metro Transit Monthly Pass',
+          amount: 1500,
+          category: 'Transportation',
+          type: 'expense',
+          date: '2026-01-05'
+        },
+        {
+          title: 'High-speed Fiber Broadband',
+          amount: 1299,
+          category: 'Bills & Utilities',
+          type: 'expense',
+          date: '2026-01-08'
+        },
+        {
+          title: 'Ergonomic Desk Accessories',
+          amount: 3200,
+          category: 'Shopping',
+          type: 'expense',
+          date: '2026-01-12'
+        },
+        {
+          title: 'Streaming Subscriptions & Cinema',
+          amount: 999,
+          category: 'Entertainment',
+          type: 'expense',
+          date: '2026-01-15'
+        },
+        {
+          title: 'Quarterly Health Checkup',
+          amount: 2400,
+          category: 'Health',
+          type: 'expense',
+          date: '2026-01-18'
+        }
+      ];
+
+      samples.forEach((s) => this.service.addExpense(s));
+      this.refresh();
+      this.ui.showToast('Sample dataset loaded successfully.');
+    });
+  }
+
+  private switchView(view: string): void {
+    const mainDashboard = document.getElementById('mainDashboardSection');
+    const transactionsSection = document.getElementById('transactionsTableSection');
+    const analyticsSection = document.getElementById('analyticsSection');
+    const budgetsSection = document.getElementById('budgetsSection');
+    const settingsSection = document.getElementById('settingsSection');
+
+    if (mainDashboard) mainDashboard.style.display = view === 'dashboard' ? 'block' : 'none';
+    if (transactionsSection)
+      transactionsSection.style.display = view === 'transactions' ? 'block' : 'none';
+    if (analyticsSection) analyticsSection.style.display = view === 'analytics' ? 'block' : 'none';
+    if (budgetsSection) budgetsSection.style.display = view === 'budgets' ? 'block' : 'none';
+    if (settingsSection) settingsSection.style.display = view === 'settings' ? 'block' : 'none';
   }
 }
 
-// Bootstrap application on DOM ready
 if (typeof document !== 'undefined') {
   document.addEventListener('DOMContentLoaded', () => {
     new ExpenseApp();

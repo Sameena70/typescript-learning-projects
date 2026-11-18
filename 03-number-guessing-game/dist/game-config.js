@@ -9,8 +9,8 @@ export const MAX_ATTEMPTS = 50;
  * Standard preset difficulty configurations.
  */
 export const DEFAULT_DIFFICULTIES = {
-    easy: { name: 'Easy', min: 1, max: 100, maxAttempts: 7 },
-    medium: { name: 'Medium', min: 1, max: 500, maxAttempts: 9 },
+    easy: { name: 'Easy', min: 1, max: 50, maxAttempts: 10 },
+    medium: { name: 'Medium', min: 1, max: 100, maxAttempts: 10 },
     hard: { name: 'Hard', min: 1, max: 1000, maxAttempts: 10 }
 };
 /**

@@ -45,13 +45,13 @@ describe('GameConfigManager (Difficulty Boundaries & Custom Ranges)', () => {
   it('provides default boundaries for standard difficulties', () => {
     const easy = config.getConfig('easy');
     expect(easy.min).toBe(1);
-    expect(easy.max).toBe(100);
-    expect(easy.maxAttempts).toBe(7);
+    expect(easy.max).toBe(50);
+    expect(easy.maxAttempts).toBe(10);
 
     const medium = config.getConfig('medium');
     expect(medium.min).toBe(1);
-    expect(medium.max).toBe(500);
-    expect(medium.maxAttempts).toBe(9);
+    expect(medium.max).toBe(100);
+    expect(medium.maxAttempts).toBe(10);
 
     const hard = config.getConfig('hard');
     expect(hard.min).toBe(1);
@@ -153,9 +153,9 @@ describe('GameStateModel (State Machine & Input Validation)', () => {
   it('initializes game state with appropriate boundaries for easy difficulty', () => {
     expect(model.getDifficulty()).toBe('easy');
     expect(model.getMin()).toBe(1);
-    expect(model.getMax()).toBe(100);
-    expect(model.getMaxAttempts()).toBe(7);
-    expect(model.getRemainingAttempts()).toBe(7);
+    expect(model.getMax()).toBe(50);
+    expect(model.getMaxAttempts()).toBe(10);
+    expect(model.getRemainingAttempts()).toBe(10);
     expect(model.getIsGameOver()).toBe(false);
     expect(model.getHasWon()).toBe(false);
   });
@@ -177,8 +177,8 @@ describe('GameStateModel (State Machine & Input Validation)', () => {
   });
 
   it('rejects guesses that violate numerical constraints or ranges', () => {
-    expect(() => model.submitGuess(0)).toThrow('Guess must be between 1 and 100.');
-    expect(() => model.submitGuess(101)).toThrow('Guess must be between 1 and 100.');
+    expect(() => model.submitGuess(0)).toThrow('Guess must be between 1 and 50.');
+    expect(() => model.submitGuess(51)).toThrow('Guess must be between 1 and 50.');
     expect(() => model.submitGuess(45.5)).toThrow('Please enter a valid whole integer.');
   });
 

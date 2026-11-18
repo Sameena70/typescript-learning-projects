@@ -8,8 +8,8 @@
 import { VALID_CATEGORIES, isContactCategory } from './generic-utils.js';
 import { SEED_CONTACTS } from './data/seed-contacts.js';
 export { VALID_CATEGORIES, SEED_CONTACTS };
-export const STORAGE_KEY = 'ts_contact_manager_contacts_v1';
-export const LEGACY_STORAGE_KEY = 'ts_contact_manager_contacts';
+export const STORAGE_KEY = 'ts_contacthub_contacts_v2';
+export const LEGACY_STORAGE_KEY = 'ts_contact_manager_contacts_v1';
 /**
  * Type guard verifying if an arbitrary unknown value satisfies the Contact structure.
  * Uses `in` operator and `typeof` checks to avoid blind type casts.
@@ -192,15 +192,7 @@ export class ContactRepository {
     }
     loadContacts() {
         try {
-            let rawData = this.driver.getItem(STORAGE_KEY);
-            // Migration: check legacy storage key if primary is empty
-            if (!rawData) {
-                const legacyData = this.driver.getItem(LEGACY_STORAGE_KEY);
-                if (legacyData) {
-                    rawData = legacyData;
-                    this.driver.setItem(STORAGE_KEY, legacyData);
-                }
-            }
+            const rawData = this.driver.getItem(STORAGE_KEY);
             if (!rawData) {
                 this.saveContacts(SEED_CONTACTS);
                 return SEED_CONTACTS.map((c) => (Object.assign({}, c)));
